@@ -1,0 +1,35 @@
+The Calxeda firmware update utility in this directory is a cheap prototype.
+It is intended to be useful, in that an administrator with a lot of patenice
+can define his environment in terms of
+
+    Calxeda server addresses
+    Images available to be deployed
+    Distribution plans (which combine servers and images with some rules)
+
+can persist the definition and re-use it.  Eventually it will support both
+a scriptable and one or more interactive interfaces.
+
+Some interesting features of the utility are
+
+    It can optionally start its own tftp server for use during firmware update
+    It can use fabric management commands to discover server addresses
+
+
+The application uses an MVC (Model-View-Controller) style in the hope
+that parts of the model (persistence, target discovery, status, maybe
+some others) can be abstracted into the ../common directory and used across
+more than one application.  The modules break down like this:
+
+main.py -- invocation
+csfwupd_resources.py -- separates out strings and other stuff we might
+                        want to be different at runtime.
+controller.py -- this is fairly thin now.  It might get split up in future
+View related modules:
+  ui.py -- scrolling user interface
+  cli.py (eventually. It doesn't exist yet.) -- scriptable interface
+Model related modules:
+  model.py -- handles the container relationships, persistence, etc.
+  tftp.py -- handles tftp configuration and state
+  images.py -- keeps track of images and what and where they are
+  targets.py -- keeps track of named collections of servers
+  plans.py -- keeps track of plans
