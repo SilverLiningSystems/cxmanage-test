@@ -83,8 +83,20 @@ class controller:
 ###########################  Images-specific methods ###########################
 
     def list_images(self, subject):
-        pass
+        #FIXME
+        return ''
 
+    def validate_image_file(self, f):
+        #FIXME
+        return False
+
+    def get_image_header_str(self, f):
+        #FIXME
+        return ''
+
+    def tftp_get(self, path):
+        #FIXME
+        return None
 
 ###########################  Targets-specific methods #########################
 

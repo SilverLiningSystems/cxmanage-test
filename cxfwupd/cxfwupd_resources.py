@@ -127,7 +127,7 @@ class cxfwupd_resources:
                 'tftp-interface-menu':
                     {
                     'interface-change-options': 'Change internal tftp server interface:',
-                    'status': '(Internal tftp server is current listening on {0}, port {1}',
+                    'status': '(Internal tftp server is current listening on {0}, port {1} {2})',
                     'change-interface': 'Enter new network interface (i.e. ethx)',
                     'change-port': 'Enter new listener port',
                     'apply-changes': 'Apply changes',
@@ -138,9 +138,22 @@ class cxfwupd_resources:
                     {
                     'status': '(External tftp server is at {0} listening on port {1}',
                     'change-addr': 'Enter new IP address:',
-                    'change-port': 'Enter new listener port',
+                    'change-port': 'Enter new listener port:',
+                    'change-rootdir': 'Enter tftp root directory:',
                     'apply-changes': 'Apply changes to external tftp server address and port?',
                     'leave-unchanged': 'Leaving external tftp server and port unchanged'
+                    },
+                'image-strings':
+                    {
+                    'adding': 'Adding an image',
+                    'exit': 'Exit without doing anything',
+                    'add-from-local': 'Transfer an image on local disk to the tftp server',
+                    'add-remote': 'Add a reference to an image already on the tftp server',
+                    'option-prompt': 'Enter an option:',
+                    'enter-local-path': 'Enter local path:',
+                    'enter-tftp-path': 'Enter file name on the tftp server:',
+                    'nf-add-anyway': 'Remote file not found.  Add anyway?',
+                    'image-validated': 'Image validated.'
                     }
             }
             menu = allstrings[subject]

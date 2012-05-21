@@ -62,7 +62,7 @@ class ui:
                          strings['images-option'],
                          strings['images-status'].format(iss)])
             self._print(['3.',
-                         strings['targets-option'],
+                         strings['targets-option'], '\n  ',
                          strings['targets-status'].format(tss)])
             self._print(['4.',
                          strings['plan-option'],
@@ -74,7 +74,7 @@ class ui:
                          strings['execute-option'],
                          strings['execute-status'].format(ess)])
             self._print(['7.',
-                         strings['status-option'],
+                         strings['status-option'], '\n  ',
                          strings['status-status'].format(sss)])
             self._print(['8.',
                          strings['exit-option'],
@@ -149,35 +149,51 @@ class ui:
             else:
                 self.handle_specify_tftp_server()
 
+    #
+    # I'm sure I don't have all the use cases down for images.
+    # To create a plan, we have to pair up a tftp server path for an
+    # image with one or more targets.  If the tftp server is local,
+    # we can populate the list of possible images by looking in
+    # one or more directories specified by the user; but if it's remote,
+    # the user has to tell use the whole path for each image.
+    #
+    # To add a new image to the ftp repository, the user has to give us
+    # a local path, and we'll try to copy it do a tftp location
+    # he specifies (using tftp if the server is not local).  The tftp server
+    # at a remote site may not have write access to the path specified.
+    #
+    # Our job in the ui is to keep the model informed of all images we
+    # know about, and
+    #     what type it is
+    #     what path the target should request
+    #     whether it's been verified
+    #     the last time we know it was successfully accessed
+    #     whether it was there the last time we checked.
     def handle_images_options(self):
         """ Handle the main menu images option by presenting a menu of image
         editing options."""
         strings = cxfwupd_resources.get_strings('image-menu')
         # Image options:
-        #  1. Specify base directories
-        #  2. List images
-        #  3. Add an image
-        #  4. Delete an image
-        #  5. Validate an image
-        #  6. Exit images menu
+        #  1. List images
+        #  2. Add an image
+        #  3. Delete an image
+        #  4. Validate an image
+        #  5. Exit images menu
         self._print([strings['image-options']])
-        self._print(['1.', strings['base-dirs']])
-        self._print(['2.', strings['list-images']])
-        self._print(['3.', strings['add-image']])
-        self._print(['4.', strings['delete-image']])
-        self._print(['5.', strings['validate-image']])
-        self._print(['6.', strings['exit']])
+        self._print(['1.', strings['list-images']])
+        self._print(['2.', strings['add-image']])
+        self._print(['3.', strings['delete-image']])
+        self._print(['4.', strings['validate-image']])
+        self._print(['5.', strings['exit']])
         strings = cxfwupd_resources.get_strings('image-menu')
         menusel = ui._get_menu_sel(strings['option-prompt'])
         if menusel == 1:
-            self.handle_edit_base_dirs()
-        elif menusel == 2:
             self.handle_list_images()
-        elif menusel == 3:
+        elif menusel == 2:
             self.handle_add_image()
-        elif menusel == 4:
+        elif menusel == 3:
             self.handle_delete_image()
-        elif menusel == 5:
+        elif menusel == 4:
             self.handle_validate_image()
 
 
@@ -297,20 +313,21 @@ class ui:
             self.handle_cancel_plan()
 
 
-    def _handle_internal_tftp(self, interface, port):
+    def _handle_internal_tftp(self, interface, port, rootdir):
         strings = cxfwupd_resources.get_strings('tftp-interface-menu')
         # Change internal tftp server interface:
         #    Internal tftp server is currently listening on ethx port y
         #    Enter new interface:
         #    Enter new port
         #    Apply changes?
-        self._print([strings['status'] % [interface, port]])
+        self._print([strings['status'] % [interface, port, rootdir]])
         interface = ui._get_str(strings['change-interface'])
         port = ui._get_int(strings['change-port'])
-        self._print([strings['status'] % [interface, port]])
+        rootdir = ui._get_str(strings['change-rootdir'])
+        self._print([strings['status'] % [interface, port, rootdir]])
         yn = ui._get_str(strings['apply-changes'])
         if ui._is_yes(yn):
-            self._controller.set_internal_tftp_server(interface, port)
+            self._controller.set_internal_tftp_server(interface, port, rootdir)
             return True
         else:
             self._print(['leave-unchanged'])
@@ -321,11 +338,12 @@ class ui:
         #the intenal TFTP server.
         interface = self._controller.get_internal_tftp_interface()
         port = self._controller.get_internal_tftp_port()
-        if self._handle_internal_tftp(interface, port):
+        rootdir = self._controller.get_internal_tftp_root()
+        if self._handle_internal_tftp(interface, port, rootdir):
             self._controller.restart_tftp_server()
 
     def handle_create_internal_tftp(self):
-        self._handle_internal_tftp('eth0', 69)
+        self._handle_internal_tftp('eth0', 69, '/tftpboot')
 
     def handle_tftp_addr_change(self):
         addr = self._controller.get_external_tftp_addr()
@@ -356,23 +374,65 @@ class ui:
         #    There is currently no tftp server configured
         #    Specify tftp server ip address
         self._handle_tftp_addr_change('127.0.0.1', 69)
-            
-    def handle_edit_base_dirs(self):
-        # Edit base directories in the tftp server
-        #   1. List base directories by image type
-        #   2. Change base directories by image type
-        #   3. Save changes and exit
-        #   4. Exit without saving changes
-        while True:
-            break;
 
     def handle_list_images(self):
         self._controller.list_images('all')
             
     def handle_add_image(self):
-        # Enter path:
-        # Image is a xxxx image and will be placed in tftp directory yyyy. OK?
+        strings = cxfwupd_resources.get_strings('image-strings')
+        # Adding an image
+        #   1. Transfer an image on local disk to the tftp server
+        #   2. Add a reference to an image already on the tftp server
+        #   3. Exit
+        self._print([strings['adding']])
+        self._print(['1.', strings['add-from-local']])
+        self._print(['2.', strings['add-remote']])
+        self._print(['3.', strings['exit']])
+        menusel = ui._get_menu_sel(strings['option-prompt'])
+        if menusel == 1:
+            self.handle_add_local_image(strings)
+        elif menusel == 2:
+            self.handle_add_remote_image(strings)
+
+    def handle_put_image_on_tftp(self, f):
         pass
+
+    def handle_image_upload(self, f, really_upload):
+        if self._controller.validate_image_file(f):
+            self._print([strings['image validated'],
+                         self._controller.get_image_header_str(f)])
+            if really_upload:
+                self.handle_put_image_on_tftp(localpath)
+            # FIXME: add to model
+
+    def handle_add_local_image(self, strings):
+        # Enter path:
+        localpath = ui._get_str(strings['enter-local-path'])
+        try:
+            f = open(localpath)
+            if f:
+                handle_image_upload(f, True)
+                f.close()
+        except IOError:
+            self._print(['File', localpath, 'could not be accessed.'])
+            return
+        
+    def handle_add_remote_image(self, strings):
+        tftppath = ui._get_str(strings['enter-tftp-path'])
+        localpath = self._controller.tftp_get(tftppath)
+        try:
+            f = open(localpath)
+            if f:
+                handle_image_upload(f, False)
+                f.close()
+        except IOError:
+            yn = ui._get_str(strings['nf-add-anyway'])
+            if ui._is_yes(yn):
+                # FIXME: get metadata
+                # FIXME: add to model
+                pass
+        except TypeError:
+            pass
 
     def handle_delete_image(self):
         if self._controller.get_status_code('tftp-selection') == 1:
