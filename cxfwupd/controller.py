@@ -3,6 +3,8 @@ In this case, the controller understands the model's container structure
 and the objects it contains: tftp, images, targets and plans. """
 
 from model import model
+from pyipmi import make_bmc, IpmiError
+from pyipmi.bmc import LanBMC
 
 class controller:
 
@@ -117,11 +119,46 @@ class controller:
     def get_targets_in_range(self, startaddr, endaddr):
         """ Attempt to reach a socman on each of the addresses in the range.
         Return a list of socman addresses successfully reached. """
-        pass
+        
+        addresses = []
+        
+        # Convert startaddr to byte representation
+        startaddr_bytes = map(int, startaddr.split("."))
+        startaddr_i = ((startaddr_bytes[0] << 24) | (startaddr_bytes[1] << 16)
+                | (startaddr_bytes[2] << 8) | (startaddr_bytes[3]))
+        
+        # Convert endaddr to byte representation
+        endaddr_bytes = map(int, endaddr.split("."))
+        endaddr_i = ((endaddr_bytes[0] << 24) | (endaddr_bytes[1] << 16)
+                | (endaddr_bytes[2] << 8) | endaddr_bytes[3])
+        
+        # Get ip addresses in range
+        for i in range(startaddr_i, endaddr_i + 1):
+            addr_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
+            address = (str(addr_bytes[0]) + "." + str(addr_bytes[1]) + "." +
+                    str(addr_bytes[2]) + "." + str(addr_bytes[3]))
+            addresses.append(address)
+        
+        # TODO: attempt to reach socman at addresses
+        return addresses
 
     def get_targets_from_fabric(self, nodeaddr):
         """ Attempt to get the addresses of socman instances that are known
         to the ipmi server at 'nodeaddr'.  If nodeaddr is a socman image,
         it will know about the instances that are part of fabric that
         nodeaddr\'s node belongs to.  Return a list of addresses reported."""
-        pass
+        
+        addresses = []
+        
+        # TODO: scrutinize this. This is just a rough estimation of the steps.
+        tftp_addr = self._model.get_tftp_address()
+        try:
+            bmc = make_bmc(LanBMC, hostname=nodeaddr, username="admin", password="admin")
+            bmc.get_ip_list("iplist", tftp_addr)
+            self.tftp_get(tftp_addr, "./iplist")
+            
+            # TODO: parse iplist file
+        except IpmiError:
+            pass
+        
+        return addresses
