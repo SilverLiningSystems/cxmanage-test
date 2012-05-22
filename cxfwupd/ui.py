@@ -550,11 +550,18 @@ class ui:
     def handle_add_target_range(self, grpname):
         """ Handle request to add servers in a range of addresses to
         a target group."""
-        pass
+        # FIXME
+        range_start = '127.0.0.1'
+        range_end = '127.0.0.255'
+        targets = self._controller.get_targets_in_range(range_start, range_end)
+        self._controller.add_targets_to_group(grpname, targets)
 
     def handle_add_target_fabric(self, grpname):
         """ Handle request to add servers in a fabric to a target group."""
-        pass
+        #FIXME
+        ipaddr = '127.0.0.1'
+        targets = self._controller.get_targets_from_fabric(ipaddr)
+        self._controller.add_targets_to_group(grpname, targets)
 
     def handle_add_target_invidual(self, grpname):
         """ Add individual targets to a target group."""

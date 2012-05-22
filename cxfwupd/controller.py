@@ -107,7 +107,21 @@ class controller:
         pass
 
     def add_targets_to_group(self, group, targets):
+        """ Add the targets to the list of targets for the group.
+        Eliminate duplicates."""
         pass
 
     def delete_target_group(self, group):
+        pass
+
+    def get_targets_in_range(self, startaddr, endaddr):
+        """ Attempt to reach a socman on each of the addresses in the range.
+        Return a list of socman addresses successfully reached. """
+        pass
+
+    def get_targets_from_fabric(self, nodeaddr):
+        """ Attempt to get the addresses of socman instances that are known
+        to the ipmi server at 'nodeaddr'.  If nodeaddr is a socman image,
+        it will know about the instances that are part of fabric that
+        nodeaddr\'s node belongs to.  Return a list of addresses reported."""
         pass

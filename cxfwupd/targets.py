@@ -10,3 +10,8 @@ class targets:
 
     def get_settings_str(self):
         return 'None'
+
+    def add_target(self, addr, metadata):
+        """ Add the address and its associated metadata to the representation.
+        Overwrite any existing data. """
+        targets[addr] = metadata
