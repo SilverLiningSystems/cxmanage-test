@@ -80,6 +80,10 @@ class controller:
     def set_external_tftp_server(self, addr, port):
         pass
 
+    def tftp_get(self, tftppath, localpath):
+        #FIXME
+        return None
+
 ###########################  Images-specific methods ###########################
 
     def list_images(self, subject):
@@ -94,11 +98,16 @@ class controller:
         #FIXME
         return ''
 
-    def tftp_get(self, path):
-        #FIXME
-        return None
+    def add_image(image_type):
+        pass
 
 ###########################  Targets-specific methods #########################
 
     def list_target_groups(self, subject):
+        pass
+
+    def add_targets_to_group(self, group, targets):
+        pass
+
+    def delete_target_group(self, group):
         pass

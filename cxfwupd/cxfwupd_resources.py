@@ -154,6 +154,39 @@ class cxfwupd_resources:
                     'enter-tftp-path': 'Enter file name on the tftp server:',
                     'nf-add-anyway': 'Remote file not found.  Add anyway?',
                     'image-validated': 'Image validated.'
+                    },
+                'imagetype-menu':
+                    {
+                    'select': 'Select an image type:',
+                    'socman': 'ECME controller image',
+                    'uboot': 'uboot image',
+                    'bootloader': 'ECME bootloader image',
+                    'dtb': 'Device Tree Blob'
+                    },
+                'validate-image-menu':
+                    {
+                    'options': 'Validate an image:',
+                    'local': 'Validate an image stored locally',
+                    'remote': 'Validate an image stored on the tftp server',
+                    'exit': 'Exit.',
+                    'prompt': 'Enter an option:',
+                    'local-path': 'Enter the path of the local file:',
+                    'remote-path': 'Enter the path of the file on the tftp server:',
+                    'remote-file-not-found': 'File not found on tftp server',
+                    'not-valid-image': 'The file does not contain a valid image'
+                    },
+                'target-strings':
+                    {
+                    'existing-groups': 'Existing target groups:',
+                    'enter-new-name': 'Enter the new group name:',
+                    'enter-del-name': 'Enter the name of the group to delete',
+                    'add-from-range': 'Add targets from a range of IP addresses',
+                    'add-fabric': 'Add targets for Calxeda servers in a fabric',
+                    'add-individual': 'Add individual targets',
+                    'exit': 'Exit',
+                    'prompt': 'Enter the source of target addresses:',
+                    'successful-delete': 'Group was successfully deleted',
+                    'not-deleted': 'The group was not deleted.'
                     }
             }
             menu = allstrings[subject]
