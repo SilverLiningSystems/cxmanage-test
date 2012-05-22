@@ -173,6 +173,7 @@ class cxfwupd_resources:
                     'local-path': 'Enter the path of the local file:',
                     'remote-path': 'Enter the path of the file on the tftp server:',
                     'remote-file-not-found': 'File not found on tftp server',
+                    'local-file-not-found': 'File not found',
                     'not-valid-image': 'The file does not contain a valid image'
                     },
                 'target-strings':
