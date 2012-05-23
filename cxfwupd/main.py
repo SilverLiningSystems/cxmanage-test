@@ -9,7 +9,7 @@ from model import model
 from controller import controller
 
 def main(): # FIXME: we'll have command line arguments later
-    mytftp = tftp(None, 69, False)
+    mytftp = tftp()
     myimages = images()
     mytargets = targets()
     myplans = plans()

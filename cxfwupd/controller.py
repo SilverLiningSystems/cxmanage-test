@@ -58,29 +58,33 @@ class controller:
 ###########################  TFTP-specific methods ###########################
 
     def set_internal_tftp_server(self, interface, port):
-        pass
+        """ Set up a TFTP server to be hosted locally """
+        self._model._tftp.set_internal_server(interface, port)
 
     def get_internal_tftp_interface(self):
-        #FIXME
-        return 'eth0'
+        """ Return the interface used by the internal TFTP server"""
+        return self._model._tftp.get_internal_server_interface()
 
     def get_internal_tftp_port(self):
-        #FIXME
-        return 69
+        """ Return the port used by the internal TFTP server"""
+        return self._model._tftp.get_port()
 
     def restart_tftp_server(self):
+        """ Restart the internal TFTP server """
+        # TODO
         pass
-
-    def get_external_tftp_addr(self):
-        #FIXME
-        return '127.0.0.1'
-
-    def get_external_tftp_port(self):
-        #FIXME
-        return 69
 
     def set_external_tftp_server(self, addr, port):
-        pass
+        """ Set up a remote TFTP server """
+        self._model._tftp.set_external_server(addr, port)
+
+    def get_external_tftp_addr(self):
+        """ Return the address of the external TFTP server """
+        return self._model._tftp.get_address()
+
+    def get_external_tftp_port(self):
+        """ Return the port used by the external TFTP server """
+        return self._model._tftp.get_port()
 
     def tftp_get(self, tftppath, localpath):
         #FIXME
@@ -106,15 +110,18 @@ class controller:
 ###########################  Targets-specific methods #########################
 
     def list_target_groups(self, subject):
+        #FIXME
         pass
 
     def add_targets_to_group(self, group, targets):
         """ Add the targets to the list of targets for the group.
         Eliminate duplicates."""
-        pass
+        for target in targets:
+            self._model._targets.add_target_to_group(group, target)
 
     def delete_target_group(self, group):
-        pass
+        """ Delete the specified target group """
+        self._model._targets.delete_group(group)
 
     def get_targets_in_range(self, startaddr, endaddr):
         """ Attempt to reach a socman on each of the addresses in the range.
@@ -122,12 +129,12 @@ class controller:
         
         addresses = []
         
-        # Convert startaddr to byte representation
+        # Convert startaddr to int
         startaddr_bytes = map(int, startaddr.split("."))
         startaddr_i = ((startaddr_bytes[0] << 24) | (startaddr_bytes[1] << 16)
                 | (startaddr_bytes[2] << 8) | (startaddr_bytes[3]))
         
-        # Convert endaddr to byte representation
+        # Convert endaddr to int
         endaddr_bytes = map(int, endaddr.split("."))
         endaddr_i = ((endaddr_bytes[0] << 24) | (endaddr_bytes[1] << 16)
                 | (endaddr_bytes[2] << 8) | endaddr_bytes[3])
@@ -151,7 +158,7 @@ class controller:
         addresses = []
         
         # TODO: scrutinize this. This is just a rough estimation of the steps.
-        tftp_addr = self._model.get_tftp_address()
+        tftp_addr = self._model._tftp.get_address()
         try:
             bmc = make_bmc(LanBMC, hostname=nodeaddr, username="admin", password="admin")
             bmc.get_ip_list("iplist", tftp_addr)
@@ -159,6 +166,8 @@ class controller:
             
             # TODO: parse iplist file
         except IpmiError:
+            # Unable to get IP list from ipmi.
+            # Return empty list.
             pass
         
         return addresses
