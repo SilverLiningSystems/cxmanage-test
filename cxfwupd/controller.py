@@ -46,10 +46,10 @@ class controller:
         states. """
         code = -1
         if subject == 'tftp-selection':
-            if not self._model._tftp._ipaddr:
+            if not self._model._tftp.is_set():
                 code = 0 # No tftp server set
             else:
-                if self._model._tftp._isinternal:
+                if self._model._tftp.is_internal():
                     code = 1
                 else:
                     code = 2
@@ -70,9 +70,8 @@ class controller:
         return self._model._tftp.get_port()
 
     def restart_tftp_server(self):
-        """ Restart the internal TFTP server """
-        # TODO
-        pass
+        """ Restart the TFTP server """
+        self._model._tftp.restart_server()
 
     def set_external_tftp_server(self, addr, port):
         """ Set up a remote TFTP server """
@@ -87,8 +86,7 @@ class controller:
         return self._model._tftp.get_port()
 
     def tftp_get(self, tftppath, localpath):
-        #FIXME
-        return None
+        self._model._tftp.get_file(tftppath, localpath)
 
 ###########################  Images-specific methods ###########################
 
@@ -104,7 +102,7 @@ class controller:
         #FIXME
         return ''
 
-    def add_image(image_type):
+    def add_image(self, image_type):
         pass
 
 ###########################  Targets-specific methods #########################
@@ -144,9 +142,11 @@ class controller:
             addr_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
             address = (str(addr_bytes[0]) + "." + str(addr_bytes[1]) + "." +
                     str(addr_bytes[2]) + "." + str(addr_bytes[3]))
+            
+            # TODO: attempt to reach socman at address
+            # For now, just return all the addresses in range.
             addresses.append(address)
         
-        # TODO: attempt to reach socman at addresses
         return addresses
 
     def get_targets_from_fabric(self, nodeaddr):
@@ -160,11 +160,14 @@ class controller:
         # TODO: scrutinize this. This is just a rough estimation of the steps.
         tftp_addr = self._model._tftp.get_address()
         try:
-            bmc = make_bmc(LanBMC, hostname=nodeaddr, username="admin", password="admin")
-            bmc.get_ip_list("iplist", tftp_addr)
-            self.tftp_get(tftp_addr, "./iplist")
+            bmc = make_bmc(LanBMC, hostname=nodeaddr,
+                    username="admin", password="admin")
+            bmc.get_ip_list("ipinfo", tftp_addr)
+            self.tftp_get(tftp_addr, "./ipinfo")
             
-            # TODO: parse iplist file
+            # TODO: parse ipinfo file. I can't really get to this until the
+            # ipinfo command is working in ipmitool.
+            
         except IpmiError:
             # Unable to get IP list from ipmi.
             # Return empty list.

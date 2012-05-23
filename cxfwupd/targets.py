@@ -9,6 +9,7 @@ class targets:
         self.groups = {}
 
     def get_settings_str(self):
+        # TODO
         return 'None'
 
     def add_target_to_group(self, group, addr):
