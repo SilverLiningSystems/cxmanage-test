@@ -180,14 +180,26 @@ class cxfwupd_resources:
                     {
                     'existing-groups': 'Existing target groups:',
                     'enter-new-name': 'Enter the new group name:',
-                    'enter-del-name': 'Enter the name of the group to delete',
+                    'enter-del-name': 'Enter the name of the group to delete:',
+                    'enter-edit-name': 'Enter the name of a group to edit:',
                     'add-from-range': 'Add targets from a range of IP addresses',
                     'add-fabric': 'Add targets for Calxeda servers in a fabric',
                     'add-individual': 'Add individual targets',
                     'exit': 'Exit',
                     'prompt': 'Enter the source of target addresses:',
                     'successful-delete': 'Group was successfully deleted',
-                    'not-deleted': 'The group was not deleted.'
+                    'not-deleted': 'The group was not deleted.',
+                    'add-servers': 'Add servers to the group',
+                    'remove-servers': 'Remove servers from the group',
+                    'edit-metadata': 'Edit metadata',
+                    'group-exists': 'Target group name already exists',
+                    'group-not-found': 'There is no target group with that name',
+                    'edit-prompt': 'Enter an edit option:'
+                    },
+                'plan-strings':
+                    {
+                    'existing-plans': 'Existing plans:',
+                    'enter-new-name': 'Enter a name for the new plan:'
                     }
             }
             menu = allstrings[subject]

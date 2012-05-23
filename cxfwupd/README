@@ -33,3 +33,4 @@ Model related modules:
   images.py -- keeps track of images and what and where they are
   targets.py -- keeps track of named collections of servers
   plans.py -- keeps track of plans
+  schedule.py -- specify for a plan how it is to be carried out.

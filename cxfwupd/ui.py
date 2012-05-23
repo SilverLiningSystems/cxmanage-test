@@ -533,19 +533,30 @@ class ui:
         self._controller.list_target_groups('all')
         grpname = ui._get_str(strings['enter-new-name'])
         if grpname:
+            if not self._controller.target_group_exists(grpname):
+                self._add_targets(grpname)
+            else:
+                self._print(strings['group-exists'])
+
+    def _add_targets(grpname):
         # 1. Add targets from a range of IP addresses
         # 2. Add targets for Calxeda servers in a fabric
-            ui._print(['1.', strings['add-from-range']])
-            ui._print(['2.', strings['add-fabric']])
-            ui._print(['3.', strings['add-individual']])
-            ui._print(['4.', strings['exit']])
-            menusel = ui._get_int(strings['prompt'])
-            if menusel == 1:
-                self.handle_add_target_range(grpname)
-            elif menusel == 2:
-                self.handle_add_target_fabric(grpname)
-            elif menusel == 3:
-                self.handle_add_target_individual(grpname)
+        # 3. Add targets individually
+        # 4. Exit
+        ui._print(['1.', strings['add-from-range']])
+        ui._print(['2.', strings['add-fabric']])
+        ui._print(['3.', strings['add-individual']])
+        ui._print(['4.', strings['exit']])
+        menusel = ui._get_int(strings['prompt'])
+        if menusel == 1:
+            self.handle_add_target_range(grpname)
+        elif menusel == 2:
+            self.handle_add_target_fabric(grpname)
+        elif menusel == 3:
+            self.handle_add_target_individual(grpname)
+
+    def _delete_targets(grpname):
+        pass
 
     def handle_add_target_range(self, grpname):
         """ Handle request to add servers in a range of addresses to
@@ -580,12 +591,36 @@ class ui:
                 ui._print([strings['not-deleted']])
 
     def handle_edit_target_group(self):
-        # Select the target group
-        # 1. Add servers to the group
-        # 2. Remove servers from the group
-        pass
+        strings = cxfwupd_resources.get_strings('target-strings')
+        ui._print(['\n', strings['existing-groups'], '\n'])
+        self._controller.list_target_groups('all')
+        # Select the target group to edit:
+        grpname = ui._get_str(strings['enter-edit-name'])
+        if grpname:
+            if self._controller.target_group_exists(grpname):
+                # 1. Add servers to the group
+                # 2. Remove servers from the group
+                # 3. Edit metadata
+                self._print(['1.', strings['add-servers']])
+                self._print(['2.', strings['remove-servers']])
+                self._print(['3.', strings['edit-metadata']])
+                self._print(['4.', strings['exit']])
+                menusel = ui._get_int(strings['edit-prompt'])
+                if menusel == 1:
+                    self._add_targets(grpname)
+                elif menusel == 2:
+                    self._delete_targets(grpname)
+                elif menusel == 3:
+                    self._editg_group_metadata(grpname)
+            else:
+                self._print(strings['grp-not-found'])
 
     def handle_add_plan(self):
+        """ Handle request to create a new distribution plan."""
+        strings = cxfwupd_resources.get_strings('plan-strings')
+        ui._print(['\n', strings['existing-plans'], '\n'])
+        self._controller.list_plans('all')
+        grpname = ui._get_str(strings['enter-new-name'])
         # Name the plan:
         # Enter an initial list of target addresses by range or fabric or groups
         # Enter a list of images

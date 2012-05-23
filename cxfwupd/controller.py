@@ -104,6 +104,7 @@ class controller:
 ###########################  Targets-specific methods #########################
 
     def list_target_groups(self, subject):
+        """ Return a formatted listing of target groups """
         pass
 
     def add_targets_to_group(self, group, targets):
@@ -125,3 +126,12 @@ class controller:
         it will know about the instances that are part of fabric that
         nodeaddr\'s node belongs to.  Return a list of addresses reported."""
         pass
+
+    def target_group_exists(self, grpname):
+        """ Return true if the grpname is the name of a target group contained
+        in the model."""
+        #FIXME
+        return False
+ ########################    Plans-specific methods     ######################
+    def list_plans(self, subject):
+        """ Return a formatted list of plan names """
