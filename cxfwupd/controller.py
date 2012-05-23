@@ -59,6 +59,7 @@ class controller:
 
     def set_internal_tftp_server(self, interface, port):
         """ Set up a TFTP server to be hosted locally """
+        # TODO: may need to untrack images at this point
         self._model._tftp.set_internal_server(interface, port)
 
     def get_internal_tftp_interface(self):
@@ -75,6 +76,7 @@ class controller:
 
     def set_external_tftp_server(self, addr, port):
         """ Set up a remote TFTP server """
+        # TODO: may need to untrack images at this point
         self._model._tftp.set_external_server(addr, port)
 
     def get_external_tftp_addr(self):
@@ -87,6 +89,9 @@ class controller:
 
     def tftp_get(self, tftppath, localpath):
         self._model._tftp.get_file(tftppath, localpath)
+
+    def tftp_put(self, tftppath, localpath):
+        self._model._tftp.put_file(tftppath, localpath)
 
 ###########################  Images-specific methods ###########################
 
@@ -124,29 +129,29 @@ class controller:
     def get_targets_in_range(self, startaddr, endaddr):
         """ Attempt to reach a socman on each of the addresses in the range.
         Return a list of socman addresses successfully reached. """
-        
+
         addresses = []
-        
+
         # Convert startaddr to int
         startaddr_bytes = map(int, startaddr.split("."))
         startaddr_i = ((startaddr_bytes[0] << 24) | (startaddr_bytes[1] << 16)
                 | (startaddr_bytes[2] << 8) | (startaddr_bytes[3]))
-        
+
         # Convert endaddr to int
         endaddr_bytes = map(int, endaddr.split("."))
         endaddr_i = ((endaddr_bytes[0] << 24) | (endaddr_bytes[1] << 16)
                 | (endaddr_bytes[2] << 8) | endaddr_bytes[3])
-        
+
         # Get ip addresses in range
         for i in range(startaddr_i, endaddr_i + 1):
             addr_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
             address = (str(addr_bytes[0]) + "." + str(addr_bytes[1]) + "." +
                     str(addr_bytes[2]) + "." + str(addr_bytes[3]))
-            
+
             # TODO: attempt to reach socman at address
             # For now, just return all the addresses in range.
             addresses.append(address)
-        
+
         return addresses
 
     def get_targets_from_fabric(self, nodeaddr):
@@ -154,9 +159,9 @@ class controller:
         to the ipmi server at 'nodeaddr'.  If nodeaddr is a socman image,
         it will know about the instances that are part of fabric that
         nodeaddr\'s node belongs to.  Return a list of addresses reported."""
-        
+
         addresses = []
-        
+
         # TODO: scrutinize this. This is just a rough estimation of the steps.
         tftp_addr = self._model._tftp.get_address()
         try:
@@ -164,13 +169,13 @@ class controller:
                     username="admin", password="admin")
             bmc.get_ip_list("ipinfo", tftp_addr)
             self.tftp_get(tftp_addr, "./ipinfo")
-            
+
             # TODO: parse ipinfo file. I can't really get to this until the
             # ipinfo command is working in ipmitool.
-            
+
         except IpmiError:
             # Unable to get IP list from ipmi.
             # Return empty list.
             pass
-        
+
         return addresses

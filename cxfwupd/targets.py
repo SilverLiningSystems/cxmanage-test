@@ -1,35 +1,35 @@
 #!/bin/env python
 
-""" This class is a container of target Calxeda SoCs targeted for configuration and
-provisioning. """
+""" This class is a container of target Calxeda SoCs targeted for configuration
+and provisioning. """
 
 class targets:
 
     def __init__(self):
-        self.groups = {}
+        self._groups = {}
 
     def get_settings_str(self):
         # TODO
         return 'None'
 
     def add_target_to_group(self, group, addr):
-        """ Add the address to the target group """
-        
+        """ Add the target address to a group """
+
         # Create group if it doesn't exist
-        if not group in self.groups:
-            self.groups[group] = set()
-        
+        if not group in self._groups:
+            self._groups[group] = set()
+
         # Add target to group
-        self.groups[group].add(addr)
-    
+        self._groups[group].add(addr)
+
     def list_groups(self):
-        """ Return a sorted list of the currently stored groups """
-        return sorted(self.groups.keys())
-    
+        """ Return a sorted list of the current groups """
+        return sorted(self._groups.keys())
+
     def list_targets(self, group):
-        """ Return a sorted list of addresses in a group """
-        return sorted(self.groups[group])
-    
+        """ Return a sorted list of targets in a group """
+        return sorted(self._groups[group])
+
     def delete_group(self, group):
         """ Delete the specified target group """
-        del self.groups[group]
+        del self._groups[group]
