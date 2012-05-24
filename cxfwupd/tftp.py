@@ -54,9 +54,25 @@ class tftp:
         """ Attempt to reach the tftp server. Return true if the server was
         reached successfully. """
         if self._ipaddr != None:
-            # Try sending and receiving something small. if successful,
-            # set _hasbeengood and return True; otherwise return False
-            return True
+            # Create a small file to send
+            f = open("testfile_a", "w")
+            f.write("")
+            f.close()
+
+            # Try sending and receiving the file
+            try:
+                self.put_file("testfile", "testfile_a")
+                self.get_file("testfile", "testfile_b")
+            except:
+                pass
+
+            # Check if we completed successfully
+            os.remove("testfile_a")
+            if os.path.exists("testfile_b"):
+                os.remove("testfile_b")
+                self._hasbeengood = True
+                return True
+
         return False
 
     def set_internal_server(self, interface, port):
