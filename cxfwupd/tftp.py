@@ -1,7 +1,7 @@
 """ Holds state about the tftp service to be used by a calxeda update
 application. """
 
-import atexit, os, signal, shutil
+import atexit, os, signal, shutil, subprocess
 
 from cxfwupd_resources import cxfwupd_resources
 from tftpy import TftpClient, TftpServer
@@ -66,8 +66,8 @@ class tftp:
         # Kill existing internal server
         self.kill_server()
 
-        # TODO: get _ipaddr properly
-        self._ipaddr = "127.0.0.1"
+        # Get IP address for interface
+        self._ipaddr = self._get_interface_ip(interface)
         self._interface = interface
         self._port = port
 
@@ -83,7 +83,7 @@ class tftp:
             server.listen(self._ipaddr, self._port)
             os._exit(0)
 
-        self._client = TftpClient("127.0.0.1", self._port)
+        self._client = TftpClient(self._ipaddr, self._port)
 
     def set_external_server(self, addr, port):
         """ Shut down any server that's currently running, then set up a
@@ -116,6 +116,14 @@ class tftp:
             os.kill(self._server, signal.SIGTERM)
             self._server = None
 
+    def get_address(self):
+        """ Return the address of this server """
+        return self._ipaddr
+
+    def get_port(self):
+        """ Return the listening port of this server """
+        return self._port
+
     def get_internal_server_interface(self):
         """ Return the interface used by the internal server """
         return self._interface
@@ -133,3 +141,8 @@ class tftp:
             shutil.copy(localpath, "tftp/" + tftppath)
         else:
             self._client.upload(tftppath, localpath)
+
+    def _get_interface_ip(self, interface):
+        """ Get the IP address associated with this interface """
+        output = subprocess.check_output(["ifconfig", interface])
+        return output.partition("inet addr:")[2].split()[0]

@@ -2,6 +2,8 @@
 In this case, the controller understands the model's container structure
 and the objects it contains: tftp, images, targets and plans. """
 
+import time
+
 from model import model
 from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC
@@ -161,19 +163,29 @@ class controller:
         it will know about the instances that are part of fabric that
         nodeaddr\'s node belongs to.  Return a list of addresses reported."""
         addresses = []
-
-        # TODO: revise this. This is just a rough estimation of the steps.
+        
+        # Get TFTP address
         tftp_addr = self._model._tftp.get_address()
+        tftp_addr += ":" + str(self._model._tftp.get_port())
+
         try:
+            # Get ip_info file from fabric
+            # TODO: username and password options?
             bmc = make_bmc(LanBMC, hostname=nodeaddr,
                     username="admin", password="admin")
-            bmc.get_ip_list("ipinfo", tftp_addr)
-            self.tftp_get(tftp_addr, "./ipinfo")
+            bmc.get_fabric_ipinfo("ip_info.txt", tftp_addr)
+            time.sleep(1) # must delay before retrieving file
+            self.tftp_get("ip_info.txt", "ip_info.txt")
 
-            # TODO: parse ipinfo file. I can't really get to this until I get
-            # the ipinfo command working in ipmitool.
+            # Get addresses from ip_info file
+            ip_info_file = open("ip_info.txt", "r")
+            for line in ip_info_file:
+                address = line.split()[-1]
+                if address != "0.0.0.0":
+                    addresses.append(address)
+            ip_info_file.close()
 
-        except IpmiError:
+        except IpmiError, IOError:
             # Unable to get IP list from ipmi.
             # Return empty list.
             pass
@@ -183,8 +195,7 @@ class controller:
     def target_group_exists(self, grpname):
         """ Return true if the grpname is the name of a target group contained
         in the model."""
-        #FIXME
-        return False
+        return self._model._targets.group_exists(grpname)
 
  ########################    Plans-specific methods     ######################
 

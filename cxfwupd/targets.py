@@ -6,6 +6,7 @@ and provisioning. """
 class targets:
 
     def __init__(self):
+        # This is a mapping of group names to address sets
         self._groups = {}
 
     def get_settings_str(self):
@@ -33,3 +34,7 @@ class targets:
     def delete_group(self, group):
         """ Delete the specified target group """
         del self._groups[group]
+
+    def group_exists(self, group):
+        """ Returns true if the specified group exists """
+        return group in self._groups
