@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import argparse, sys
+import argparse, os, sys
 
 from common.model import Model
 from common.controller import Controller
@@ -13,9 +13,13 @@ def main():
     parser.add_argument("options", nargs="+", help="Command options")
     parser.add_argument("-u", default="admin", help="Username for login")
     parser.add_argument("-p", default="admin", help="Password for login")
-    parser.add_argument("-f", "--force", action="store_true",
-            help="Execute command without confirmation")
-    parser.add_argument("-t", "--tftp", help="TFTP server to use <ip:port>")
+    # TODO: re-enable
+    #parser.add_argument("-f", "--force", action="store_true",
+    #        help="Execute command without confirmation")
+    parser.add_argument("-t", "--tftp",
+            help="Connect to remote TFTP server at <ip:port>")
+    parser.add_argument("--localtftp",
+            help="Host a local TFTP server listening on <ip:port>")
     parser.add_argument("-a", "--all", action="store_true",
             help="Send command to all nodes reported by fabric")
     args = parser.parse_args()
@@ -24,49 +28,34 @@ def main():
     controller = Controller(model)
 
     # Set up TFTP
-    if args.tftp:
+    if args.tftp and args.localtftp:
+        print "ERROR: Both local and remote TFTP servers specified"
+        return 1
+    elif args.tftp:
         try:
             tftp_address, tftp_port = args.tftp.split(":")
+            tftp_port = int(tftp_port)
         except ValueError:
             tftp_address = args.tftp
-            tftp_port = "69"
+            tftp_port = 69
         controller.set_external_tftp_server(tftp_address, tftp_port)
+    elif args.localtftp:
+        try:
+            tftp_address, tftp_port = args.localtftp.split(":")
+            tftp_port = int(tftp_port)
+        except ValueError:
+            tftp_address = args.localtftp
+            tftp_port = 69
+        controller.set_internal_tftp_server(tftp_address, tftp_port)
 
     # Execute command
-    if args.command == "fwupdate":
-        return fwupdate_command(controller, args)
-    elif args.command == "power":
+    if args.command == "power":
         return power_command(controller, args)
+    elif args.command == "fwupdate":
+        return fwupdate_command(controller, args)
     else:
         print "ERROR: \"%s\" command not recognized" % args.command
         return 1
-
-def fwupdate_command(controller, args):
-    # Verify arguments
-    if len(args.options) < 3:
-        print "ERROR: Not enough options for fwupdate command"
-        return 1
-    if not args.options[0] in []: # TODO: slot types
-        print "ERROR: %s is not a valid slot type" % args.options[0]
-        return 1
-    if not os.path.exists(args.options[1]):
-        print "ERROR: File %s does not exist" % args.options[1]
-        return 1
-
-    if get_addresses(controller, args.options[1:], args):
-        return 1
-
-    # Get confirmation
-    print_status(controller)
-    if confirmation_dialogue(args):
-        return 1
-
-    controller.set_plan_command("cxmanage", "fwupdate")
-    controller.add_group_to_plan("cxmanage", "cxmanage")
-    controller.add_image_to_plan() # TODO
-    controller.execute_plan("cxmanage", args.u, args.p)
-
-    return 0
 
 def power_command(controller, args):
     # Verify arguments
@@ -78,7 +67,10 @@ def power_command(controller, args):
         return 1
 
     # Get addresses
-    if get_addresses(controller, args.options[1:], args):
+    try:
+        get_addresses(controller, args.options[1:], args)
+    except ValueError:
+        print "ERROR: Failed to get IP addresses"
         return 1
 
     # Get confirmation
@@ -89,6 +81,34 @@ def power_command(controller, args):
     # Set up and execute plan
     controller.set_plan_command("cxmanage", "power " + args.options[0])
     controller.add_group_to_plan("cxmanage", "cxmanage")
+    controller.execute_plan("cxmanage", args.u, args.p)
+
+    return 0
+
+def fwupdate_command(controller, args):
+    # Verify arguments
+    if len(args.options) < 3:
+        print "ERROR: Not enough options for fwupdate command"
+        return 1
+    if not os.path.exists(args.options[1]):
+        print "ERROR: File %s does not exist" % args.options[1]
+        return 1
+
+    try:
+        get_addresses(controller, args.options[2:], args)
+    except ValueError:
+        print "ERROR: Failed to get IP addresses"
+        return 1
+
+    # Get confirmation
+    print_status(controller)
+    if confirmation_dialogue(args):
+        return 1
+
+    controller.add_image("cxmanage", args.options[0], args.options[1])
+    controller.set_plan_command("cxmanage", "fwupdate")
+    controller.add_group_to_plan("cxmanage", "cxmanage")
+    controller.add_image_to_plan("cxmanage", "cxmanage")
     controller.execute_plan("cxmanage", args.u, args.p)
 
     return 0
@@ -106,11 +126,6 @@ def get_addresses(controller, address_arg, args):
             addresses.add(entry)
 
     if args.all:
-        # Make sure the TFTP server is up
-        if not controller.get_tftp_address():
-            print "ERROR: No TFTP server specified"
-            return 1
-
         # Get targets from fabric
         fabric_addresses = set()
         for address in addresses:
@@ -122,19 +137,15 @@ def get_addresses(controller, address_arg, args):
 
     # Add addresses to target group
     controller.add_targets_to_group("cxmanage", addresses)
-    return 0
 
 def print_status(controller):
     # TODO
     pass
 
 def confirmation_dialogue(args):
-    # Confirm automatically if forced
-    if args.force:
-        return 0
-
     # TODO: get confirmation
-    return 1
+    # for now, assume yes
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

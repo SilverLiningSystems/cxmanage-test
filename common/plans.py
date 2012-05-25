@@ -39,10 +39,19 @@ class Plans:
     def get_groups_from_plan(self, plan):
         return self._plans[plan].get_groups()
 
+    def add_image_to_plan(self, plan, image):
+        if not plan in self._plans:
+            self._plans[plan] = Plan()
+        self._plans[plan].add_image(image)
+
+    def get_images_from_plan(self, plan):
+        return self._plans[plan].get_images()
+
 class Plan:
     def __init__(self):
         self._command = None
         self._groups = []
+        self._images = []
 
     def set_command(self, command):
         self._command = command
@@ -59,3 +68,10 @@ class Plan:
 
     def get_groups(self):
         return self._groups
+
+    def add_image(self, image):
+        self._images.append(image)
+
+    def get_images(self):
+        return self._images
+

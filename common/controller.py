@@ -2,7 +2,7 @@
 In this case, the controller understands the model's container structure
 and the objects it contains: tftp, images, targets and plans. """
 
-import time
+import os, time
 
 from model import Model
 from pyipmi import make_bmc, IpmiError
@@ -59,10 +59,9 @@ class Controller:
 
 ###########################  TFTP-specific methods ###########################
 
-    # TODO: change this to take an address, not an interface
-    def set_internal_tftp_server(self, interface, port):
+    def set_internal_tftp_server(self, addr, port):
         """ Set up a TFTP server to be hosted locally """
-        self._model._tftp.set_internal_server(interface, port)
+        self._model._tftp.set_internal_server(addr, port)
 
     def set_external_tftp_server(self, addr, port):
         """ Set up a remote TFTP server """
@@ -80,11 +79,6 @@ class Controller:
         """ Return the port used by the internal TFTP server"""
         return self._model._tftp.get_port()
 
-    # TODO: remove this
-    def get_internal_tftp_interface(self):
-        """ Return the interface used by the internal TFTP server"""
-        return self._model._tftp.get_internal_server_interface()
-
     def tftp_get(self, tftppath, localpath):
         self._model._tftp.get_file(tftppath, localpath)
 
@@ -97,16 +91,20 @@ class Controller:
         #FIXME
         return ''
 
-    def validate_image_file(self, f):
-        #FIXME
-        return False
+    def validate_image_file(self, filename):
+        # TODO: really validate
+        # For now, just make sure the file exists
+        return os.path.exists(filename)
 
     def get_image_header_str(self, f):
         #FIXME
         return ''
 
-    def add_image(self, image_type):
-        pass
+    def add_image(self, image, image_type, filename):
+        if self.validate_image_file(filename):
+            self._model._images.add_image(image, image_type, filename)
+        else:
+            raise ValueError
 
 ###########################  Targets-specific methods #########################
 
@@ -170,7 +168,6 @@ class Controller:
 
         try:
             # Get ip_info file from fabric
-            # TODO: username and password options?
             bmc = make_bmc(LanBMC, hostname=nodeaddr,
                     username=username, password=password)
             bmc.get_fabric_ipinfo("ip_info.txt", tftp_addr)
@@ -185,7 +182,7 @@ class Controller:
                     addresses.append(address)
             ip_info_file.close()
 
-        except IpmiError, IOError:
+        except (IpmiError, IOError, TypeError):
             raise ValueError
 
         return addresses
@@ -202,6 +199,10 @@ class Controller:
         #FIXME
         pass
 
+    def set_plan_command(self, plan, command):
+        """ Set the plan's command """
+        self._model._plans.set_plan_command(plan, command)
+
     def add_group_to_plan(self, plan, group):
         """ Add the group to the specified plan. The plan will be created if
         necessary. """
@@ -211,9 +212,8 @@ class Controller:
         """ Remove the group from the specified plan. """
         self._model._plans.remove_group_from_plan(plan, group)
 
-    def set_plan_command(self, plan, command):
-        """ Set the plan's command """
-        self._model._plans.set_plan_command(plan, command)
+    def add_image_to_plan(self, plan, image):
+        self._model._plans.add_image_to_plan(plan, image)
 
     def execute_plan(self, plan, username="admin", password="admin"):
         """ Execute the specified plan """
@@ -226,18 +226,73 @@ class Controller:
 
         # Get command
         command = self._model._plans.get_plan_command(plan)
+
+        # TODO: remove this
+        print addresses
+        
+        # Handle power commands
         if command == "power on":
             for address in addresses:
-                bmc = make_bmc(LanBMC, hostname=address,
-                        username=username, password=password)
-                bmc.handle.chassis_control(mode="on")
+                self._send_power_command(address, username, password, "on")
         elif command == "power off":
             for address in addresses:
-                bmc = make_bmc(LanBMC, hostname=address,
-                        username=username, password=password)
-                bmc.handle.chassis_control(mode="off")
+                self._send_power_command(address, username, password, "off")
         elif command == "power reset":
             for address in addresses:
-                bmc = make_bmc(LanBMC, hostname=address,
-                        username=username, password=password)
-                bmc.handle.chassis_control(mode="reset")
+                self._send_power_command(address, username, password, "reset")
+
+        # Handle fwupdate command
+        elif command == "fwupdate":
+            for image in self._model._plans.get_images_from_plan(plan):
+                filename = self._model._images.get_image_filename(image)
+                image_type = self._model._images.get_image_type(image)
+                tftp_address = self.get_tftp_address()
+
+                # Upload image to tftp
+                self.tftp_put(filename, filename)
+
+                for address in addresses:
+                    self._update_firmware(address, username, password,
+                            image_type, filename, tftp_address)
+
+    def _send_power_command(self, address, username, password, command):
+        bmc = make_bmc(LanBMC, hostname=address,
+                username=username, password=password)
+        # Send power command
+        bmc.handle.chassis_control(mode=command)
+
+    def _update_firmware(self, address, username, password,
+            image_type, filename, tftp_address):
+        bmc = make_bmc(LanBMC, hostname=address,
+                username=username, password=password)
+
+        # Get slots
+        results = bmc.get_firmware_info()[:-1]
+        try:
+            # Image type is an int
+            type_i = int(image_type)
+            slots = [x.slot for x in results[:-1] if
+                    int(x.type.split()[0]) == int(image_type)]
+        except ValueError:
+            # Image type is a string
+            slots = [x.slot for x in results[:-1] if
+                    x.type.split()[1][1:-1] == image_type.upper()]
+        
+        # TODO: apply to all slots
+        # For testing sake, trim away all but the first
+        slots = slots[:1]
+
+        for slot in slots:
+            # Send firmware update command
+            result = bmc.update_firmware(filename, slot, image_type, tftp_address)
+            handle = result.tftp_handle_id
+        
+            # Wait for update to finish
+            time.sleep(1)
+            status = bmc.get_firmware_status(handle).status
+            while status == "In progress":
+                time.sleep(1)
+                status = bmc.get_firmware_status(handle).status
+
+            # Activate new firmware
+            bmc.activate_firmware(slot)

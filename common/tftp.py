@@ -10,7 +10,6 @@ class Tftp:
 
     def __init__(self):
         self._ipaddr = None
-        self._interface = None
         self._port = None
 
         self._isinternal = False
@@ -75,16 +74,14 @@ class Tftp:
 
         return False
 
-    def set_internal_server(self, interface, port):
+    def set_internal_server(self, addr, port):
         """ Shut down any server that's currently running, then start an
         internal tftp server. """
 
         # Kill existing internal server
         self.kill_server()
 
-        # Get IP address for interface
-        self._ipaddr = self._get_interface_ip(interface)
-        self._interface = interface
+        self._ipaddr = addr
         self._port = port
 
         self._isinternal = True
@@ -109,7 +106,6 @@ class Tftp:
         self.kill_server()
 
         self._ipaddr = addr
-        self._interface = None
         self._port = port
 
         self._isinternal = False
@@ -122,7 +118,7 @@ class Tftp:
         """ Reset the server model; this will also restart the server if it's
         internal. """
         if self._isinternal:
-            self.set_internal_server(self._interface, self._port)
+            self.set_internal_server(self._ipaddr, self._port)
         else:
             self.set_external_server(self._ipaddr, self._port)
 
@@ -140,10 +136,6 @@ class Tftp:
         """ Return the listening port of this server """
         return self._port
 
-    def get_internal_server_interface(self):
-        """ Return the interface used by the internal server """
-        return self._interface
-
     def get_file(self, tftppath, localpath):
         """ Download a file from the tftp server """
         if self._isinternal:
@@ -157,8 +149,3 @@ class Tftp:
             shutil.copy(localpath, "tftp/" + tftppath)
         else:
             self._client.upload(tftppath, localpath)
-
-    def _get_interface_ip(self, interface):
-        """ Get the IP address associated with this interface """
-        output = subprocess.check_output(["ifconfig", interface])
-        return output.partition("inet addr:")[2].split()[0]
