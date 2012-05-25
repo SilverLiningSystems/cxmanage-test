@@ -6,12 +6,17 @@ like tftp and targets, may be common to other Calxeda fabric configuration
 tools. All object, including images, targets and plans may be externally
 persisted. """
 
-class model:
+from tftp import Tftp
+from images import Images
+from targets import Targets
+from plans import Plans
 
-    def __init__(self, tftp, images, targets, plans):
-        self._tftp = tftp
-        self._images = images
-        self._targets = targets
-        self._plans = plans
+class Model:
+
+    def __init__(self):
+        self._tftp = Tftp()
+        self._images = Images()
+        self._targets = Targets()
+        self._plans = Plans()
 
 

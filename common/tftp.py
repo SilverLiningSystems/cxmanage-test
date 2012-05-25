@@ -6,7 +6,7 @@ import atexit, os, signal, shutil, subprocess
 from cxfwupd_resources import cxfwupd_resources
 from tftpy import TftpClient, TftpServer
 
-class tftp:
+class Tftp:
 
     def __init__(self):
         self._ipaddr = None

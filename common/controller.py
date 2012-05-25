@@ -4,11 +4,11 @@ and the objects it contains: tftp, images, targets and plans. """
 
 import time
 
-from model import model
+from model import Model
 from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC
 
-class controller:
+class Controller:
 
     def __init__(self, model):
         self._model = model
@@ -59,35 +59,31 @@ class controller:
 
 ###########################  TFTP-specific methods ###########################
 
+    # TODO: change this to take an address, not an interface
     def set_internal_tftp_server(self, interface, port):
         """ Set up a TFTP server to be hosted locally """
-        # TODO: may need to untrack images at this point
         self._model._tftp.set_internal_server(interface, port)
 
-    def get_internal_tftp_interface(self):
-        """ Return the interface used by the internal TFTP server"""
-        return self._model._tftp.get_internal_server_interface()
-
-    def get_internal_tftp_port(self):
-        """ Return the port used by the internal TFTP server"""
-        return self._model._tftp.get_port()
+    def set_external_tftp_server(self, addr, port):
+        """ Set up a remote TFTP server """
+        self._model._tftp.set_external_server(addr, port)
 
     def restart_tftp_server(self):
         """ Restart the TFTP server """
         self._model._tftp.restart_server()
 
-    def set_external_tftp_server(self, addr, port):
-        """ Set up a remote TFTP server """
-        # TODO: may need to untrack images at this point
-        self._model._tftp.set_external_server(addr, port)
-
-    def get_external_tftp_addr(self):
+    def get_tftp_address(self):
         """ Return the address of the external TFTP server """
         return self._model._tftp.get_address()
 
-    def get_external_tftp_port(self):
-        """ Return the port used by the external TFTP server """
+    def get_tftp_port(self):
+        """ Return the port used by the internal TFTP server"""
         return self._model._tftp.get_port()
+
+    # TODO: remove this
+    def get_internal_tftp_interface(self):
+        """ Return the interface used by the internal TFTP server"""
+        return self._model._tftp.get_internal_server_interface()
 
     def tftp_get(self, tftppath, localpath):
         self._model._tftp.get_file(tftppath, localpath)
@@ -132,32 +128,36 @@ class controller:
     def get_targets_in_range(self, startaddr, endaddr):
         """ Attempt to reach a socman on each of the addresses in the range.
         Return a list of socman addresses successfully reached. """
+        try:
+            addresses = []
 
-        addresses = []
+            # Convert startaddr to int
+            startaddr_bytes = map(int, startaddr.split("."))
+            startaddr_i = ((startaddr_bytes[0] << 24) | (startaddr_bytes[1] << 16)
+                    | (startaddr_bytes[2] << 8) | (startaddr_bytes[3]))
 
-        # Convert startaddr to int
-        startaddr_bytes = map(int, startaddr.split("."))
-        startaddr_i = ((startaddr_bytes[0] << 24) | (startaddr_bytes[1] << 16)
-                | (startaddr_bytes[2] << 8) | (startaddr_bytes[3]))
+            # Convert endaddr to int
+            endaddr_bytes = map(int, endaddr.split("."))
+            endaddr_i = ((endaddr_bytes[0] << 24) | (endaddr_bytes[1] << 16)
+                    | (endaddr_bytes[2] << 8) | endaddr_bytes[3])
 
-        # Convert endaddr to int
-        endaddr_bytes = map(int, endaddr.split("."))
-        endaddr_i = ((endaddr_bytes[0] << 24) | (endaddr_bytes[1] << 16)
-                | (endaddr_bytes[2] << 8) | endaddr_bytes[3])
+            # Get ip addresses in range
+            for i in range(startaddr_i, endaddr_i + 1):
+                addr_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
+                address = (str(addr_bytes[0]) + "." + str(addr_bytes[1]) + "." +
+                        str(addr_bytes[2]) + "." + str(addr_bytes[3]))
 
-        # Get ip addresses in range
-        for i in range(startaddr_i, endaddr_i + 1):
-            addr_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
-            address = (str(addr_bytes[0]) + "." + str(addr_bytes[1]) + "." +
-                    str(addr_bytes[2]) + "." + str(addr_bytes[3]))
+                # TODO: attempt to reach socman at address
+                # For now, just return all the addresses in range.
+                addresses.append(address)
 
-            # TODO: attempt to reach socman at address
-            # For now, just return all the addresses in range.
-            addresses.append(address)
+            return addresses
 
-        return addresses
+        except IndexError:
+            raise ValueError
 
-    def get_targets_from_fabric(self, nodeaddr):
+    def get_targets_from_fabric(self, nodeaddr,
+            username="admin", password="admin"):
         """ Attempt to get the addresses of socman instances that are known
         to the ipmi server at 'nodeaddr'.  If nodeaddr is a socman image,
         it will know about the instances that are part of fabric that
@@ -172,7 +172,7 @@ class controller:
             # Get ip_info file from fabric
             # TODO: username and password options?
             bmc = make_bmc(LanBMC, hostname=nodeaddr,
-                    username="admin", password="admin")
+                    username=username, password=password)
             bmc.get_fabric_ipinfo("ip_info.txt", tftp_addr)
             time.sleep(1) # must delay before retrieving file
             self.tftp_get("ip_info.txt", "ip_info.txt")
@@ -186,9 +186,7 @@ class controller:
             ip_info_file.close()
 
         except IpmiError, IOError:
-            # Unable to get IP list from ipmi.
-            # Return empty list.
-            pass
+            raise ValueError
 
         return addresses
 
@@ -197,9 +195,49 @@ class controller:
         in the model."""
         return self._model._targets.group_exists(grpname)
 
- ########################    Plans-specific methods     ######################
+#########################    Plans-specific methods     ######################
 
     def list_plans(self, subject):
         """ Return a formatted list of plan names """
         #FIXME
         pass
+
+    def add_group_to_plan(self, plan, group):
+        """ Add the group to the specified plan. The plan will be created if
+        necessary. """
+        self._model._plans.add_group_to_plan(plan, group)
+
+    def remove_group_from_plan(self, plan, group):
+        """ Remove the group from the specified plan. """
+        self._model._plans.remove_group_from_plan(plan, group)
+
+    def set_plan_command(self, plan, command):
+        """ Set the plan's command """
+        self._model._plans.set_plan_command(plan, command)
+
+    def execute_plan(self, plan, username="admin", password="admin"):
+        """ Execute the specified plan """
+
+        # Get addresses from groups
+        groups = self._model._plans.get_groups_from_plan(plan)
+        addresses = []
+        for group in groups:
+            addresses.extend(self._model._targets.get_targets_in_group(group))
+
+        # Get command
+        command = self._model._plans.get_plan_command(plan)
+        if command == "power on":
+            for address in addresses:
+                bmc = make_bmc(LanBMC, hostname=address,
+                        username=username, password=password)
+                bmc.handle.chassis_control(mode="on")
+        elif command == "power off":
+            for address in addresses:
+                bmc = make_bmc(LanBMC, hostname=address,
+                        username=username, password=password)
+                bmc.handle.chassis_control(mode="off")
+        elif command == "power reset":
+            for address in addresses:
+                bmc = make_bmc(LanBMC, hostname=address,
+                        username=username, password=password)
+                bmc.handle.chassis_control(mode="reset")

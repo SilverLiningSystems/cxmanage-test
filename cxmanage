@@ -1,0 +1,140 @@
+#!/usr/bin/python
+
+import argparse, sys
+
+from common.model import Model
+from common.controller import Controller
+
+def main():
+    # Get command line arguments
+    parser = argparse.ArgumentParser(
+            description="Calxeda Server Management Utility")
+    parser.add_argument("command", help="Command to execute")
+    parser.add_argument("options", nargs="+", help="Command options")
+    parser.add_argument("-u", default="admin", help="Username for login")
+    parser.add_argument("-p", default="admin", help="Password for login")
+    parser.add_argument("-f", "--force", action="store_true",
+            help="Execute command without confirmation")
+    parser.add_argument("-t", "--tftp", help="TFTP server to use <ip:port>")
+    parser.add_argument("-a", "--all", action="store_true",
+            help="Send command to all nodes reported by fabric")
+    args = parser.parse_args()
+
+    model = Model()
+    controller = Controller(model)
+
+    # Set up TFTP
+    if args.tftp:
+        try:
+            tftp_address, tftp_port = args.tftp.split(":")
+        except ValueError:
+            tftp_address = args.tftp
+            tftp_port = "69"
+        controller.set_external_tftp_server(tftp_address, tftp_port)
+
+    # Execute command
+    if args.command == "fwupdate":
+        return fwupdate_command(controller, args)
+    elif args.command == "power":
+        return power_command(controller, args)
+    else:
+        print "ERROR: \"%s\" command not recognized" % args.command
+        return 1
+
+def fwupdate_command(controller, args):
+    # Verify arguments
+    if len(args.options) < 3:
+        print "ERROR: Not enough options for fwupdate command"
+        return 1
+    if not args.options[0] in []: # TODO: slot types
+        print "ERROR: %s is not a valid slot type" % args.options[0]
+        return 1
+    if not os.path.exists(args.options[1]):
+        print "ERROR: File %s does not exist" % args.options[1]
+        return 1
+
+    if get_addresses(controller, args.options[1:], args):
+        return 1
+
+    # Get confirmation
+    print_status(controller)
+    if confirmation_dialogue(args):
+        return 1
+
+    controller.set_plan_command("cxmanage", "fwupdate")
+    controller.add_group_to_plan("cxmanage", "cxmanage")
+    controller.add_image_to_plan() # TODO
+    controller.execute_plan("cxmanage", args.u, args.p)
+
+    return 0
+
+def power_command(controller, args):
+    # Verify arguments
+    if len(args.options) < 2:
+        print "ERROR: Not enough options for power command"
+        return 1
+    if not args.options[0] in ["on", "off", "reset"]:
+        print "ERROR: %s is not a valid power option" % args.options[0]
+        return 1
+
+    # Get addresses
+    if get_addresses(controller, args.options[1:], args):
+        return 1
+
+    # Get confirmation
+    print_status(controller)
+    if confirmation_dialogue(args):
+        return 1
+
+    # Set up and execute plan
+    controller.set_plan_command("cxmanage", "power " + args.options[0])
+    controller.add_group_to_plan("cxmanage", "cxmanage")
+    controller.execute_plan("cxmanage", args.u, args.p)
+
+    return 0
+
+def get_addresses(controller, address_arg, args):
+    # Get initial addresses
+    addresses = set()
+    for entry in address_arg:
+        try:
+            # Treat the entry as an IP range
+            start, end = entry.split("-")
+            addresses.update(controller.get_targets_in_range(start, end))
+        except ValueError:
+            # Not an IP range, just add the address directly
+            addresses.add(entry)
+
+    if args.all:
+        # Make sure the TFTP server is up
+        if not controller.get_tftp_address():
+            print "ERROR: No TFTP server specified"
+            return 1
+
+        # Get targets from fabric
+        fabric_addresses = set()
+        for address in addresses:
+            if not address in fabric_addresses:
+                new_addresses = controller.get_targets_from_fabric(address,
+                        args.u, args.p)
+                fabric_addresses.update(new_addresses)
+        addresses = addresses.union(fabric_addresses)
+
+    # Add addresses to target group
+    controller.add_targets_to_group("cxmanage", addresses)
+    return 0
+
+def print_status(controller):
+    # TODO
+    pass
+
+def confirmation_dialogue(args):
+    # Confirm automatically if forced
+    if args.force:
+        return 0
+
+    # TODO: get confirmation
+    return 1
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -4,7 +4,7 @@
 fill in the rest of the description.  We'll probably make the location
 a URI. """
 
-class images:
+class Images:
     def __init__(self):
         self._images = {} # this will be a dictionary of tag: image object
         self._location = "http://127.0.0.1"
