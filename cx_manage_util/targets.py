@@ -14,7 +14,7 @@ class Targets:
         # This is a mapping of group names to address sets
         self._groups = {}
 
-    def add_target_to_group(self, group, addr):
+    def add_target(self, group, address, username, password):
         """ Add the target address to a group """
 
         # Create group if it doesn't exist
@@ -22,7 +22,7 @@ class Targets:
             self._groups[group] = set()
 
         # Add target to group
-        self._groups[group].add(addr)
+        self._groups[group].add(Target(address, username, password))
 
     def get_groups(self):
         """ Return a sorted list of the current groups """

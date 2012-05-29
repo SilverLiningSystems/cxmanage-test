@@ -84,7 +84,7 @@ def main():
     controller = Controller()
 
     try:
-        get_addresses(controller, args.hostname, args)
+        get_addresses(controller, args)
     except ValueError:
         print 'ERROR: Failed to get IP addresses'
         return 1
@@ -126,10 +126,10 @@ def fwupdate_command(controller, args):
 
     return 0
 
-def get_addresses(controller, address_arg, args):
+def get_addresses(controller, args):
     """get initial addresses"""
     addresses = set()
-    for entry in address_arg:
+    for entry in args.hostname:
         try:
             # Treat the entry as an IP range
             start, end = entry.split('-')
@@ -149,7 +149,8 @@ def get_addresses(controller, address_arg, args):
         addresses = addresses.union(fabric_addresses)
 
     # Add addresses to target group
-    controller.add_targets_to_group('_group', addresses)
+    for address in addresses:
+        controller.add_target('_group', address, args.user, args.password)
 
 if __name__ == '__main__':
     main()

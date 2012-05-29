@@ -53,7 +53,7 @@ class Controller:
     def add_target(self, group, address, username, password):
         """ Add the target to the list of targets for the group.
         Eliminate duplicates."""
-        self._targets.add_target_to_group(group, address, username, password)
+        self._targets.add_target(group, address, username, password)
 
     def delete_group(self, group):
         """ Delete the specified target group """
@@ -97,7 +97,7 @@ class Controller:
         except IndexError:
             raise ValueError
 
-    def add_targets_from_fabric(self, group, address, username, password):
+    def get_targets_from_fabric(self, group, address, username, password):
         """ Add all targets reported by a fabric. """
 
         # Create initial target
@@ -124,9 +124,7 @@ class Controller:
 
         ip_info_file.close()
 
-        # Add targets to group
-        for address in addresses:
-            self.add_target(group, address, username, password)
+        return addresses
 
 #########################    Execution methods    #########################
 
