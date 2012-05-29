@@ -1,0 +1,10 @@
+To use this, you have to install it.
+
+I recommend you use a virtualenv - it can be the same one you use for
+hb_spif/socman/ipmitest etc.
+
+To install, do something like "python setup.py develop" or "python setup.py
+install".
+
+After that, you should be able to use the 'cxmanage' utility from anywhere (as
+long as you're in your virtualenv, if you're using one).
