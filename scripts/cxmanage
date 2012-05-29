@@ -9,29 +9,117 @@ def main():
     # Get command line arguments
     parser = argparse.ArgumentParser(
             description="Calxeda Server Management Utility")
-    parser.add_argument("command", help="Command to execute")
-    parser.add_argument("options", nargs="+", help="Command options")
+
+    #global arguments
     parser.add_argument("-u", default="admin", help="Username for login")
     parser.add_argument("-p", default="admin", help="Password for login")
-    # TODO: re-enable
-    #parser.add_argument("-f", "--force", action="store_true",
-    #        help="Execute command without confirmation")
-    parser.add_argument("-t", "--tftp",
-            help="Connect to remote TFTP server at <ip:port>")
-    parser.add_argument("--localtftp",
-            help="Host a local TFTP server listening on <ip:port>")
     parser.add_argument("-a", "--all", action="store_true",
             help="Send command to all nodes reported by fabric")
+
+    subparsers = parser.add_subparsers()
+
+    #power command
+    power = subparsers.add_parser('power', help='control a9 power')
+    power_subs = power.add_subparsers()
+    power_subs.add_parser('on', help='boot the a9').set_defaults(power_mode='on')
+    power_subs.add_parser('off', help='shut the a9 off').set_defaults(power_mode='off')
+    power_subs.add_parser('reset', help='reset the a9').set_defaults(power_mode='reset')
+    power.set_defaults(func=power_command)
+
+    #fwupdate command
+    fwupdate = subparsers.add_parser('fwupdate')
+
+    tftp_type = fwupdate.add_mutually_exclusive_group(required=True)
+    tftp_type.add_argument("-t", "--tftp",
+            help="Connect to remote TFTP server at <ip:port>")
+    tftp_type.add_argument("--localtftp",
+            help="Host a local TFTP server listening on <ip:port>")
+
+    fwupdate.add_argument('image_type', metavar='IMAGE_TYPE', help='type of image to update',
+                        choices = list(sorted([
+                            'DEL',
+                            'DEL1',
+                            'S2_ELF',
+                            'SOC_ELF',
+                            'A9_UEFI',
+                            'A9_UBOOT',
+                            'A9_EXEC',
+                            'A9_ELF',
+                            'SOCDATA',
+                            'DTB',
+                            'CDB',
+                            'UBOOTENV',
+                            'SEL',
+                            'BOOT_LOG',
+                            'UEFI_ENV',
+                            'DIAG_ELF',
+                        ]))
+            )
+    fwupdate.add_argument('filename', help='path to file to upload')
+    fwupdate.set_defaults(func=fwupdate_command)
+    
+    parser.add_argument('hostnames', help='hostnames to target', nargs='+')
+
     args = parser.parse_args()
 
     model = Model()
     controller = Controller(model)
+    
+    print(args)
 
+    args.func(controller, args)
+
+"""
     # Set up TFTP
     if args.tftp and args.localtftp:
         print "ERROR: Both local and remote TFTP servers specified"
         return 1
-    elif args.tftp:
+
+    # Execute command
+    if args.command == "power":
+        return power_command(controller, args)
+    elif args.command == "fwupdate":
+        return fwupdate_command(controller, args)
+    else:
+        print "ERROR: \"%s\" command not recognized" % args.command
+        return 1
+"""
+
+def power_command(controller, args):
+    # Verify arguments
+    # Get addresses
+    try:
+        get_addresses(controller, args.hostnames, args)
+    except ValueError:
+        print "ERROR: Failed to get IP addresses"
+        return 1
+
+    # Get confirmation
+    print_status(controller)
+    if confirmation_dialogue(args):
+        return 1
+
+    # Set up and execute plan
+    controller.set_plan_command("cxmanage", "power " + args.power_mode)
+    controller.add_group_to_plan("cxmanage", "cxmanage")
+    controller.execute_plan("cxmanage", args.u, args.p)
+
+    return 0
+
+def fwupdate_command(controller, args):
+    # Verify arguments
+
+    if not os.path.exists(args.filename):
+        print "ERROR: File %s does not exist" % args.filename
+        return 1
+
+    try:
+        get_addresses(controller, args.hostnames, args)
+    except ValueError:
+        print "ERROR: Failed to get IP addresses"
+        return 1
+
+    if args.tftp:
         try:
             tftp_address, tftp_port = args.tftp.split(":")
             tftp_port = int(tftp_port)
@@ -48,64 +136,12 @@ def main():
             tftp_port = 69
         controller.set_internal_tftp_server(tftp_address, tftp_port)
 
-    # Execute command
-    if args.command == "power":
-        return power_command(controller, args)
-    elif args.command == "fwupdate":
-        return fwupdate_command(controller, args)
-    else:
-        print "ERROR: \"%s\" command not recognized" % args.command
-        return 1
-
-def power_command(controller, args):
-    # Verify arguments
-    if len(args.options) < 2:
-        print "ERROR: Not enough options for power command"
-        return 1
-    if not args.options[0] in ["on", "off", "reset"]:
-        print "ERROR: %s is not a valid power option" % args.options[0]
-        return 1
-
-    # Get addresses
-    try:
-        get_addresses(controller, args.options[1:], args)
-    except ValueError:
-        print "ERROR: Failed to get IP addresses"
-        return 1
-
     # Get confirmation
     print_status(controller)
     if confirmation_dialogue(args):
         return 1
 
-    # Set up and execute plan
-    controller.set_plan_command("cxmanage", "power " + args.options[0])
-    controller.add_group_to_plan("cxmanage", "cxmanage")
-    controller.execute_plan("cxmanage", args.u, args.p)
-
-    return 0
-
-def fwupdate_command(controller, args):
-    # Verify arguments
-    if len(args.options) < 3:
-        print "ERROR: Not enough options for fwupdate command"
-        return 1
-    if not os.path.exists(args.options[1]):
-        print "ERROR: File %s does not exist" % args.options[1]
-        return 1
-
-    try:
-        get_addresses(controller, args.options[2:], args)
-    except ValueError:
-        print "ERROR: Failed to get IP addresses"
-        return 1
-
-    # Get confirmation
-    print_status(controller)
-    if confirmation_dialogue(args):
-        return 1
-
-    controller.add_image("cxmanage", args.options[0], args.options[1])
+    controller.add_image("cxmanage", args.image_type, args.filename)
     controller.set_plan_command("cxmanage", "fwupdate")
     controller.add_group_to_plan("cxmanage", "cxmanage")
     controller.add_image_to_plan("cxmanage", "cxmanage")
