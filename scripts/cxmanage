@@ -1,9 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import argparse, os, sys
 
-from common.model import Model
-from common.controller import Controller
+from cx_manage_util.common.model import Model
+from cx_manage_util.common.controller import Controller
 
 def main():
     # Get command line arguments
