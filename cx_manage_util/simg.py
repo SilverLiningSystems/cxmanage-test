@@ -1,12 +1,23 @@
 """python for manipulating Calxeda SIMG headers"""
 import struct
 import argparse
+import tempfile
+import os
 
-def create_simg(infile_path, outfile_path, daddr=0):
+def create_simg(infile_path, outfile_path=None, daddr=0):
     """Create an SIMG version of a file
     
     Assumes version, hdrfmt, daddr and crc32 are all 0.
     """
+    
+    if not outfile_path:
+        fd,dst_path = tempfile.mkstemp(suffix='.simg')
+        #dst = open('/tmp/jasonsdf', 'w')
+        dst = os.fdopen(fd, 'w')
+    else:
+        dst = open(outfile_path, 'w')
+        dst_path = outfile_path
+
     contents = open(infile_path).read()
     string = struct.pack('<4sHHIIIII',
             'SIMG',         #magic_string
@@ -17,10 +28,12 @@ def create_simg(infile_path, outfile_path, daddr=0):
             daddr,          #daddr
             0xffffffff,     #flags
             0x00000000)     #crc32
-    
-    with open(outfile_path, 'w') as outfile:
-        outfile.write(string)
-        outfile.write(contents)
+
+    dst.write(string)
+    dst.write(contents)
+    dst.close()
+   
+    return dst_path
 
 def display_simg(infile_path):
     """Display the SIMG header of a file"""

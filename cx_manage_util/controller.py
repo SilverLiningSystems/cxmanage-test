@@ -2,11 +2,13 @@
 In this case, the controller understands the model's container structure
 and the objects it contains: tftp, images, targets and plans. """
 
+import os
 import time
 
 from images import Images
 from targets import Targets, Target
 from tftp import Tftp
+from simg import create_simg
 
 class Controller:
 
@@ -45,8 +47,13 @@ class Controller:
 
 ###########################  Images-specific methods ###########################
 
-    def add_image(self, name, image_type, filename):
-        self._images.add_image(name, image_type, filename)
+    def add_image(self, name, image_type, filename, add_simg=False):
+        if (add_simg):
+            new_path = create_simg(filename)
+        else:
+            new_path = filename
+
+        self._images.add_image(name, image_type, new_path)
 
 ###########################  Targets-specific methods #########################
 
@@ -143,8 +150,8 @@ class Controller:
 
         # Upload image to TFTP
         image_type = self._images.get_image_type(image)
-        full_filename = self._images.get_image_filename(image)
-        filename = full_filename.split("/")[-1]
+        full_filename = os.path.abspath(self._images.get_image_filename(image))
+        filename = os.path.basename(full_filename)
         self.tftp_put(filename, full_filename)
 
         # Update firmware on all targets

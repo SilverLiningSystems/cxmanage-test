@@ -69,6 +69,8 @@ def build_parser():
                         ]))
             )
     fwupdate.add_argument('filename', help='path to file to upload')
+    fwupdate.add_argument('-s', '--simg', help='prepend SIMG to file',
+                            default=False, action='store_true')
     fwupdate.set_defaults(func=fwupdate_command)
     
     parser.add_argument('hostname', help='hostname to target', nargs='+')
@@ -121,7 +123,7 @@ def fwupdate_command(controller, args):
         return 1
 
     # Add image and execute command
-    controller.add_image('_image', args.image_type, args.filename)
+    controller.add_image('_image', args.image_type, args.filename, args.simg)
     controller.update_firmware('_group', '_image')
 
     return 0
