@@ -18,7 +18,13 @@ def build_parser():
     parser.add_argument('-p', '--password', default='admin',
                         help='Password for login')
     parser.add_argument('-a', '--all', action='store_true',
-                        help='Send command to all nodes reported by fabric')
+                        help='Send command to all nodes reported by fabric \
+                            (requires TFTP)')
+    tftp_type = parser.add_mutually_exclusive_group(required=True)
+    tftp_type.add_argument('-t', '--tftp',
+            help='Connect to remote TFTP server at <ip:port>')
+    tftp_type.add_argument('--localtftp',
+            help='Host a local TFTP server listening on <ip:port>')
 
     subparsers = parser.add_subparsers()
 
@@ -40,12 +46,6 @@ def build_parser():
 
     #fwupdate command
     fwupdate = subparsers.add_parser('fwupdate', help='update firmware')
-
-    tftp_type = fwupdate.add_mutually_exclusive_group(required=True)
-    tftp_type.add_argument('-t', '--tftp',
-            help='Connect to remote TFTP server at <ip:port>')
-    tftp_type.add_argument('--localtftp',
-            help='Host a local TFTP server listening on <ip:port>')
 
     fwupdate.add_argument('image_type', metavar='IMAGE_TYPE',
                         help='type of image to update',
@@ -83,6 +83,23 @@ def main():
 
     controller = Controller()
 
+    if args.tftp:
+        try:
+            tftp_address, tftp_port = args.tftp.split(':')
+            tftp_port = int(tftp_port)
+        except ValueError:
+            tftp_address = args.tftp
+            tftp_port = 69
+        controller.set_external_tftp_server(tftp_address, tftp_port)
+    elif args.localtftp:
+        try:
+            tftp_address, tftp_port = args.localtftp.split(':')
+            tftp_port = int(tftp_port)
+        except ValueError:
+            tftp_address = args.localtftp
+            tftp_port = 69
+        controller.set_internal_tftp_server(tftp_address, tftp_port)
+
     try:
         get_addresses(controller, args)
     except ValueError:
@@ -102,23 +119,6 @@ def fwupdate_command(controller, args):
     if not os.path.exists(args.filename):
         print 'ERROR: File %s does not exist' % args.filename
         return 1
-
-    if args.tftp:
-        try:
-            tftp_address, tftp_port = args.tftp.split(':')
-            tftp_port = int(tftp_port)
-        except ValueError:
-            tftp_address = args.tftp
-            tftp_port = 69
-        controller.set_external_tftp_server(tftp_address, tftp_port)
-    elif args.localtftp:
-        try:
-            tftp_address, tftp_port = args.localtftp.split(':')
-            tftp_port = int(tftp_port)
-        except ValueError:
-            tftp_address = args.localtftp
-            tftp_port = 69
-        controller.set_internal_tftp_server(tftp_address, tftp_port)
 
     # Add image and execute command
     controller.add_image('_image', args.image_type, args.filename)

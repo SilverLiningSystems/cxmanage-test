@@ -97,8 +97,8 @@ class Controller:
         except IndexError:
             raise ValueError
 
-    def get_targets_from_fabric(self, group, address, username, password):
-        """ Add all targets reported by a fabric. """
+    def get_targets_from_fabric(self, address, username, password):
+        """ Get a list of targets reported by fabric """
 
         # Create initial target
         target = Target(address, username, password)
