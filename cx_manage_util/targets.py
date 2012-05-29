@@ -82,7 +82,9 @@ class Target:
             while status == "In progress":
                 time.sleep(1)
                 status = self._bmc.get_firmware_status(handle).status
+            print status
 
-            # TODO: look at final status
-            # For now, activate firmware
-            self._bmc.activate_firmware(slot)
+            # Activate firmware on completion
+            # TODO: consider raising an exception on failure
+            if status == "Complete":
+                self._bmc.activate_firmware(slot)
