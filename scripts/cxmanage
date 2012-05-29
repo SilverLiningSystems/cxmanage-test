@@ -8,13 +8,13 @@ from cx_manage_util.common.controller import Controller
 def main():
     # Get command line arguments
     parser = argparse.ArgumentParser(
-            description="Calxeda Server Management Utility")
+            description='Calxeda Server Management Utility')
 
     #global arguments
-    parser.add_argument("-u", default="admin", help="Username for login")
-    parser.add_argument("-p", default="admin", help="Password for login")
-    parser.add_argument("-a", "--all", action="store_true",
-            help="Send command to all nodes reported by fabric")
+    parser.add_argument('-u', '--user', default='admin', help='Username for login')
+    parser.add_argument('-p', '--password', default='admin', help='Password for login')
+    parser.add_argument('-a', '--all', action='store_true',
+            help='Send command to all nodes reported by fabric')
 
     subparsers = parser.add_subparsers()
 
@@ -27,13 +27,13 @@ def main():
     power.set_defaults(func=power_command)
 
     #fwupdate command
-    fwupdate = subparsers.add_parser('fwupdate')
+    fwupdate = subparsers.add_parser('fwupdate', help='update firmware')
 
     tftp_type = fwupdate.add_mutually_exclusive_group(required=True)
-    tftp_type.add_argument("-t", "--tftp",
-            help="Connect to remote TFTP server at <ip:port>")
-    tftp_type.add_argument("--localtftp",
-            help="Host a local TFTP server listening on <ip:port>")
+    tftp_type.add_argument('-t', '--tftp',
+            help='Connect to remote TFTP server at <ip:port>')
+    tftp_type.add_argument('--localtftp',
+            help='Host a local TFTP server listening on <ip:port>')
 
     fwupdate.add_argument('image_type', metavar='IMAGE_TYPE', help='type of image to update',
                         choices = list(sorted([
@@ -65,25 +65,7 @@ def main():
     model = Model()
     controller = Controller(model)
     
-    print(args)
-
     args.func(controller, args)
-
-"""
-    # Set up TFTP
-    if args.tftp and args.localtftp:
-        print "ERROR: Both local and remote TFTP servers specified"
-        return 1
-
-    # Execute command
-    if args.command == "power":
-        return power_command(controller, args)
-    elif args.command == "fwupdate":
-        return fwupdate_command(controller, args)
-    else:
-        print "ERROR: \"%s\" command not recognized" % args.command
-        return 1
-"""
 
 def power_command(controller, args):
     # Verify arguments
@@ -91,7 +73,7 @@ def power_command(controller, args):
     try:
         get_addresses(controller, args.hostnames, args)
     except ValueError:
-        print "ERROR: Failed to get IP addresses"
+        print 'ERROR: Failed to get IP addresses'
         return 1
 
     # Get confirmation
@@ -100,9 +82,9 @@ def power_command(controller, args):
         return 1
 
     # Set up and execute plan
-    controller.set_plan_command("cxmanage", "power " + args.power_mode)
-    controller.add_group_to_plan("cxmanage", "cxmanage")
-    controller.execute_plan("cxmanage", args.u, args.p)
+    controller.set_plan_command('cxmanage', 'power ' + args.power_mode)
+    controller.add_group_to_plan('cxmanage', 'cxmanage')
+    controller.execute_plan('cxmanage', args.u, args.p)
 
     return 0
 
@@ -110,18 +92,18 @@ def fwupdate_command(controller, args):
     # Verify arguments
 
     if not os.path.exists(args.filename):
-        print "ERROR: File %s does not exist" % args.filename
+        print 'ERROR: File %s does not exist' % args.filename
         return 1
 
     try:
         get_addresses(controller, args.hostnames, args)
     except ValueError:
-        print "ERROR: Failed to get IP addresses"
+        print 'ERROR: Failed to get IP addresses'
         return 1
 
     if args.tftp:
         try:
-            tftp_address, tftp_port = args.tftp.split(":")
+            tftp_address, tftp_port = args.tftp.split(':')
             tftp_port = int(tftp_port)
         except ValueError:
             tftp_address = args.tftp
@@ -129,7 +111,7 @@ def fwupdate_command(controller, args):
         controller.set_external_tftp_server(tftp_address, tftp_port)
     elif args.localtftp:
         try:
-            tftp_address, tftp_port = args.localtftp.split(":")
+            tftp_address, tftp_port = args.localtftp.split(':')
             tftp_port = int(tftp_port)
         except ValueError:
             tftp_address = args.localtftp
@@ -141,11 +123,11 @@ def fwupdate_command(controller, args):
     if confirmation_dialogue(args):
         return 1
 
-    controller.add_image("cxmanage", args.image_type, args.filename)
-    controller.set_plan_command("cxmanage", "fwupdate")
-    controller.add_group_to_plan("cxmanage", "cxmanage")
-    controller.add_image_to_plan("cxmanage", "cxmanage")
-    controller.execute_plan("cxmanage", args.u, args.p)
+    controller.add_image('cxmanage', args.image_type, args.filename)
+    controller.set_plan_command('cxmanage', 'fwupdate')
+    controller.add_group_to_plan('cxmanage', 'cxmanage')
+    controller.add_image_to_plan('cxmanage', 'cxmanage')
+    controller.execute_plan('cxmanage', args.u, args.p)
 
     return 0
 
@@ -155,7 +137,7 @@ def get_addresses(controller, address_arg, args):
     for entry in address_arg:
         try:
             # Treat the entry as an IP range
-            start, end = entry.split("-")
+            start, end = entry.split('-')
             addresses.update(controller.get_targets_in_range(start, end))
         except ValueError:
             # Not an IP range, just add the address directly
@@ -172,7 +154,7 @@ def get_addresses(controller, address_arg, args):
         addresses = addresses.union(fabric_addresses)
 
     # Add addresses to target group
-    controller.add_targets_to_group("cxmanage", addresses)
+    controller.add_targets_to_group('cxmanage', addresses)
 
 def print_status(controller):
     # TODO
@@ -183,5 +165,5 @@ def confirmation_dialogue(args):
     # for now, assume yes
     return 0
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())
