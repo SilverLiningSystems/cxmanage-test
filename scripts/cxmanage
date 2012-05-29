@@ -5,7 +5,6 @@ import argparse
 import os
 import sys
 
-from cx_manage_util.model import Model
 from cx_manage_util.controller import Controller
 
 def build_parser():
@@ -82,22 +81,19 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
-    model = Model()
-    controller = Controller(model)
+    controller = Controller()
 
     try:
         get_addresses(controller, args.hostname, args)
     except ValueError:
         print 'ERROR: Failed to get IP addresses'
         return 1
-    
+
     sys.exit(args.func(controller, args))
 
 def power_command(controller, args):
     """change the power state of a cluster or host"""
-    controller.set_plan_command('cxmanage', 'power ' + args.power_mode)
-    controller.add_group_to_plan('cxmanage', 'cxmanage')
-    controller.execute_plan('cxmanage', args.user, args.password)
+    controller.power_command('_group', args.power_mode)
 
     return 0
 
@@ -124,11 +120,9 @@ def fwupdate_command(controller, args):
             tftp_port = 69
         controller.set_internal_tftp_server(tftp_address, tftp_port)
 
-    controller.add_image('cxmanage', args.image_type, args.filename)
-    controller.set_plan_command('cxmanage', 'fwupdate')
-    controller.add_group_to_plan('cxmanage', 'cxmanage')
-    controller.add_image_to_plan('cxmanage', 'cxmanage')
-    controller.execute_plan('cxmanage', args.user, args.password)
+    # Add image and execute command
+    controller.add_image('_image', args.image_type, args.filename)
+    controller.update_firmware('_group', '_image')
 
     return 0
 
@@ -155,7 +149,7 @@ def get_addresses(controller, address_arg, args):
         addresses = addresses.union(fabric_addresses)
 
     # Add addresses to target group
-    controller.add_targets_to_group('cxmanage', addresses)
+    controller.add_targets_to_group('_group', addresses)
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()

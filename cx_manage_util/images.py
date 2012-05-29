@@ -4,16 +4,18 @@
 fill in the rest of the description.  We'll probably make the location
 a URI. """
 
+import os
+
 class Images:
     def __init__(self):
         self._images = {} # this will be a dictionary of tag: image object
 
-    def get_settings_str(self):
-        # FIXME
-        return "No settings."
-
     def add_image(self, image, image_type, filename):
-        self._images[image] = Image(image_type, filename)
+        # TODO: validate properly
+        if os.path.exists(filename):
+            self._images[image] = Image(image_type, filename)
+        else:
+            raise ValueError
 
     def get_image_type(self, image):
         return self._images[image].get_type()

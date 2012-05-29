@@ -1,9 +1,8 @@
 """ Holds state about the tftp service to be used by a calxeda update
 application. """
 
-import atexit, os, signal, shutil, subprocess
+import atexit, os, signal, shutil
 
-from cxfwupd_resources import cxfwupd_resources
 from tftpy import TftpClient, TftpServer
 
 class Tftp:
@@ -19,27 +18,6 @@ class Tftp:
         self._client = None
 
         atexit.register(self.kill_server)
-
-    def get_settings_str(self):
-        """ Get tftp settings as a string """
-        strings = cxfwupd_resources.get_strings('tftp')
-        s = ''
-        if self._ipaddr == None:
-            s = strings['not-set']
-        else:
-            s = self._ipaddr + ':' + str(self._port)
-            if self._isinternal:
-                s += strings['internal-server']
-            if not self._hasbeengood:
-                res = self.is_reachable()
-            if res:
-                s += strings['is-reachable']
-            else:
-                if self._hasbeengood:
-                    s += strings['know-good-once']
-                else:
-                    s += strings['not-reachable']
-        return s
 
     def is_set(self):
         """ Return true if a server has been set """
