@@ -1,29 +1,42 @@
 #!/usr/bin/env python
+"""Command line tool for managing a Calxeda cluster"""
 
-import argparse, os, sys
+import argparse
+import os
+import sys
 
 from cx_manage_util.common.model import Model
 from cx_manage_util.common.controller import Controller
 
-def main():
-    # Get command line arguments
+def build_parser():
+    """setup the argparse parser"""
     parser = argparse.ArgumentParser(
             description='Calxeda Server Management Utility')
 
     #global arguments
-    parser.add_argument('-u', '--user', default='admin', help='Username for login')
-    parser.add_argument('-p', '--password', default='admin', help='Password for login')
+    parser.add_argument('-u', '--user', default='admin',
+                        help='Username for login')
+    parser.add_argument('-p', '--password', default='admin',
+                        help='Password for login')
     parser.add_argument('-a', '--all', action='store_true',
-            help='Send command to all nodes reported by fabric')
+                        help='Send command to all nodes reported by fabric')
 
     subparsers = parser.add_subparsers()
 
     #power command
-    power = subparsers.add_parser('power', help='control a9 power')
+    power = subparsers.add_parser('power',
+                                  help='control a9 power')
     power_subs = power.add_subparsers()
-    power_subs.add_parser('on', help='boot the a9').set_defaults(power_mode='on')
-    power_subs.add_parser('off', help='shut the a9 off').set_defaults(power_mode='off')
-    power_subs.add_parser('reset', help='reset the a9').set_defaults(power_mode='reset')
+
+    power_on = power_subs.add_parser('on', help='boot the a9')
+    power_on.set_defaults(power_mode='on')
+
+    power_off = power_subs.add_parser('off', help='shut the a9 off')
+    power_off.set_defaults(power_mode='off')
+
+    power_reset = power_subs.add_parser('reset', help='reset the a9')
+    power_reset.set_defaults(power_mode='reset')
+
     power.set_defaults(func=power_command)
 
     #fwupdate command
@@ -35,7 +48,8 @@ def main():
     tftp_type.add_argument('--localtftp',
             help='Host a local TFTP server listening on <ip:port>')
 
-    fwupdate.add_argument('image_type', metavar='IMAGE_TYPE', help='type of image to update',
+    fwupdate.add_argument('image_type', metavar='IMAGE_TYPE',
+                        help='type of image to update',
                         choices = list(sorted([
                             'DEL',
                             'DEL1',
@@ -58,30 +72,29 @@ def main():
     fwupdate.add_argument('filename', help='path to file to upload')
     fwupdate.set_defaults(func=fwupdate_command)
     
-    parser.add_argument('hostnames', help='hostnames to target', nargs='+')
+    parser.add_argument('hostname', help='hostname to target', nargs='+')
 
+    return parser
+
+def main():
+    """Get args and go"""
+
+    parser = build_parser()
     args = parser.parse_args()
 
     model = Model()
     controller = Controller(model)
-    
-    args.func(controller, args)
 
-def power_command(controller, args):
-    # Verify arguments
-    # Get addresses
     try:
-        get_addresses(controller, args.hostnames, args)
+        get_addresses(controller, args.hostname, args)
     except ValueError:
         print 'ERROR: Failed to get IP addresses'
         return 1
+    
+    sys.exit(args.func(controller, args))
 
-    # Get confirmation
-    print_status(controller)
-    if confirmation_dialogue(args):
-        return 1
-
-    # Set up and execute plan
+def power_command(controller, args):
+    """change the power state of a cluster or host"""
     controller.set_plan_command('cxmanage', 'power ' + args.power_mode)
     controller.add_group_to_plan('cxmanage', 'cxmanage')
     controller.execute_plan('cxmanage', args.u, args.p)
@@ -89,16 +102,9 @@ def power_command(controller, args):
     return 0
 
 def fwupdate_command(controller, args):
-    # Verify arguments
-
+    """update firmware on a cluster or host"""
     if not os.path.exists(args.filename):
         print 'ERROR: File %s does not exist' % args.filename
-        return 1
-
-    try:
-        get_addresses(controller, args.hostnames, args)
-    except ValueError:
-        print 'ERROR: Failed to get IP addresses'
         return 1
 
     if args.tftp:
@@ -118,11 +124,6 @@ def fwupdate_command(controller, args):
             tftp_port = 69
         controller.set_internal_tftp_server(tftp_address, tftp_port)
 
-    # Get confirmation
-    print_status(controller)
-    if confirmation_dialogue(args):
-        return 1
-
     controller.add_image('cxmanage', args.image_type, args.filename)
     controller.set_plan_command('cxmanage', 'fwupdate')
     controller.add_group_to_plan('cxmanage', 'cxmanage')
@@ -132,7 +133,7 @@ def fwupdate_command(controller, args):
     return 0
 
 def get_addresses(controller, address_arg, args):
-    # Get initial addresses
+    """get initial addresses"""
     addresses = set()
     for entry in address_arg:
         try:
@@ -155,15 +156,6 @@ def get_addresses(controller, address_arg, args):
 
     # Add addresses to target group
     controller.add_targets_to_group('cxmanage', addresses)
-
-def print_status(controller):
-    # TODO
-    pass
-
-def confirmation_dialogue(args):
-    # TODO: get confirmation
-    # for now, assume yes
-    return 0
 
 if __name__ == '__main__':
     sys.exit(main())
