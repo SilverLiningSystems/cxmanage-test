@@ -6,6 +6,7 @@ import atexit, os, signal, shutil
 from tftpy import TftpClient, TftpServer
 
 class Tftp:
+    """ Contains info about a remote or local TFTP server """
 
     def __init__(self):
         self._ipaddr = None

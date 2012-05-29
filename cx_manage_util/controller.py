@@ -11,6 +11,9 @@ from tftp import Tftp
 from simg import create_simg
 
 class Controller:
+    """ The controller class serves as a manager for all the internals of
+    cx_manage_util. Scripts or UIs can build on top of this to provide an user
+    interface. """
 
     def __init__(self):
         self._images = Images()
@@ -40,20 +43,23 @@ class Controller:
         return self._tftp.get_port()
 
     def tftp_get(self, tftppath, localpath):
+        """ Download a file from the TFTP server """
         self._tftp.get_file(tftppath, localpath)
 
     def tftp_put(self, tftppath, localpath):
+        """ Upload a file to the TFTP server """
         self._tftp.put_file(tftppath, localpath)
 
-###########################  Images-specific methods ###########################
+###########################  Images-specific methods ##########################
 
-    def add_image(self, name, image_type, filename, add_simg=False):
+    def add_image(self, image_name, image_type, filename, add_simg=False):
+        """ Add an image to our collection """
         if (add_simg):
             new_path = create_simg(filename)
         else:
             new_path = filename
 
-        self._images.add_image(name, image_type, new_path)
+        self._images.add_image(image_name, image_type, new_path)
 
 ###########################  Targets-specific methods #########################
 
@@ -71,26 +77,27 @@ class Controller:
         in the model."""
         return self._targets.group_exists(group)
 
-    def add_targets_in_range(self, group, startaddr, endaddr, username, password):
+    def add_targets_in_range(self, group, start, end, username, password):
         """ Attempt to reach a socman on each of the addresses in the range.
-        Return a list of socman addresses successfully reached. """
+        Add all socman addresses successfully reached. """
         try:
             # Convert startaddr to int
-            startaddr_bytes = map(int, startaddr.split("."))
-            startaddr_i = ((startaddr_bytes[0] << 24) | (startaddr_bytes[1] << 16)
-                    | (startaddr_bytes[2] << 8) | (startaddr_bytes[3]))
+            start_bytes = map(int, start.split("."))
+            start_i = ((start_bytes[0] << 24) | (start_bytes[1] << 16)
+                    | (start_bytes[2] << 8) | (start_bytes[3]))
 
             # Convert endaddr to int
-            endaddr_bytes = map(int, endaddr.split("."))
-            endaddr_i = ((endaddr_bytes[0] << 24) | (endaddr_bytes[1] << 16)
-                    | (endaddr_bytes[2] << 8) | endaddr_bytes[3])
+            end_bytes = map(int, end.split("."))
+            end_i = ((end_bytes[0] << 24) | (end_bytes[1] << 16)
+                    | (end_bytes[2] << 8) | (end_bytes[3]))
 
             # Get ip addresses in range
             addresses = []
-            for i in range(startaddr_i, endaddr_i + 1):
-                addr_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
-                address = (str(addr_bytes[0]) + "." + str(addr_bytes[1]) + "." +
-                        str(addr_bytes[2]) + "." + str(addr_bytes[3]))
+            for i in range(start_i, end_i + 1):
+                address_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
+                address = (str(address_bytes[0]) + "." + str(address_bytes[1])
+                        + "." + str(address_bytes[2]) + "."
+                        + str(address_bytes[3]))
 
                 # TODO: attempt to reach socman at address
                 # For now, just return all the addresses in range.
@@ -98,8 +105,7 @@ class Controller:
 
             # Add targets
             for address in addresses:
-                self._targets.add_target_to_group(group,
-                        address, username, password)
+                self._targets.add_target(group, address, username, password)
 
         except IndexError:
             raise ValueError

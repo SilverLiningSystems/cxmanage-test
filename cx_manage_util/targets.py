@@ -9,6 +9,7 @@ from pyipmi import make_bmc
 from pyipmi.bmc import LanBMC
 
 class Targets:
+    """ Contains a list of targets """
 
     def __init__(self):
         # This is a mapping of group names to address sets
@@ -41,6 +42,9 @@ class Targets:
         return group in self._groups
 
 class Target:
+    """ Contains info for a single target. A target consists of a hostname,
+    an username, and a password. """
+
     def __init__(self, address, username, password):
         self._address = address
         self._username = username
@@ -49,12 +53,23 @@ class Target:
                 username=username, password=password)
 
     def get_fabric_ipinfo(self, filename, tftp_address):
+        """ Send an IPMI get_fabric_ipinfo command to this target
+
+        Note that this method puts the ip_info file on the TFTP server
+        but does not retrieve it locally. """
         self._bmc.get_fabric_ipinfo(filename, tftp_address)
 
     def power_command(self, command):
+        """ Send an IPMI power command to this target """
         self._bmc.handle.chassis_control(mode=command)
 
     def update_firmware(self, image_type, filename, tftp_address):
+        """ Update firmware on this target. 
+        
+        Note that this only uploads to the first matching slot, and consists of
+        3 steps: upload the image, wait for the transfer to finish, and
+        activate the image on completion. """
+
         # Get slots
         results = self._bmc.get_firmware_info()[:-1]
         try:
@@ -82,7 +97,6 @@ class Target:
             while status == "In progress":
                 time.sleep(1)
                 status = self._bmc.get_firmware_status(handle).status
-            print status
 
             # Activate firmware on completion
             # TODO: consider raising an exception on failure
