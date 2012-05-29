@@ -97,7 +97,7 @@ def power_command(controller, args):
     """change the power state of a cluster or host"""
     controller.set_plan_command('cxmanage', 'power ' + args.power_mode)
     controller.add_group_to_plan('cxmanage', 'cxmanage')
-    controller.execute_plan('cxmanage', args.u, args.p)
+    controller.execute_plan('cxmanage', args.user, args.password)
 
     return 0
 
@@ -128,7 +128,7 @@ def fwupdate_command(controller, args):
     controller.set_plan_command('cxmanage', 'fwupdate')
     controller.add_group_to_plan('cxmanage', 'cxmanage')
     controller.add_image_to_plan('cxmanage', 'cxmanage')
-    controller.execute_plan('cxmanage', args.u, args.p)
+    controller.execute_plan('cxmanage', args.user, args.password)
 
     return 0
 
@@ -150,7 +150,7 @@ def get_addresses(controller, address_arg, args):
         for address in addresses:
             if not address in fabric_addresses:
                 new_addresses = controller.get_targets_from_fabric(address,
-                        args.u, args.p)
+                        args.user, args.password)
                 fabric_addresses.update(new_addresses)
         addresses = addresses.union(fabric_addresses)
 
