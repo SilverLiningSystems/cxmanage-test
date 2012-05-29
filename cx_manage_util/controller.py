@@ -136,13 +136,16 @@ class Controller:
 
     def update_firmware(self, group, image):
         """ Send firmware update commands to all targets in group """
-        # Get image info
-        image_type = self._images.get_image_type(image)
-        filename = self._images.get_image_filename(image)
 
         # Get TFTP address
         tftp_address = self._tftp.get_address()
         tftp_address += ":" + str(self._tftp.get_port())
+
+        # Upload image to TFTP
+        image_type = self._images.get_image_type(image)
+        full_filename = self._images.get_image_filename(image)
+        filename = full_filename.split("/")[-1]
+        self.tftp_put(filename, full_filename)
 
         # Update firmware on all targets
         targets = self._targets.get_targets_in_group(group)
