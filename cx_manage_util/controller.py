@@ -77,9 +77,9 @@ class Controller:
         in the model."""
         return self._targets.group_exists(group)
 
-    def add_targets_in_range(self, group, start, end, username, password):
+    def get_targets_in_range(self, start, end):
         """ Attempt to reach a socman on each of the addresses in the range.
-        Add all socman addresses successfully reached. """
+        Return a list of socman addresses successfully reached. """
         try:
             # Convert startaddr to int
             start_bytes = map(int, start.split("."))
@@ -103,9 +103,7 @@ class Controller:
                 # For now, just return all the addresses in range.
                 addresses.append(address)
 
-            # Add targets
-            for address in addresses:
-                self._targets.add_target(group, address, username, password)
+            return addresses
 
         except IndexError:
             raise ValueError
