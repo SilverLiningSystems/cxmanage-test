@@ -49,6 +49,7 @@ def build_parser():
 
     fwupdate.add_argument('image_type', metavar='IMAGE_TYPE',
                         help='type of image to update',
+                        type=lambda string: string.upper(),
                         choices = list(sorted([
                             'DEL',
                             'DEL1',
