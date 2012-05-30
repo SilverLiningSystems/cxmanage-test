@@ -52,10 +52,15 @@ class Controller:
 
 ###########################  Images-specific methods ##########################
 
-    def add_image(self, image_name, image_type, filename, add_simg=False):
+    def add_image(self,
+                  image_name,
+                  image_type,
+                  filename,
+                  add_simg=False,
+                  daddr=0):
         """ Add an image to our collection """
         if (add_simg):
-            new_path = create_simg(filename)
+            new_path = create_simg(filename, daddr=daddr)
         else:
             new_path = filename
 

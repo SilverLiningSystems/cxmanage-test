@@ -72,6 +72,8 @@ def build_parser():
     fwupdate.add_argument('filename', help='path to file to upload')
     fwupdate.add_argument('-s', '--simg', help='prepend SIMG to file',
                             default=False, action='store_true')
+    fwupdate.add_argument('-d', '--daddr', help='Destination address for SIMG',
+                            default=0, type=lambda x : int(x, 16))
     fwupdate.set_defaults(func=fwupdate_command)
     
     parser.add_argument('hostname', help='hostname to target', nargs='+')
@@ -82,6 +84,10 @@ def validate_args(args):
     if args.all or args.func == fwupdate_command:
         if not (args.tftp or args.localtftp):
             sys.exit('Must supply --tftp or --localtftp when using --all or \'fwupdate\'')
+
+    if args.func == fwupdate_command:
+        if args.daddr and not args.simg:
+            sys.exit('Must supply --simg if --daddr is supplied')
 
 def main():
     """Get args and go"""
@@ -131,7 +137,11 @@ def fwupdate_command(controller, args):
         return 1
 
     # Add image and execute command
-    controller.add_image('_image', args.image_type, args.filename, args.simg)
+    controller.add_image('_image',
+                            args.image_type,
+                            args.filename,
+                            args.simg,
+                            args.daddr)
     controller.update_firmware('_group', '_image')
 
     return 0
