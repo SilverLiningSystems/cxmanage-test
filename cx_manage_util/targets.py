@@ -63,14 +63,14 @@ class Target:
         """ Send an IPMI power command to this target """
         self._bmc.handle.chassis_control(mode=command)
 
-    def update_firmware(self, image_type, filename, tftp_address):
+    def update_firmware(self, image_type, filename, tftp_address, slot_arg):
         """ Update firmware on this target. 
         
         Note that this only uploads to the first matching slot, and consists of
         3 steps: upload the image, wait for the transfer to finish, and
         activate the image on completion. """
 
-        # Get slots
+        # Get all available slots
         results = self._bmc.get_firmware_info()[:-1]
         try:
             # Image type is an int
@@ -81,16 +81,27 @@ class Target:
             slots = [x.slot for x in results[:-1] if
                     x.type.split()[1][1:-1] == image_type.upper()]
 
-        # TODO: should we apply to all slots?
-        # For now, apply only to first
-        slots = slots[:1]
+        # Select slots
+        print len(slots)
+        if slot_arg == "PRIMARY":
+            if len(slots) < 1:
+                raise ValueError("No primary slot found on host")
+            slots = slots[:1]
+        elif slot_arg == "SECONDARY":
+            if len(slots) < 2:
+                raise ValueError("No secondary slot found on host")
+            slots = slots[1:2]
+        elif slot_arg == "ALL":
+            pass
+        else:
+            raise ValueError("Invalid slot argument")
 
         for slot in slots:
             # Send firmware update command
             result = self._bmc.update_firmware(filename,
                     slot, image_type, tftp_address)
             handle = result.tftp_handle_id
-        
+
             # Wait for update to finish
             time.sleep(1)
             status = self._bmc.get_firmware_status(handle).status

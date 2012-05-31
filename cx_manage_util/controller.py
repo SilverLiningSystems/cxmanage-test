@@ -150,7 +150,7 @@ class Controller:
         for target in targets:
             target.power_command(command)
 
-    def update_firmware(self, group, image):
+    def update_firmware(self, group, image, slot_arg):
         """ Send firmware update commands to all targets in group """
 
         # Get TFTP address
@@ -166,4 +166,5 @@ class Controller:
         # Update firmware on all targets
         targets = self._targets.get_targets_in_group(group)
         for target in targets:
-            target.update_firmware(image_type, filename, tftp_address)
+            target.update_firmware(image_type,
+                    filename, tftp_address, slot_arg)
