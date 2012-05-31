@@ -61,7 +61,10 @@ class Target:
 
     def power_command(self, command):
         """ Send an IPMI power command to this target """
-        self._bmc.handle.chassis_control(mode=command)
+        try:
+            self._bmc.handle.chassis_control(mode=command)
+        except:
+            raise ValueError("Failed to send power command")
 
     def update_firmware(self, image_type, filename, tftp_address, slot_arg):
         """ Update firmware on this target. 
@@ -72,6 +75,8 @@ class Target:
 
         # Get all available slots
         results = self._bmc.get_firmware_info()[:-1]
+        if not results:
+            raise ValueError("Failed to retrieve firmware info")
         try:
             # Image type is an int
             slots = [x.slot for x in results[:-1] if
@@ -82,7 +87,6 @@ class Target:
                     x.type.split()[1][1:-1] == image_type.upper()]
 
         # Select slots
-        print len(slots)
         if slot_arg == "PRIMARY":
             if len(slots) < 1:
                 raise ValueError("No primary slot found on host")
@@ -110,6 +114,7 @@ class Target:
                 status = self._bmc.get_firmware_status(handle).status
 
             # Activate firmware on completion
-            # TODO: consider raising an exception on failure
             if status == "Complete":
                 self._bmc.activate_firmware(slot)
+            else:
+                raise ValueError("Node reported transfer failure")

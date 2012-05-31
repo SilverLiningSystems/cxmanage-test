@@ -19,6 +19,14 @@ class Controller:
         self._images = Images()
         self._targets = Targets()
         self._tftp = Tftp()
+        self._errors = []
+        self._successful_hosts = []
+
+    def get_errors(self):
+        return self._errors
+
+    def get_successful_hosts(self):
+        return self._successful_hosts
 
 ###########################  TFTP-specific methods ###########################
 
@@ -83,8 +91,7 @@ class Controller:
         return self._targets.group_exists(group)
 
     def get_targets_in_range(self, start, end):
-        """ Attempt to reach a socman on each of the addresses in the range.
-        Return a list of socman addresses successfully reached. """
+        """ Return a list of addresses in the given IP range """
         try:
             # Convert startaddr to int
             start_bytes = map(int, start.split("."))
@@ -104,8 +111,6 @@ class Controller:
                         + "." + str(address_bytes[2]) + "."
                         + str(address_bytes[3]))
 
-                # TODO: attempt to reach socman at address
-                # For now, just return all the addresses in range.
                 addresses.append(address)
 
             return addresses
@@ -148,23 +153,36 @@ class Controller:
         """ Send the given power command to all targets in group """
         targets = self._targets.get_targets_in_group(group)
         for target in targets:
-            target.power_command(command)
+            try:
+                target.power_command(command)
+                self._successful_hosts.append(target._address)
+            except Exception as e:
+                errors[target._address] = e
 
     def update_firmware(self, group, image, slot_arg):
-        """ Send firmware update commands to all targets in group """
-
-        # Get TFTP address
-        tftp_address = self._tftp.get_address()
-        tftp_address += ":" + str(self._tftp.get_port())
+        """ Send firmware update commands to all targets in group. """
 
         # Upload image to TFTP
-        image_type = self._images.get_image_type(image)
-        full_filename = os.path.abspath(self._images.get_image_filename(image))
-        filename = os.path.basename(full_filename)
-        self.tftp_put(filename, full_filename)
+        try:
+            tftp_address = self._tftp.get_address()
+            tftp_address += ":" + str(self._tftp.get_port())
+
+            image_type = self._images.get_image_type(image)
+            full_filename = os.path.abspath(self._images.get_image_filename(image))
+            filename = os.path.basename(full_filename)
+            self.tftp_put(filename, full_filename)
+        except Exception as e:
+            # Failed to upload to TFTP
+            print "ERROR: Failed to upload to TFTP server"
+            print "No hosts were updated."
+            return
 
         # Update firmware on all targets
         targets = self._targets.get_targets_in_group(group)
         for target in targets:
-            target.update_firmware(image_type,
-                    filename, tftp_address, slot_arg)
+            try:
+                target.update_firmware(image_type,
+                        filename, tftp_address, slot_arg)
+                self._successful_hosts.append(target._address)
+            except Exception as e:
+                self._errors.append("%s: %s" % (target._address, e))

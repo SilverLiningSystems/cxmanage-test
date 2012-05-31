@@ -137,7 +137,7 @@ def power_command(controller, args):
     """change the power state of a cluster or host"""
     controller.power_command('_group', args.power_mode)
 
-    return 0
+    return final_status(controller)
 
 def fwupdate_command(controller, args):
     """update firmware on a cluster or host"""
@@ -153,7 +153,8 @@ def fwupdate_command(controller, args):
                             args.daddr)
     controller.update_firmware('_group', '_image', args.slot)
 
-    return 0
+    # Print errors
+    return final_status(controller)
 
 def get_addresses(controller, args):
     """get initial addresses"""
@@ -180,6 +181,23 @@ def get_addresses(controller, args):
     # Add addresses to target group
     for address in addresses:
         controller.add_target('_group', address, args.user, args.password)
+
+def final_status(controller):
+    # Print successful hosts
+    successful_hosts = controller.get_successful_hosts()
+    if len(successful_hosts) > 0:
+        print "\nThe command completed successfully on the following hosts:"
+        for host in successful_hosts:
+            print host
+
+    # Print errors and return
+    errors = controller.get_errors()
+    if len(errors) > 0:
+        print "\nThe following errors occured:"
+        for error in errors:
+            print error
+        return 1
+    return 0
 
 if __name__ == '__main__':
     main()

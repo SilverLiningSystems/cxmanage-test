@@ -17,7 +17,7 @@ class Images:
         if os.path.exists(filename):
             self._images[image_name] = Image(image_type, filename)
         else:
-            raise ValueError
+            raise ValueError("Image does not exist")
 
     def get_image_type(self, image_name):
         """ Return the image type associated with this name """

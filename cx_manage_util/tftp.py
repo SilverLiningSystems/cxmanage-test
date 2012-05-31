@@ -117,14 +117,20 @@ class Tftp:
 
     def get_file(self, tftppath, localpath):
         """ Download a file from the tftp server """
-        if self._isinternal:
-            shutil.copy("tftp/" + tftppath, localpath)
-        else:
-            self._client.download(tftppath, localpath)
+        try:
+            if self._isinternal:
+                shutil.copy("tftp/" + tftppath, localpath)
+            else:
+                self._client.download(tftppath, localpath)
+        except Exception as e:
+            raise ValueError("Failed to download file from TFTP server")
 
     def put_file(self, tftppath, localpath):
         """ Upload a file to the tftp server """
-        if self._isinternal:
-            shutil.copy(localpath, "tftp/" + tftppath)
-        else:
-            self._client.upload(tftppath, localpath)
+        try:
+            if self._isinternal:
+                shutil.copy(localpath, "tftp/" + tftppath)
+            else:
+                self._client.upload(tftppath, localpath)
+        except Exception as e:
+            raise ValueError("Failed to upload file to TFTP server")
