@@ -4,12 +4,14 @@ import argparse
 import tempfile
 import os
 
-def create_simg(infile_path, outfile_path=None, daddr=0):
+from crc32 import get_crc32
+
+def create_simg(infile_path, outfile_path=None, daddr=0, skip_crc32=False):
     """Create an SIMG version of a file
-    
-    Assumes version, hdrfmt, daddr and crc32 are all 0.
+
+    Assumes version and hdrfmt are 0.
     """
-    
+
     if not outfile_path:
         fd,dst_path = tempfile.mkstemp(suffix='.simg')
         #dst = open('/tmp/jasonsdf', 'w')
@@ -19,6 +21,23 @@ def create_simg(infile_path, outfile_path=None, daddr=0):
         dst_path = outfile_path
 
     contents = open(infile_path).read()
+
+    # Calculate crc value
+    if skip_crc32:
+        crc32 = 0
+    else:
+        string = struct.pack('<4sHHIIIII',
+                'SIMG',         #magic_string
+                0,              #hdrfmt
+                0,              #version
+                28,             #imgoff
+                len(contents),  #imglen
+                daddr,          #daddr
+                0x00000000,     #flags
+                0x00000000)     #crc32
+        crc32 = get_crc32(contents, get_crc32(string))
+
+    # Get SIMG header
     string = struct.pack('<4sHHIIIII',
             'SIMG',         #magic_string
             0,              #hdrfmt
@@ -27,12 +46,12 @@ def create_simg(infile_path, outfile_path=None, daddr=0):
             len(contents),  #imglen
             daddr,          #daddr
             0xffffffff,     #flags
-            0x00000000)     #crc32
+            crc32)          #crc32
 
     dst.write(string)
     dst.write(contents)
     dst.close()
-   
+
     return dst_path
 
 def display_simg(infile_path):
