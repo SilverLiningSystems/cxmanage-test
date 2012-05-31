@@ -90,7 +90,7 @@ def build_parser():
                             default=False, action='store_true')
     fwupdate.set_defaults(func=fwupdate_command)
     
-    parser.add_argument('hostname', help='hostname to target', nargs='+')
+    parser.add_argument('hostname', help='hostname to target')
 
     return parser
 
@@ -169,7 +169,7 @@ def fwupdate_command(controller, args):
 def get_addresses(controller, args):
     """get initial addresses"""
     addresses = set()
-    for entry in args.hostname:
+    for entry in args.hostname.split(','):
         try:
             # Treat the entry as an IP range
             start, end = entry.split('-')
