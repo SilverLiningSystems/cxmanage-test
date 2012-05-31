@@ -57,10 +57,12 @@ class Controller:
                   image_type,
                   filename,
                   add_simg=False,
-                  daddr=0):
+                  daddr=0,
+                  skip_crc32=False):
         """ Add an image to our collection """
         if (add_simg):
-            new_path = create_simg(filename, daddr=daddr)
+            new_path = create_simg(filename,
+                    daddr=daddr, skip_crc32=skip_crc32)
         else:
             new_path = filename
 

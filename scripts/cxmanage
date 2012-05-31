@@ -73,10 +73,6 @@ def build_parser():
                         ]))
             )
     fwupdate.add_argument('filename', help='path to file to upload')
-    fwupdate.add_argument('-s', '--simg', help='prepend SIMG to file',
-                            default=False, action='store_true')
-    fwupdate.add_argument('-d', '--daddr', help='Destination address for SIMG',
-                            default=0, type=lambda x : int(x, 16))
     fwupdate.add_argument('--slot', help='Specify slot to update',
                             default='PRIMARY',
                             type=lambda string: string.upper(),
@@ -86,6 +82,12 @@ def build_parser():
                                 'ALL'
                             ]))
             )
+    fwupdate.add_argument('-s', '--simg', help='prepend SIMG to file',
+                            default=False, action='store_true')
+    fwupdate.add_argument('-d', '--daddr', help='Destination address for SIMG',
+                            default=0, type=lambda x : int(x, 16))
+    fwupdate.add_argument('--skip-crc32', help='Skip crc32 calculation for SIMG',
+                            default=False, action='store_true')
     fwupdate.set_defaults(func=fwupdate_command)
     
     parser.add_argument('hostname', help='hostname to target', nargs='+')
@@ -100,6 +102,8 @@ def validate_args(args):
     if args.func == fwupdate_command:
         if args.daddr and not args.simg:
             sys.exit('Must supply --simg if --daddr is supplied')
+        if args.skip_crc32 and not args.simg:
+            sys.exit('Must supply --simg if --skip-crc32 is supplied')
 
 def main():
     """Get args and go"""
@@ -156,7 +160,8 @@ def fwupdate_command(controller, args):
                             args.image_type,
                             args.filename,
                             args.simg,
-                            args.daddr)
+                            args.daddr,
+                            args.skip_crc32)
     controller.update_firmware('_group', '_image', args.slot)
 
     return 0
