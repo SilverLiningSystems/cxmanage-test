@@ -19,14 +19,6 @@ class Controller:
         self._images = Images()
         self._targets = Targets()
         self._tftp = Tftp()
-        self._errors = []
-        self._successful_hosts = []
-
-    def get_errors(self):
-        return self._errors
-
-    def get_successful_hosts(self):
-        return self._successful_hosts
 
 ###########################  TFTP-specific methods ###########################
 
@@ -151,13 +143,46 @@ class Controller:
 
     def power_command(self, group, command):
         """ Send the given power command to all targets in group """
+        successes = []
+        errors = []
         targets = self._targets.get_targets_in_group(group)
         for target in targets:
             try:
                 target.power_command(command)
-                self._successful_hosts.append(target._address)
+                successes.append(target._address)
             except Exception as e:
-                errors[target._address] = e
+                errors.append("%s: %s" % (target._address, e))
+
+        # Print successful hosts
+        if len(successes) > 0:
+            print "\nPower %s command executed successfully on the following hosts:" % command
+            for host in successes:
+                print host
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured:"
+            for error in errors:
+                print error
+
+    def power_status(self, group):
+        """ Retrieve power status from all targets in group """
+        results = []
+        targets = self._targets.get_targets_in_group(group)
+        for target in targets:
+            try:
+                status = target.power_status()
+                results.append("%s: %s" % (target._address, status))
+            except Exception as e:
+                results.append("%s: %s" % (target._address, e))
+
+        # Print results
+        if len(results) > 0:
+            print "\nPower status info:"
+            for result in results:
+                print result
+        else:
+            print "\nERROR: Failed to retrieve power status info"
 
     def update_firmware(self, group, image, slot_arg):
         """ Send firmware update commands to all targets in group. """
@@ -173,16 +198,30 @@ class Controller:
             self.tftp_put(filename, full_filename)
         except Exception as e:
             # Failed to upload to TFTP
-            print "ERROR: Failed to upload to TFTP server"
+            print "\nERROR: Failed to upload to TFTP server"
             print "No hosts were updated."
             return
 
         # Update firmware on all targets
+        successes = []
+        errors = []
         targets = self._targets.get_targets_in_group(group)
         for target in targets:
             try:
                 target.update_firmware(image_type,
                         filename, tftp_address, slot_arg)
-                self._successful_hosts.append(target._address)
+                successes.append(target._address)
             except Exception as e:
-                self._errors.append("%s: %s" % (target._address, e))
+                errors.append("%s: %s" % (target._address, e))
+
+        # Print successful hosts
+        if len(successes) > 0:
+            print "\nFirmware updated successfully on the following hosts:"
+            for host in successes:
+                print host
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured:"
+            for error in errors:
+                print error

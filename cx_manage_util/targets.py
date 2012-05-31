@@ -66,6 +66,16 @@ class Target:
         except:
             raise ValueError("Failed to send power command")
 
+    def power_status(self):
+        """ Return power status reported by IPMI """
+        try:
+            if self._bmc.handle.chassis_status().power_on:
+                return "on"
+            else:
+                return "off"
+        except:
+            raise ValueError("Failed to retrieve power status")
+
     def update_firmware(self, image_type, filename, tftp_address, slot_arg):
         """ Update firmware on this target. 
         
