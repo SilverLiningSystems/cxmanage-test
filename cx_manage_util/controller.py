@@ -22,11 +22,11 @@ class Controller:
 
 ###########################  TFTP-specific methods ###########################
 
-    def set_internal_tftp_server(self, address, port):
+    def set_internal_tftp_server(self, address=None, port=0):
         """ Set up a TFTP server to be hosted locally """
         self._tftp.set_internal_server(address, port)
 
-    def set_external_tftp_server(self, address, port):
+    def set_external_tftp_server(self, address, port=69):
         """ Set up a remote TFTP server """
         self._tftp.set_external_server(address, port)
 
@@ -118,12 +118,9 @@ class Controller:
         # Create initial target
         target = Target(address, username, password)
 
-        # Get TFTP address
-        tftp_address = self._tftp.get_address()
-        tftp_address += ":" + str(self._tftp.get_port())
-
         # Retrieve ip_info file
-        target.get_fabric_ipinfo("ip_info.txt", tftp_address)
+        target.get_fabric_ipinfo(self._tftp, "ip_info.txt")
+        # TODO: don't sleep on failure.
         time.sleep(1) # must delay before retrieving file
         self.tftp_get("ip_info.txt", "ip_info.txt")
 
@@ -191,9 +188,6 @@ class Controller:
 
         # Upload image to TFTP
         try:
-            tftp_address = self._tftp.get_address()
-            tftp_address += ":" + str(self._tftp.get_port())
-
             image_type = self._images.get_image_type(image)
             full_filename = os.path.abspath(self._images.get_image_filename(image))
             filename = os.path.basename(full_filename)
@@ -210,8 +204,8 @@ class Controller:
         targets = self._targets.get_targets_in_group(group)
         for target in targets:
             try:
-                target.update_firmware(image_type,
-                        filename, tftp_address, slot_arg)
+                target.update_firmware(self._tftp,
+                        image_type, filename, slot_arg)
                 successes.append(target._address)
             except Exception as e:
                 errors.append("%s: %s" % (target._address, e))

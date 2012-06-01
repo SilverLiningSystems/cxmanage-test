@@ -3,7 +3,7 @@
 """ This class is a container of target Calxeda SoCs targeted for configuration
 and provisioning. """
 
-import time
+import socket, time
 
 from pyipmi import make_bmc
 from pyipmi.bmc import LanBMC
@@ -52,11 +52,12 @@ class Target:
         self._bmc = make_bmc(LanBMC, hostname=address,
                 username=username, password=password)
 
-    def get_fabric_ipinfo(self, filename, tftp_address):
+    def get_fabric_ipinfo(self, tftp, filename):
         """ Send an IPMI get_fabric_ipinfo command to this target
 
         Note that this method puts the ip_info file on the TFTP server
         but does not retrieve it locally. """
+        tftp_address = self._get_tftp_address(tftp)
         self._bmc.get_fabric_ipinfo(filename, tftp_address)
 
     def power_command(self, command):
@@ -76,12 +77,13 @@ class Target:
         except:
             raise ValueError("Failed to retrieve power status")
 
-    def update_firmware(self, image_type, filename, tftp_address, slot_arg):
+    def update_firmware(self, tftp, image_type, filename, slot_arg):
         """ Update firmware on this target. 
         
         Note that this only uploads to the first matching slot, and consists of
         3 steps: upload the image, wait for the transfer to finish, and
         activate the image on completion. """
+        tftp_address = self._get_tftp_address(tftp)
 
         # Get all available slots
         results = self._bmc.get_firmware_info()[:-1]
@@ -128,3 +130,21 @@ class Target:
                 self._bmc.activate_firmware(slot)
             else:
                 raise ValueError("Node reported transfer failure")
+
+    def _get_tftp_address(self, tftp):
+        """ Get the TFTP server address
+        Returns a string in ip:port format """
+        # Get address
+        if tftp.is_internal() and tftp.get_address() == None:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((self._address, 0))
+            address = s.getsockname()[0]
+            s.close()
+        else:
+            address = tftp.get_address()
+
+        # Get port
+        port = tftp.get_port()
+
+        # Return in address:port form
+        return "%s:%i" % (address, port)

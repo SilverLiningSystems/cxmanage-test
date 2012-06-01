@@ -1,7 +1,7 @@
 """ Holds state about the tftp service to be used by a calxeda update
 application. """
 
-import atexit, os, signal, shutil
+import atexit, os, signal, shutil, subprocess
 
 from tftpy import TftpClient, TftpServer
 
@@ -9,14 +9,14 @@ class Tftp:
     """ Contains info about a remote or local TFTP server """
 
     def __init__(self):
+        self._server = None
+        self._client = None
+
         self._ipaddr = None
         self._port = None
 
         self._isinternal = False
         self._hasbeengood = False
-
-        self._server = None
-        self._client = None
 
         atexit.register(self.kill_server)
 
@@ -53,18 +53,12 @@ class Tftp:
 
         return False
 
-    def set_internal_server(self, addr, port):
+    def set_internal_server(self, addr=None, port=0):
         """ Shut down any server that's currently running, then start an
         internal tftp server. """
 
         # Kill existing internal server
         self.kill_server()
-
-        self._ipaddr = addr
-        self._port = port
-
-        self._isinternal = True
-        self._hasbeengood = False
 
         # Start tftp server
         self._server = os.fork()
@@ -72,26 +66,36 @@ class Tftp:
             if not os.path.exists("tftp"):
                 os.mkdir("tftp")
             server = TftpServer("tftp")
-            server.listen(self._ipaddr, self._port)
+            server.listen(addr, port)
             os._exit(0)
 
-        self._client = TftpClient(self._ipaddr, self._port)
+        self._client = None
 
-    def set_external_server(self, addr, port):
+        self._ipaddr = addr
+
+        if port != 0:
+            self._port = port
+        else:
+            self._port = self._discover_port()
+
+        self._isinternal = True
+        self._hasbeengood = False
+
+    def set_external_server(self, addr, port=69):
         """ Shut down any server that's currently running, then set up a
         connection to an external tftp server. """
 
         # Kill existing internal server
         self.kill_server()
 
+        self._server = None
+        self._client = TftpClient(self._ipaddr, self._port)
+
         self._ipaddr = addr
         self._port = port
 
         self._isinternal = False
         self._hasbeengood = False
-
-        self._server = None
-        self._client = TftpClient(self._ipaddr, self._port)
 
     def restart_server(self):
         """ Reset the server model; this will also restart the server if it's
@@ -122,7 +126,7 @@ class Tftp:
                 shutil.copy("tftp/" + tftppath, localpath)
             else:
                 self._client.download(tftppath, localpath)
-        except Exception as e:
+        except:
             raise ValueError("Failed to download file from TFTP server")
 
     def put_file(self, tftppath, localpath):
@@ -132,5 +136,12 @@ class Tftp:
                 shutil.copy(localpath, "tftp/" + tftppath)
             else:
                 self._client.upload(tftppath, localpath)
-        except Exception as e:
+        except:
             raise ValueError("Failed to upload file to TFTP server")
+
+    def _discover_port(self):
+        """ Discover what port an internal server is bound to.
+        This uses the 'lsof' command line utility """
+        command = "lsof -p%i -a -i4" % self._server
+        output = subprocess.check_output(command.split())
+        return int(output.split()[-1].split(":")[-1])
