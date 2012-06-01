@@ -18,8 +18,7 @@ def build_parser():
     parser.add_argument('-p', '--password', default='admin',
                         help='Password for login')
     parser.add_argument('-a', '--all', action='store_true',
-                        help='Send command to all nodes reported by fabric \
-                            (requires TFTP)')
+                        help='Send command to all nodes reported by fabric')
     tftp_type = parser.add_mutually_exclusive_group()
     tftp_type.add_argument('-t', '--tftp',
             help='Connect to remote TFTP server at <ip:port>')
@@ -46,6 +45,11 @@ def build_parser():
     power_status.set_defaults(power_mode='status')
 
     power.set_defaults(func=power_command)
+
+    #mcreset command
+    mcreset = subparsers.add_parser('mcreset',
+                                  help='reset the management controller')
+    mcreset.set_defaults(func=mcreset_command)
 
     #fwupdate command
     fwupdate = subparsers.add_parser('fwupdate', help='update firmware')
@@ -144,6 +148,12 @@ def power_command(controller, args):
         controller.power_status('_group')
     else:
         controller.power_command('_group', args.power_mode)
+
+    return 0
+
+def mcreset_command(controller, args):
+    """reset the management controllers of a cluster or host"""
+    controller.mc_reset('_group')
 
     return 0
 

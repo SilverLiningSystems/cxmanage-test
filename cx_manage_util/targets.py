@@ -131,6 +131,13 @@ class Target:
             else:
                 raise ValueError("Node reported transfer failure")
 
+    def mc_reset(self):
+        """ Send an IPMI MC reset command to the target """
+        try:
+            self._bmc.mc_reset("cold")
+        except:
+            raise ValueError("Failed to send MC reset command")
+
     def _get_tftp_address(self, tftp):
         """ Get the TFTP server address
         Returns a string in ip:port format """

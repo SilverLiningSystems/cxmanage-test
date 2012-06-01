@@ -221,3 +221,27 @@ class Controller:
             print "\nThe following errors occured:"
             for error in errors:
                 print error
+
+    def mc_reset(self, group):
+        """ Send the given power command to all targets in group """
+        successes = []
+        errors = []
+        targets = self._targets.get_targets_in_group(group)
+        for target in targets:
+            try:
+                target.mc_reset()
+                successes.append(target._address)
+            except Exception as e:
+                errors.append("%s: %s" % (target._address, e))
+
+        # Print successful hosts
+        if len(successes) > 0:
+            print "\nMC reset command sent successfully to the following hosts:"
+            for host in successes:
+                print host
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured:"
+            for error in errors:
+                print error
