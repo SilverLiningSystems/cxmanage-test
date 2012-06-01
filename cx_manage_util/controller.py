@@ -154,13 +154,13 @@ class Controller:
 
         # Print successful hosts
         if len(successes) > 0:
-            print "\nPower %s command executed successfully on the following hosts:" % command
+            print "\nPower %s command executed successfully on the following hosts" % command
             for host in successes:
                 print host
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured:"
+            print "\nThe following errors occured"
             for error in errors:
                 print error
 
@@ -177,7 +177,7 @@ class Controller:
 
         # Print results
         if len(results) > 0:
-            print "\nPower status info:"
+            print "\nPower status"
             for result in results:
                 print result
         else:
@@ -212,13 +212,13 @@ class Controller:
 
         # Print successful hosts
         if len(successes) > 0:
-            print "\nFirmware updated successfully on the following hosts:"
+            print "\nFirmware updated successfully on the following hosts"
             for host in successes:
                 print host
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured:"
+            print "\nThe following errors occured"
             for error in errors:
                 print error
 
@@ -234,14 +234,8 @@ class Controller:
             except Exception as e:
                 errors.append("%s: %s" % (target._address, e))
 
-        # Print successful hosts
-        if len(successes) > 0:
-            print "\nMC reset command sent successfully to the following hosts:"
-            for host in successes:
-                print host
-
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured:"
+            print "\nThe following errors occured"
             for error in errors:
                 print error

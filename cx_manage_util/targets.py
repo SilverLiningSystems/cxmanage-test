@@ -5,7 +5,7 @@ and provisioning. """
 
 import socket, time
 
-from pyipmi import make_bmc
+from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC
 
 class Targets:
@@ -64,7 +64,7 @@ class Target:
         """ Send an IPMI power command to this target """
         try:
             self._bmc.handle.chassis_control(mode=command)
-        except:
+        except IpmiError:
             raise ValueError("Failed to send power command")
 
     def power_status(self):
@@ -74,7 +74,7 @@ class Target:
                 return "on"
             else:
                 return "off"
-        except:
+        except IpmiError:
             raise ValueError("Failed to retrieve power status")
 
     def update_firmware(self, tftp, image_type, filename, slot_arg):
@@ -135,7 +135,7 @@ class Target:
         """ Send an IPMI MC reset command to the target """
         try:
             self._bmc.mc_reset("cold")
-        except:
+        except IpmiError:
             raise ValueError("Failed to send MC reset command")
 
     def _get_tftp_address(self, tftp):
