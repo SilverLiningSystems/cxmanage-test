@@ -89,7 +89,7 @@ class Tftp:
         self.kill_server()
 
         self._server = None
-        self._client = TftpClient(self._ipaddr, self._port)
+        self._client = TftpClient(addr, port)
 
         self._ipaddr = addr
         self._port = port

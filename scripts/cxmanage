@@ -22,8 +22,8 @@ def build_parser():
     tftp_type = parser.add_mutually_exclusive_group()
     tftp_type.add_argument('-t', '--tftp',
             help='Connect to remote TFTP server at <ip:port>')
-    tftp_type.add_argument('--localtftp',
-            help='Host a local TFTP server listening on <ip:port>')
+    tftp_type.add_argument('--internal-tftp',
+            help='Host an internal TFTP server listening on <ip:port>')
 
     subparsers = parser.add_subparsers()
 
@@ -116,20 +116,29 @@ def main():
     controller = Controller()
 
     if args.tftp:
-        try:
-            tftp_address, tftp_port = args.tftp.split(':')
-            tftp_port = int(tftp_port)
-        except ValueError:
-            tftp_address = args.tftp
+        tftp_args = args.tftp.split(':')
+        if len(tftp_args) == 1:
+            tftp_address = tftp_args[0]
             tftp_port = 69
+        elif len(tftp_args) == 2:
+            tftp_address = tftp_args[0]
+            tftp_port = int(tftp_args[1])
+        else:
+            print "ERROR: %s is not a valid argument for --tftp" % args.tftp
+            return 1
         controller.set_external_tftp_server(tftp_address, tftp_port)
-    elif args.localtftp:
-        try:
-            tftp_address, tftp_port = args.localtftp.split(':')
-            tftp_port = int(tftp_port)
-        except ValueError:
-            tftp_address = args.localtftp
-            tftp_port = 69
+    elif args.internal_tftp:
+        tftp_args = args.internal_tftp.split(':')
+        if len(tftp_args) == 1:
+            tftp_address = tftp_args[0]
+            tftp_port = 0
+        elif len(tftp_args) == 2:
+            tftp_address = tftp_args[0]
+            tftp_port = int(tftp_args[1])
+        else:
+            print ("ERROR: %s is not a valid argument for --internal-tftp"
+                    % args.tftp)
+            return 1
         controller.set_internal_tftp_server(tftp_address, tftp_port)
     else:
         controller.set_internal_tftp_server()
