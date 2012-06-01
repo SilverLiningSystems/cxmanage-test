@@ -99,6 +99,6 @@ def get_crc32(string, crc=0):
     """ Compute crc32 value of the given string """
     for char in string:
         byte = ord(char)
-        crc = (TABLE[(crc ^ byte) & 0xff] ^ (crc >> 8)) & 0xFFFFFFFF
+        crc = TABLE[(crc ^ byte) & 0xff] ^ (crc >> 8)
 
     return crc
