@@ -2,7 +2,10 @@
 In this case, the controller understands the model's container structure
 and the objects it contains: tftp, images, targets and plans. """
 
+import atexit
 import os
+import shutil
+import tempfile
 import time
 
 from images import Images
@@ -19,12 +22,14 @@ class Controller:
         self._images = Images()
         self._targets = Targets()
         self._tftp = Tftp()
+        self._work_dir = tempfile.mkdtemp(prefix="cxmanage-")
+        atexit.register(self._cleanup)
 
 ###########################  TFTP-specific methods ###########################
 
     def set_internal_tftp_server(self, address=None, port=0):
         """ Set up a TFTP server to be hosted locally """
-        self._tftp.set_internal_server(address, port)
+        self._tftp.set_internal_server(self._work_dir, address, port)
 
     def set_external_tftp_server(self, address, port=69):
         """ Set up a remote TFTP server """
@@ -63,7 +68,8 @@ class Controller:
                   skip_crc32=False):
         """ Add an image to our collection """
         if force_simg or not (skip_simg or verify_simg(filename)):
-            new_path = create_simg(filename, version=version,
+            new_path = self._work_dir + "/" + os.path.basename(filename) + ".simg"
+            create_simg(filename, new_path, version=version,
                     daddr=daddr, skip_crc32=skip_crc32)
         else:
             new_path = filename
@@ -124,11 +130,12 @@ class Controller:
         target.get_fabric_ipinfo(self._tftp, "ip_info.txt")
         # TODO: don't sleep on failure.
         time.sleep(1) # must delay before retrieving file
-        self.tftp_get("ip_info.txt", "ip_info.txt")
+        ip_info_path = self._work_dir + "/ip_info.txt"
+        self.tftp_get("ip_info.txt", ip_info_path)
 
         # Parse addresses from ip_info file
         addresses = []
-        ip_info_file = open("ip_info.txt", "r")
+        ip_info_file = open(ip_info_path, "r")
         for line in ip_info_file:
             address = line.split()[-1]
 
@@ -241,3 +248,7 @@ class Controller:
             print "\nThe following errors occured"
             for error in errors:
                 print error
+
+    def _cleanup(self):
+        """ Clean up temporary files """
+        shutil.rmtree(self._work_dir)

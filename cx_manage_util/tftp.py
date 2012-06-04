@@ -1,7 +1,11 @@
 """ Holds state about the tftp service to be used by a calxeda update
 application. """
 
-import atexit, os, signal, shutil, subprocess
+import atexit
+import os
+import signal
+import shutil
+import subprocess
 
 from tftpy import TftpClient, TftpServer
 
@@ -11,6 +15,7 @@ class Tftp:
     def __init__(self):
         self._server = None
         self._client = None
+        self._root_dir = None
 
         self._ipaddr = None
         self._port = None
@@ -53,7 +58,7 @@ class Tftp:
 
         return False
 
-    def set_internal_server(self, addr=None, port=0):
+    def set_internal_server(self, root_dir, addr=None, port=0):
         """ Shut down any server that's currently running, then start an
         internal tftp server. """
 
@@ -63,13 +68,12 @@ class Tftp:
         # Start tftp server
         self._server = os.fork()
         if self._server == 0:
-            if not os.path.exists("tftp"):
-                os.mkdir("tftp")
-            server = TftpServer("tftp")
+            server = TftpServer(root_dir)
             server.listen(addr, port)
             os._exit(0)
 
         self._client = None
+        self._root_dir = root_dir
 
         self._ipaddr = addr
 
@@ -88,6 +92,7 @@ class Tftp:
         # Kill existing internal server
         self.kill_server()
 
+        self._root_dir = None
         self._server = None
         self._client = TftpClient(addr, port)
 
@@ -123,7 +128,9 @@ class Tftp:
         """ Download a file from the tftp server """
         try:
             if self._isinternal:
-                shutil.copy("tftp/" + tftppath, localpath)
+                tftppath = self._root_dir + "/" + tftppath
+                if tftppath != localpath:
+                    shutil.copy(tftppath, localpath)
             else:
                 self._client.download(tftppath, localpath)
         except:
@@ -133,7 +140,9 @@ class Tftp:
         """ Upload a file to the tftp server """
         try:
             if self._isinternal:
-                shutil.copy(localpath, "tftp/" + tftppath)
+                tftppath = self._root_dir + "/" + tftppath
+                if tftppath != localpath:
+                    shutil.copy(localpath, tftppath)
             else:
                 self._client.upload(tftppath, localpath)
         except:
