@@ -1,10 +1,58 @@
 To use this, you have to install it.
 
-I recommend you use a virtualenv - it can be the same one you use for
-hb_spif/socman/ipmitest etc.
+The best way to do this is with virtualenv -- it can be the same one you use
+for hb_spif/socman/ipmitest etc.
 
-To install, do something like "python setup.py develop" or "python setup.py
-install".
 
-After that, you should be able to use the 'cxmanage' utility from anywhere (as
-long as you're in your virtualenv, if you're using one).
+
+Setting up a virtualenv
+-----------------------
+If you don't have a virtualenv set up already, you can easily set up an
+environment named "foo" with the following commands:
+
+sudo apt-get install virtualenvwrapper
+mkvirtualenv foo
+
+
+Then any time you want to run cxmanage in the future, enter the environment
+beforehand:
+
+workon foo
+
+
+
+Installing pyipmi
+------------------------------
+The cxmanage utility depends on ipmitool and pyipmi. You will need a recent
+Calxeda version of ipmitool in your $PATH.
+
+
+For now, you can pull pyipmi from git and install with these commands:
+
+git clone ssh://git.calxeda.com/var/git/pyipmi.git
+cd pyipmi
+python setup.py develop
+
+
+If you're not in a virtual environment, then you'll need sudo privileges for
+the "python setup.py develop" command.
+
+
+
+Installing cxmanage
+-------------------
+Finally, to install the cxmanage utility, run this from the cx_manage_util
+folder:
+
+python setup.py develop
+
+
+This will install cxmanage, as well as the pexpect and tftpy python libraries
+that it depends on.
+
+Again, if you're not in a virtual environment, then you'll need sudo privileges
+for the "python setup.py develop" command.
+
+With ipmitool, pyipmi, and cxmanage installed, you should be good to go.
+
+
