@@ -6,7 +6,7 @@ import os
 
 from crc32 import get_crc32
 
-def create_simg(infile_path, outfile_path=None, daddr=0, skip_crc32=False):
+def create_simg(infile_path, outfile_path=None, version=0, daddr=0, skip_crc32=False):
     """Create an SIMG version of a file
 
     Assumes version and hdrfmt are 0.
@@ -28,7 +28,7 @@ def create_simg(infile_path, outfile_path=None, daddr=0, skip_crc32=False):
         string = struct.pack('<4sHHIIIII',
                 'SIMG',         #magic_string
                 0,              #hdrfmt
-                0,              #version
+                version,        #version
                 28,             #imgoff
                 len(contents),  #imglen
                 daddr,          #daddr
@@ -40,7 +40,7 @@ def create_simg(infile_path, outfile_path=None, daddr=0, skip_crc32=False):
     string = struct.pack('<4sHHIIIII',
             'SIMG',         #magic_string
             0,              #hdrfmt
-            0,              #version
+            version,        #version
             28,             #imgoff
             len(contents),  #imglen
             daddr,          #daddr

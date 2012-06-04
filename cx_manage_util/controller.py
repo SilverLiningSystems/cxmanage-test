@@ -56,13 +56,14 @@ class Controller:
                   image_name,
                   image_type,
                   filename,
-                  force_simg,
-                  skip_simg,
+                  force_simg=False,
+                  skip_simg=False,
+                  version=0,
                   daddr=0,
                   skip_crc32=False):
         """ Add an image to our collection """
         if force_simg or not (skip_simg or verify_simg(filename)):
-            new_path = create_simg(filename,
+            new_path = create_simg(filename, version=version,
                     daddr=daddr, skip_crc32=skip_crc32)
         else:
             new_path = filename
