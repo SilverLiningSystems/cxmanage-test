@@ -128,7 +128,11 @@ class Target:
 
             # Activate firmware on completion
             if status == "Complete":
-                self._bmc.activate_firmware(slot)
+                # Verify crc
+                if not self._bmc.check_firmware(slot).error:
+                    self._bmc.activate_firmware(slot)
+                else:
+                    raise ValueError("Node reported crc32 check failure")
             else:
                 raise ValueError("Node reported transfer failure")
 
