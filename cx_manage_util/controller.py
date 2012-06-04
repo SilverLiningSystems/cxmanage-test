@@ -8,7 +8,7 @@ import time
 from images import Images
 from targets import Targets, Target
 from tftp import Tftp
-from simg import create_simg
+from simg import create_simg, verify_simg
 
 class Controller:
     """ The controller class serves as a manager for all the internals of
@@ -56,11 +56,12 @@ class Controller:
                   image_name,
                   image_type,
                   filename,
-                  add_simg=False,
+                  force_simg,
+                  skip_simg,
                   daddr=0,
                   skip_crc32=False):
         """ Add an image to our collection """
-        if (add_simg):
+        if force_simg or not (skip_simg or verify_simg(filename)):
             new_path = create_simg(filename,
                     daddr=daddr, skip_crc32=skip_crc32)
         else:

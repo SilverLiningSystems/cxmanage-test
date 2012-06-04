@@ -13,8 +13,7 @@ def create_simg(infile_path, outfile_path=None, daddr=0, skip_crc32=False):
     """
 
     if not outfile_path:
-        fd,dst_path = tempfile.mkstemp(suffix='.simg')
-        #dst = open('/tmp/jasonsdf', 'w')
+        fd, dst_path = tempfile.mkstemp(suffix='.simg')
         dst = os.fdopen(fd, 'w')
     else:
         dst = open(outfile_path, 'w')
@@ -66,6 +65,24 @@ def display_simg(infile_path):
     print('daddr:       0x%08x' % tup[5])
     print('flags:       0x%08x' % tup[6])
     print('crc32:       0x%08x' % tup[7])
+
+def verify_simg(infile_path):
+    """Return true if infile has an SIMG header"""
+    # Bail early if the file is too small
+    file_size = os.path.getsize(infile_path)
+    if file_size < 28:
+        return False
+
+    header = open(infile_path).read(28)
+    tup = struct.unpack('<4sHHIIIII', header)
+
+    # Magic word
+    if tup[0] != "SIMG":
+        return False
+
+    # TODO: consider image offset, length, crc32?
+
+    return True
 
 def build_parser():
     """build an argparse parser"""
