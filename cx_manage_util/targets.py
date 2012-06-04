@@ -77,7 +77,8 @@ class Target:
         except IpmiError:
             raise ValueError("Failed to retrieve power status")
 
-    def update_firmware(self, tftp, image_type, filename, slot_arg):
+    def update_firmware(self, tftp, image_type,
+            filename, slot_arg, skip_reset=False):
         """ Update firmware on this target. 
         
         Note that this only uploads to the first matching slot, and consists of
@@ -130,6 +131,9 @@ class Target:
                 self._bmc.activate_firmware(slot)
             else:
                 raise ValueError("Node reported transfer failure")
+
+        if image_type == "SOC_ELF" and not skip_reset:
+            self.mc_reset()
 
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """

@@ -86,6 +86,8 @@ def build_parser():
                                 'ALL'
                             ]))
             )
+    fwupdate.add_argument('--no-reset', help='Don\'t reset the MC after updating',
+                            default=False, action='store_true')
     simg_args = fwupdate.add_mutually_exclusive_group()
     simg_args.add_argument('--force-simg', help='Force addition of SIMG header',
                             default=False, action='store_true')
@@ -188,7 +190,7 @@ def fwupdate_command(controller, args):
                             args.version,
                             args.daddr,
                             args.skip_crc32)
-    controller.update_firmware('_group', '_image', args.slot)
+    controller.update_firmware('_group', '_image', args.slot, args.no_reset)
 
     return 0
 

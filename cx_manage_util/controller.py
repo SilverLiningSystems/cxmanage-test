@@ -192,7 +192,7 @@ class Controller:
         else:
             print "\nERROR: Failed to retrieve power status info"
 
-    def update_firmware(self, group, image, slot_arg):
+    def update_firmware(self, group, image, slot_arg, skip_reset=False):
         """ Send firmware update commands to all targets in group. """
 
         # Upload image to TFTP
@@ -213,8 +213,8 @@ class Controller:
         targets = self._targets.get_targets_in_group(group)
         for target in targets:
             try:
-                target.update_firmware(self._tftp,
-                        image_type, filename, slot_arg)
+                target.update_firmware(self._tftp, image_type,
+                        filename, slot_arg, skip_reset)
                 successes.append(target._address)
             except Exception as e:
                 errors.append("%s: %s" % (target._address, e))
