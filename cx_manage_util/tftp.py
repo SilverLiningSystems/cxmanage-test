@@ -154,6 +154,8 @@ class Tftp:
         try:
             command = "lsof -p%i -a -i4" % self._server
             output = subprocess.check_output(command.split())
-            return int(output.split()[-1].split(":")[-1])
+            line = output.split("\n")[1]
+            port = int(line.split()[8].split(":")[1])
+            return port
         except (OSError, ValueError):
             raise ValueError("Unable to discover internal TFTP port")
