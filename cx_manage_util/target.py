@@ -1,55 +1,19 @@
 #!/bin/env python
 
-""" This class is a container of target Calxeda SoCs targeted for configuration
-and provisioning. """
-
 import socket, time
 
 from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC
-
-class Targets:
-    """ Contains a list of targets """
-
-    def __init__(self):
-        # This is a mapping of group names to address sets
-        self._groups = {}
-
-    def add_target(self, group, address, username, password):
-        """ Add the target address to a group """
-
-        # Create group if it doesn't exist
-        if not group in self._groups:
-            self._groups[group] = set()
-
-        # Add target to group
-        self._groups[group].add(Target(address, username, password))
-
-    def get_groups(self):
-        """ Return a sorted list of the current groups """
-        return sorted(self._groups.keys())
-
-    def get_targets_in_group(self, group):
-        """ Return a sorted list of targets in a group """
-        return sorted(self._groups[group])
-
-    def delete_group(self, group):
-        """ Delete the specified target group """
-        del self._groups[group]
-
-    def group_exists(self, group):
-        """ Returns true if the specified group exists """
-        return group in self._groups
 
 class Target:
     """ Contains info for a single target. A target consists of a hostname,
     an username, and a password. """
 
     def __init__(self, address, username, password):
-        self._address = address
-        self._username = username
-        self._password = password
-        self._bmc = make_bmc(LanBMC, hostname=address,
+        self.address = address
+        self.username = username
+        self.password = password
+        self.bmc = make_bmc(LanBMC, hostname=address,
                 username=username, password=password)
 
     def get_fabric_ipinfo(self, tftp, filename):
@@ -58,19 +22,19 @@ class Target:
         Note that this method puts the ip_info file on the TFTP server
         but does not retrieve it locally. """
         tftp_address = self._get_tftp_address(tftp)
-        self._bmc.get_fabric_ipinfo(filename, tftp_address)
+        self.bmc.get_fabric_ipinfo(filename, tftp_address)
 
     def power_command(self, command):
         """ Send an IPMI power command to this target """
         try:
-            self._bmc.handle.chassis_control(mode=command)
+            self.bmc.handle.chassis_control(mode=command)
         except IpmiError:
             raise ValueError("Failed to send power command")
 
     def power_status(self):
         """ Return power status reported by IPMI """
         try:
-            if self._bmc.handle.chassis_status().power_on:
+            if self.bmc.handle.chassis_status().power_on:
                 return "on"
             else:
                 return "off"
@@ -79,15 +43,11 @@ class Target:
 
     def update_firmware(self, tftp, image_type,
             filename, slot_arg, skip_reset=False):
-        """ Update firmware on this target. 
-        
-        Note that this only uploads to the first matching slot, and consists of
-        3 steps: upload the image, wait for the transfer to finish, and
-        activate the image on completion. """
+        """ Update firmware on this target. """
         tftp_address = self._get_tftp_address(tftp)
 
         # Get all available slots
-        results = self._bmc.get_firmware_info()[:-1]
+        results = self.bmc.get_firmware_info()[:-1]
         if not results:
             raise ValueError("Failed to retrieve firmware info")
         try:
@@ -115,22 +75,22 @@ class Target:
 
         for slot in slots:
             # Send firmware update command
-            result = self._bmc.update_firmware(filename,
+            result = self.bmc.update_firmware(filename,
                     slot, image_type, tftp_address)
             handle = result.tftp_handle_id
 
             # Wait for update to finish
             time.sleep(1)
-            status = self._bmc.get_firmware_status(handle).status
+            status = self.bmc.get_firmware_status(handle).status
             while status == "In progress":
                 time.sleep(1)
-                status = self._bmc.get_firmware_status(handle).status
+                status = self.bmc.get_firmware_status(handle).status
 
             # Activate firmware on completion
             if status == "Complete":
                 # Verify crc
-                if not self._bmc.check_firmware(slot).error:
-                    self._bmc.activate_firmware(slot)
+                if not self.bmc.check_firmware(slot).error:
+                    self.bmc.activate_firmware(slot)
                 else:
                     raise ValueError("Node reported crc32 check failure")
             else:
@@ -142,7 +102,7 @@ class Target:
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """
         try:
-            self._bmc.mc_reset("cold")
+            self.bmc.mc_reset("cold")
         except IpmiError:
             raise ValueError("Failed to send MC reset command")
 
@@ -152,7 +112,7 @@ class Target:
         # Get address
         if tftp.is_internal() and tftp.get_address() == None:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect((self._address, 0))
+            s.connect((self.address, 0))
             address = s.getsockname()[0]
             s.close()
         else:

@@ -163,15 +163,15 @@ def main():
 def power_command(controller, args):
     """change the power state of a cluster or host"""
     if args.power_mode == 'status':
-        controller.power_status('_group')
+        controller.power_status()
     else:
-        controller.power_command('_group', args.power_mode)
+        controller.power_command(args.power_mode)
 
     return 0
 
 def mcreset_command(controller, args):
     """reset the management controllers of a cluster or host"""
-    controller.mc_reset('_group')
+    controller.mc_reset()
 
     return 0
 
@@ -182,15 +182,9 @@ def fwupdate_command(controller, args):
         return 1
 
     # Add image and execute command
-    controller.add_image('_image',
-                            args.image_type,
-                            args.filename,
-                            args.force_simg,
-                            args.skip_simg,
-                            args.version,
-                            args.daddr,
-                            args.skip_crc32)
-    controller.update_firmware('_group', '_image', args.slot, args.no_reset)
+    controller.add_image(args.image_type, args.filename, args.force_simg,
+            args.skip_simg, args.version, args.daddr, args.skip_crc32)
+    controller.update_firmware(args.slot, args.no_reset)
 
     return 0
 
@@ -218,7 +212,7 @@ def get_addresses(controller, args):
 
     # Add addresses to target group
     for address in addresses:
-        controller.add_target('_group', address, args.user, args.password)
+        controller.add_target(address, args.user, args.password)
 
 if __name__ == '__main__':
     main()
