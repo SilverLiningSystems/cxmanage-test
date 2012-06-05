@@ -5,14 +5,11 @@ import os
 
 from crc32 import get_crc32
 
-def create_simg(infile_path, outfile_path,
-        version=0, daddr=0, skip_crc32=False):
+def create_simg(contents, version=0, daddr=0, skip_crc32=False):
     """Create an SIMG version of a file
 
     Assumes version and hdrfmt are 0.
     """
-
-    contents = open(infile_path).read()
 
     # Calculate crc value
     if skip_crc32:
@@ -40,10 +37,7 @@ def create_simg(infile_path, outfile_path,
             0xffffffff,     #flags
             crc32)          #crc32
 
-    dst = open(outfile_path, 'w')
-    dst.write(string)
-    dst.write(contents)
-    dst.close()
+    return string + contents
 
 def display_simg(infile_path):
     """Display the SIMG header of a file"""
@@ -109,4 +103,4 @@ def main():
         print('how did you get here?')
 
 if __name__ == '__main__':
-    main()
+    main()        

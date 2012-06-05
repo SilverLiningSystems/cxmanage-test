@@ -50,11 +50,13 @@ class Target:
 
         for slot in slots:
             # Upload image to tftp server
-            filename = image.upload(work_dir, tftp)
+            filename = image.upload(work_dir, tftp, slot)
 
             # Send firmware update command
+            slot_id = int(slot.slot)
+            image_type = image.type
             result = self.bmc.update_firmware(filename,
-                    slot.slot, image.type, tftp_address)
+                    slot_id, image_type, tftp_address)
             handle = result.tftp_handle_id
 
             # Wait for update to finish
@@ -67,8 +69,8 @@ class Target:
             # Activate firmware on completion
             if status == "Complete":
                 # Verify crc
-                if not self.bmc.check_firmware(slot).error:
-                    self.bmc.activate_firmware(slot)
+                if not self.bmc.check_firmware(slot_id).error:
+                    self.bmc.activate_firmware(slot_id)
                 else:
                     raise ValueError("Node reported crc32 check failure")
             else:
@@ -107,11 +109,11 @@ class Target:
 
         try:
             # Image type is an int
-            slots = [x for x in fw_info[:-1] if
+            slots = [x for x in fw_info if
                     int(x.type.split()[0]) == int(image.type)]
         except ValueError:
             # Image type is a string
-            slots = [x for x in fw_info[:-1] if
+            slots = [x for x in fw_info if
                     x.type.split()[1][1:-1] == image.type.upper()]
 
         # Select slots

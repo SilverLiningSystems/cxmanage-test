@@ -18,15 +18,18 @@ class Image:
         self.skip_simg = skip_simg
         self.skip_crc32 = skip_crc32
 
-    def upload(self, work_dir, tftp):
+    def upload(self, work_dir, tftp, slot):
         # Create image
         version = self.version
         daddr = self.daddr
         filename = self.filename
+
         if self.force_simg or not (self.skip_simg or verify_simg(filename)):
-            filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
-            create_simg(self.filename, filename, version=version,
+            contents = open(filename).read()
+            simg = create_simg(contents, version=version,
                     daddr=daddr, skip_crc32=self.skip_crc32)
+            filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
+            open(filename, "w").write(simg)
 
         # Upload to tftp
         basename = os.path.basename(filename)
