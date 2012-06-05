@@ -136,7 +136,7 @@ class Tftp:
         except:
             raise ValueError("Failed to download file from TFTP server")
 
-    def put_file(self, tftppath, localpath):
+    def put_file(self, localpath, tftppath):
         """ Upload a file to the tftp server """
         try:
             if self._isinternal:

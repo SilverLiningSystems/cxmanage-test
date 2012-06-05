@@ -41,42 +41,20 @@ class Target:
         except IpmiError:
             raise ValueError("Failed to retrieve power status")
 
-    def update_firmware(self, tftp, image_type,
-            filename, slot_arg, skip_reset=False):
+    def update_firmware(self, work_dir, tftp, image, slot_arg):
         """ Update firmware on this target. """
         tftp_address = self._get_tftp_address(tftp)
 
         # Get all available slots
-        results = self.bmc.get_firmware_info()[:-1]
-        if not results:
-            raise ValueError("Failed to retrieve firmware info")
-        try:
-            # Image type is an int
-            slots = [x.slot for x in results[:-1] if
-                    int(x.type.split()[0]) == int(image_type)]
-        except ValueError:
-            # Image type is a string
-            slots = [x.slot for x in results[:-1] if
-                    x.type.split()[1][1:-1] == image_type.upper()]
-
-        # Select slots
-        if slot_arg == "PRIMARY":
-            if len(slots) < 1:
-                raise ValueError("No primary slot found on host")
-            slots = slots[:1]
-        elif slot_arg == "SECONDARY":
-            if len(slots) < 2:
-                raise ValueError("No secondary slot found on host")
-            slots = slots[1:2]
-        elif slot_arg == "ALL":
-            pass
-        else:
-            raise ValueError("Invalid slot argument")
+        slots = self._get_slots(image, slot_arg)
 
         for slot in slots:
+            # Upload image to tftp server
+            filename = image.upload(work_dir, tftp)
+
             # Send firmware update command
             result = self.bmc.update_firmware(filename,
-                    slot, image_type, tftp_address)
+                    slot.slot, image.type, tftp_address)
             handle = result.tftp_handle_id
 
             # Wait for update to finish
@@ -95,9 +73,6 @@ class Target:
                     raise ValueError("Node reported crc32 check failure")
             else:
                 raise ValueError("Node reported transfer failure")
-
-        if image_type == "SOC_ELF" and not skip_reset:
-            self.mc_reset()
 
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """
@@ -123,3 +98,34 @@ class Target:
 
         # Return in address:port form
         return "%s:%i" % (address, port)
+
+    def _get_slots(self, image, slot_arg):
+        """ Get a list of slots to update to """
+        fw_info = self.bmc.get_firmware_info()[:-1]
+        if not fw_info:
+            raise ValueError("Failed to retrieve firmware info")
+
+        try:
+            # Image type is an int
+            slots = [x for x in fw_info[:-1] if
+                    int(x.type.split()[0]) == int(image.type)]
+        except ValueError:
+            # Image type is a string
+            slots = [x for x in fw_info[:-1] if
+                    x.type.split()[1][1:-1] == image.type.upper()]
+
+        # Select slots
+        if slot_arg == "PRIMARY":
+            if len(slots) < 1:
+                raise ValueError("No primary slot found on host")
+            slots = slots[:1]
+        elif slot_arg == "SECONDARY":
+            if len(slots) < 2:
+                raise ValueError("No secondary slot found on host")
+            slots = slots[1:2]
+        elif slot_arg == "ALL":
+            pass
+        else:
+            raise ValueError("Invalid slot argument")
+
+        return slots

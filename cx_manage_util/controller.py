@@ -3,7 +3,6 @@ In this case, the controller understands the model's container structure
 and the objects it contains: tftp, images, targets and plans. """
 
 import atexit
-import os
 import shutil
 import tempfile
 import time
@@ -11,7 +10,6 @@ import time
 from cx_manage_util.image import Image
 from cx_manage_util.target import Target
 from cx_manage_util.tftp import Tftp
-from cx_manage_util.simg import create_simg, verify_simg
 
 class Controller:
     """ The controller class serves as a manager for all the internals of
@@ -39,45 +37,20 @@ class Controller:
         """ Set up a remote TFTP server """
         self.tftp.set_external_server(address, port)
 
-    def restart_tftp_server(self):
-        """ Restart the TFTP server """
-        self.tftp.restart_server()
-
-    def get_tftp_address(self):
-        """ Return the address of the external TFTP server """
-        return self.tftp.get_address()
-
-    def get_tftp_port(self):
-        """ Return the port used by the internal TFTP server"""
-        return self.tftp.get_port()
-
-    def tftp_get(self, tftppath, localpath):
-        """ Download a file from the TFTP server """
-        self.tftp.get_file(tftppath, localpath)
-
-    def tftp_put(self, tftppath, localpath):
-        """ Upload a file to the TFTP server """
-        self.tftp.put_file(tftppath, localpath)
-
 ###########################  Images-specific methods ##########################
 
     def add_image(self,
                   image_type,
                   filename,
+                  version=None,
+                  daddr=None,
                   force_simg=False,
                   skip_simg=False,
-                  version=0,
-                  daddr=0,
                   skip_crc32=False):
         """ Add an image to our collection """
-        if force_simg or not (skip_simg or verify_simg(filename)):
-            new_path = self.work_dir + "/" + os.path.basename(filename) + ".simg"
-            create_simg(filename, new_path, version=version,
-                    daddr=daddr, skip_crc32=skip_crc32)
-        else:
-            new_path = filename
-
-        self.images.append(Image(image_type, new_path))
+        image = Image(image_type, filename, version, daddr,
+                force_simg, skip_simg, skip_crc32)
+        self.images.append(image)
 
 ###########################  Targets-specific methods #########################
 
@@ -124,7 +97,7 @@ class Controller:
         # TODO: don't sleep on failure.
         time.sleep(1) # must delay before retrieving file
         ip_info_path = self.work_dir + "/ip_info.txt"
-        self.tftp_get("ip_info.txt", ip_info_path)
+        tftp.get_file("ip_info.txt", ip_info_path)
 
         # Parse addresses from ip_info file
         addresses = []
@@ -186,28 +159,23 @@ class Controller:
     def update_firmware(self, slot_arg, skip_reset=False):
         """ Send firmware update commands to all targets in group. """
 
-        # Upload image to TFTP
-        try:
-            # TODO: allow for more than one image
-            image = self.images[0]
-            image_type = image.type
-            full_filename = image.filename
-            filename = os.path.basename(full_filename)
-            self.tftp_put(filename, full_filename)
-        except:
-            # Failed to upload to TFTP
-            print "\nERROR: Failed to upload to TFTP server"
-            print "No hosts were updated."
-            return
-
         # Update firmware on all targets
         successes = []
         errors = []
         for target in self.targets:
             try:
-                target.update_firmware(self.tftp, image_type,
-                        filename, slot_arg, skip_reset)
-                successes.append(target.address)
+                # Update each image
+                reset_flag = False
+                for image in self.images:
+                    if image.type == "SOC_ELF":
+                        reset_flag = True
+                    target.update_firmware(self.work_dir, self.tftp, image, slot_arg)
+                    successes.append(target.address)
+
+                # Reset MC upon completion
+                if reset_flag and not skip_reset:
+                    target.mc_reset()
+
             except Exception as e:
                 errors.append("%s: %s" % (target.address, e))
 
