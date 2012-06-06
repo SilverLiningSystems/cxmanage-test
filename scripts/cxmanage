@@ -107,7 +107,12 @@ def build_parser():
     return parser
 
 def validate_args(args):
+    """ Bail out if the arguments don't make sense"""
     if args.func == fwupdate_command:
+        if args.image_type == "SPIF" and args.skip_simg:
+            sys.exit('Invalid argument --skip_simg with SPIF image type')
+        if args.image_type == "SPIF" and args.force_simg:
+            sys.exit('Invalid argument --force_simg with SPIF image type')
         if args.skip_simg and args.version:
             sys.exit('Invalid argument --version when supplied with --skip-simg')
         if args.skip_simg and args.daddr:

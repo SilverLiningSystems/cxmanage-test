@@ -1,4 +1,4 @@
-#!/bin/env python
+""" Target objects used by the cx_manage_util controller """
 
 import socket, time
 
@@ -74,7 +74,7 @@ class Target:
                     # Verify crc
                     if not self.bmc.check_firmware(slot_id).error:
                         # Activate
-                            self.bmc.activate_firmware(slot_id)
+                        self.bmc.activate_firmware(slot_id)
                     else:
                         raise ValueError("Node reported crc32 check failure")
             else:

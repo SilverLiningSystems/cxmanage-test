@@ -1,4 +1,4 @@
-#!/bin/env python
+""" Image objects used by the cx_manage_util controller """
 
 import os
 import tempfile
@@ -6,7 +6,8 @@ import tempfile
 from cx_manage_util.simg import create_simg, verify_simg
 
 class Image:
-    """ An image consists of an image type and a filename """
+    """ An image consists of an image type, a filename, and any info needed
+    to build an SIMG out of it. """
 
     def __init__(self, image_type, filename, version, daddr,
             force_simg, skip_simg, skip_crc32):
@@ -21,6 +22,7 @@ class Image:
             self.skip_simg = True
 
     def upload(self, work_dir, tftp, slot):
+        """ Create and upload an SIMG file """
         version = self.version
         daddr = self.daddr
         filename = self.filename
