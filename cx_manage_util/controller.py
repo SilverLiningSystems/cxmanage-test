@@ -97,7 +97,7 @@ class Controller:
         # TODO: don't sleep on failure.
         time.sleep(1) # must delay before retrieving file
         ip_info_path = self.work_dir + "/ip_info.txt"
-        tftp.get_file("ip_info.txt", ip_info_path)
+        self.tftp.get_file("ip_info.txt", ip_info_path)
 
         # Parse addresses from ip_info file
         addresses = []
