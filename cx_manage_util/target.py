@@ -55,6 +55,8 @@ class Target:
             # Send firmware update command
             slot_id = int(slot.slot)
             image_type = image.type
+            if image_type == "SPIF":
+                image_type = slot.type.split()[1][1:-1]
             result = self.bmc.update_firmware(filename,
                     slot_id, image_type, tftp_address)
             handle = result.tftp_handle_id
@@ -68,11 +70,13 @@ class Target:
 
             # Activate firmware on completion
             if status == "Complete":
-                # Verify crc
-                if not self.bmc.check_firmware(slot_id).error:
-                    self.bmc.activate_firmware(slot_id)
-                else:
-                    raise ValueError("Node reported crc32 check failure")
+                if image.type != "SPIF":
+                    # Verify crc
+                    if not self.bmc.check_firmware(slot_id).error:
+                        # Activate
+                            self.bmc.activate_firmware(slot_id)
+                    else:
+                        raise ValueError("Node reported crc32 check failure")
             else:
                 raise ValueError("Node reported transfer failure")
 
@@ -103,31 +107,34 @@ class Target:
 
     def _get_slots(self, image, slot_arg):
         """ Get a list of slots to update to """
-        fw_info = self.bmc.get_firmware_info()[:-1]
-        if not fw_info:
+        slots = self.bmc.get_firmware_info()[:-1]
+        if not slots:
             raise ValueError("Failed to retrieve firmware info")
 
-        try:
-            # Image type is an int
-            slots = [x for x in fw_info if
-                    int(x.type.split()[0]) == int(image.type)]
-        except ValueError:
-            # Image type is a string
-            slots = [x for x in fw_info if
-                    x.type.split()[1][1:-1] == image.type.upper()]
-
-        # Select slots
-        if slot_arg == "PRIMARY":
-            if len(slots) < 1:
-                raise ValueError("No primary slot found on host")
+        if image.type == "SPIF":
             slots = slots[:1]
-        elif slot_arg == "SECONDARY":
-            if len(slots) < 2:
-                raise ValueError("No secondary slot found on host")
-            slots = slots[1:2]
-        elif slot_arg == "ALL":
-            pass
         else:
-            raise ValueError("Invalid slot argument")
+            try:
+                # Image type is an int
+                slots = [x for x in slots if
+                        int(x.type.split()[0]) == int(image.type)]
+            except ValueError:
+                # Image type is a string
+                slots = [x for x in slots if
+                        x.type.split()[1][1:-1] == image.type.upper()]
+
+            # Select slots
+            if slot_arg == "PRIMARY":
+                if len(slots) < 1:
+                    raise ValueError("No primary slot found on host")
+                slots = slots[:1]
+            elif slot_arg == "SECONDARY":
+                if len(slots) < 2:
+                    raise ValueError("No secondary slot found on host")
+                slots = slots[1:2]
+            elif slot_arg == "ALL":
+                pass
+            else:
+                raise ValueError("Invalid slot argument")
 
         return slots

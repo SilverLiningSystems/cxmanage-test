@@ -17,13 +17,15 @@ class Image:
         self.force_simg = force_simg
         self.skip_simg = skip_simg
         self.skip_crc32 = skip_crc32
+        if image_type == "SPIF" and not force_simg:
+            self.skip_simg = True
 
     def upload(self, work_dir, tftp, slot):
-        # Create image
         version = self.version
         daddr = self.daddr
         filename = self.filename
 
+        # Create new image if necessary
         if self.force_simg or not (self.skip_simg or verify_simg(filename)):
             contents = open(filename).read()
             simg = create_simg(contents, version=version,

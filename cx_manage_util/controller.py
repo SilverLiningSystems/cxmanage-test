@@ -167,7 +167,7 @@ class Controller:
                 # Update each image
                 reset_flag = False
                 for image in self.images:
-                    if image.type == "SOC_ELF":
+                    if image.type in ["SOC_ELF", "SPIF"]:
                         reset_flag = True
                     target.update_firmware(self.work_dir, self.tftp, image, slot_arg)
                     successes.append(target.address)
