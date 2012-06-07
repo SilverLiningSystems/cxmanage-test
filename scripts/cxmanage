@@ -95,9 +95,9 @@ def build_parser():
     simg_args.add_argument('--skip-simg', help='Skip addition of SIMG header',
                             default=False, action='store_true')
     fwupdate.add_argument('-v', '--version', help='Version for SIMG header',
-                            default=0, type=int)
+                            default=None, type=int)
     fwupdate.add_argument('-d', '--daddr', help='Destination address for SIMG',
-                            default=0, type=lambda x : int(x, 16))
+                            default=None, type=lambda x : int(x, 16))
     fwupdate.add_argument('--skip-crc32', help='Skip crc32 calculation for SIMG',
                             default=False, action='store_true')
     fwupdate.set_defaults(func=fwupdate_command)

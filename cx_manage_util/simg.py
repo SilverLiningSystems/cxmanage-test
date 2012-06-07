@@ -39,9 +39,8 @@ def create_simg(contents, version=0, daddr=0, skip_crc32=False):
 
     return string + contents
 
-def display_simg(infile_path):
+def display_simg(header):
     """Display the SIMG header of a file"""
-    header = open(infile_path).read(28)
     tup = struct.unpack('<4sHHIIIII', header)
     print('magic:       %s' % tup[0])
     print('hdrfmt:      %d' % tup[1])
@@ -52,14 +51,13 @@ def display_simg(infile_path):
     print('flags:       0x%08x' % tup[6])
     print('crc32:       0x%08x' % tup[7])
 
-def verify_simg(infile_path):
+def verify_simg(simg):
     """Return true if infile has an SIMG header"""
     # Bail early if the file is too small
-    file_size = os.path.getsize(infile_path)
-    if file_size < 28:
+    if len(simg) < 28:
         return False
 
-    header = open(infile_path).read(28)
+    header = simg[:28]
     tup = struct.unpack('<4sHHIIIII', header)
 
     # Magic word

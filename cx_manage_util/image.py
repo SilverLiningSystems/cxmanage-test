@@ -21,19 +21,26 @@ class Image:
 
     def upload(self, work_dir, tftp, slot):
         """ Create and upload an SIMG file """
-        version = self.version
-        daddr = self.daddr
         filename = self.filename
 
         # Create new image if necessary
+        contents = open(filename).read()
         if self.type == "SPIF":
-            contents = open(filename).read()
             start = int(slot.offset, 16)
             end = start + int(slot.size, 16)
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(contents[start:end])
-        elif self.force_simg or not (self.skip_simg or verify_simg(filename)):
-            contents = open(filename).read()
+        elif self.force_simg or not (self.skip_simg or verify_simg(contents)):
+            # Figure out version and daddr
+            version = self.version
+            daddr = self.daddr
+            if version == None:
+                # TODO: handle version properly
+                version = int(slot.version, 16)
+            if daddr == None:
+                daddr = int(slot.daddr, 16)
+
+            # Create simg
             simg = create_simg(contents, version=version,
                     daddr=daddr, skip_crc32=self.skip_crc32)
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
