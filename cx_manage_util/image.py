@@ -18,8 +18,6 @@ class Image:
         self.force_simg = force_simg
         self.skip_simg = skip_simg
         self.skip_crc32 = skip_crc32
-        if image_type == "SPIF" and not force_simg:
-            self.skip_simg = True
 
     def upload(self, work_dir, tftp, slot):
         """ Create and upload an SIMG file """
@@ -28,7 +26,13 @@ class Image:
         filename = self.filename
 
         # Create new image if necessary
-        if self.force_simg or not (self.skip_simg or verify_simg(filename)):
+        if self.type == "SPIF":
+            contents = open(filename).read()
+            start = int(slot.offset, 16)
+            end = start + int(slot.size, 16)
+            filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
+            open(filename, "w").write(contents[start:end])
+        elif self.force_simg or not (self.skip_simg or verify_simg(filename)):
             contents = open(filename).read()
             simg = create_simg(contents, version=version,
                     daddr=daddr, skip_crc32=self.skip_crc32)

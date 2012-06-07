@@ -111,9 +111,7 @@ class Target:
         if not slots:
             raise ValueError("Failed to retrieve firmware info")
 
-        if image.type == "SPIF":
-            slots = slots[:1]
-        else:
+        if image.type != "SPIF":
             try:
                 # Image type is an int
                 slots = [x for x in slots if
