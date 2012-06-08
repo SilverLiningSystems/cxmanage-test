@@ -41,16 +41,15 @@ class Target:
         except IpmiError:
             raise ValueError("Failed to retrieve power status")
 
-    def update_firmware(self, work_dir, tftp, image, slot_arg):
+    def update_firmware(self, work_dir, tftp, images, slot_arg):
         """ Update firmware on this target. """
         tftp_address = self._get_tftp_address(tftp)
 
-        # Get all available slots
-        slots = self._get_slots(image, slot_arg)
-
-        for slot in slots:
+        # Get all updates
+        plan = self._get_update_plan(images, slot_arg)
+        for image, slot, new_version in plan:
             # Upload image to tftp server
-            filename = image.upload(work_dir, tftp, slot)
+            filename = image.upload(work_dir, tftp, slot, new_version)
 
             # Send firmware update command
             slot_id = int(slot.slot)
@@ -108,34 +107,65 @@ class Target:
         # Return in address:port form
         return "%s:%i" % (address, port)
 
-    def _get_slots(self, image, slot_arg):
-        """ Get a list of slots to update to """
+    def _get_update_plan(self, images, slot_arg):
+        """ Get an update plan
+        
+        A plan consists of a list of tuples:
+        (image, slot, version) """
+        plan = []
+
+        # Get all slots
         slots = self.bmc.get_firmware_info()[:-1]
         if not slots:
             raise ValueError("Failed to retrieve firmware info")
 
-        if image.type != "SPIF":
-            try:
-                # Image type is an int
-                slots = [x for x in slots if
-                        int(x.type.split()[0]) == int(image.type)]
-            except ValueError:
-                # Image type is a string
-                slots = [x for x in slots if
-                        x.type.split()[1][1:-1] == image.type.upper()]
-
-            # Select slots
-            if slot_arg == "PRIMARY":
-                if len(slots) < 1:
-                    raise ValueError("No primary slot found on host")
-                slots = slots[:1]
-            elif slot_arg == "SECONDARY":
-                if len(slots) < 2:
-                    raise ValueError("No secondary slot found on host")
-                slots = slots[1:2]
-            elif slot_arg == "ALL":
-                pass
+        soc_plan_made = False
+        cdb_plan_made = False
+        for image in images:        
+            if image.type == "SPIF":
+                # Add all slots
+                for slot in slots:
+                    plan.append((image, slot, 0))
+            elif soc_plan_made and image.type == "CDB":
+                for update in plan:
+                    if update[0].type == "SOC_ELF":
+                        plan.append((image, update[1].slot + 1, update[2]))
+            elif cdb_plan_made and image.type == "SOC_ELF":
+                for update in plan:
+                    if update[0].type == "CDB":
+                        plan.append((image, update[1].slot - 1, update[2]))
             else:
-                raise ValueError("Invalid slot argument")
+                # Filter slots for this type
+                type_slots = [x for x in slots if
+                        x.type.split()[1][1:-1] == image.type][:2]
 
-        return slots
+                # Sort slots by version
+                sorted_slots = sorted(type_slots, key=lambda x: x.version)
+                new_version = int(sorted_slots[-1].version, 16) + 1
+
+                if len(type_slots) < 1:
+                    raise ValueError("No slots found on host")
+                elif len(type_slots) < 2 or slot_arg == "FIRST":
+                    plan.append((image, type_slots[0], new_version))
+                elif slot_arg == "SECOND":
+                    plan.append((image, type_slots[1], new_version))
+                elif slot_arg == "BOTH":
+                    plan.append((image, type_slots[0], new_version))
+                    plan.append((image, type_slots[1], new_version))
+                elif slot_arg == "OLDEST":
+                    # Choose second slot if both are the same version
+                    if type_slots[0].version == type_slots[1].version:
+                        plan.append((image, type_slots[1], new_version))
+                    else:
+                        plan.append((image, sorted_slots[0], new_version))
+                elif slot_arg == "NEWEST":
+                    plan.append((image, sorted_slots[1], new_version))
+                else:
+                    raise ValueError("Invalid slot argument")
+
+                if image.type == "SOC_ELF":
+                    soc_plan_made = True
+                elif image.type == "CDB_ELF":
+                    cdb_plan_made = True
+
+        return plan

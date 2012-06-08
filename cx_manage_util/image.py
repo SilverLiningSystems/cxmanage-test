@@ -19,7 +19,7 @@ class Image:
         self.skip_simg = skip_simg
         self.skip_crc32 = skip_crc32
 
-    def upload(self, work_dir, tftp, slot):
+    def upload(self, work_dir, tftp, slot, new_version):
         """ Create and upload an SIMG file """
         filename = self.filename
 
@@ -35,8 +35,7 @@ class Image:
             version = self.version
             daddr = self.daddr
             if version == None:
-                # TODO: handle version properly
-                version = int(slot.version, 16)
+                version = new_version
             if daddr == None:
                 daddr = int(slot.daddr, 16)
 

@@ -164,16 +164,15 @@ class Controller:
         errors = []
         for target in self.targets:
             try:
-                # Update each image
-                reset_flag = False
-                for image in self.images:
-                    if image.type in ["SOC_ELF", "SPIF"]:
-                        reset_flag = True
-                    target.update_firmware(self.work_dir, self.tftp, image, slot_arg)
-                    successes.append(target.address)
+                target.update_firmware(self.work_dir, self.tftp, self.images, slot_arg)
+                successes.append(target.address)
 
                 # Reset MC upon completion
-                if reset_flag and not skip_reset:
+                should_reset = False
+                for image in self.images:
+                    if image.type in ["SOC_ELF", "SPIF"]:
+                        should_reset = True
+                if should_reset and not skip_reset:
                     target.mc_reset()
 
             except Exception as e:
