@@ -61,6 +61,9 @@ class Target:
                     slot_id, image_type, tftp_address)
             handle = result.tftp_handle_id
 
+            if image_type == "CDB":
+                time.sleep(9)
+
             # Wait for update to finish
             time.sleep(1)
             status = self.bmc.get_firmware_status(handle).status
