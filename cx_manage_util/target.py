@@ -95,11 +95,13 @@ class Target:
             elif soc_plan_made and image.type == "CDB":
                 for update in plan:
                     if update[0].type == "SOC_ELF":
-                        plan.append((image, update[1].slot + 1, update[2]))
+                        slot = slots[int(update[1].slot) + 1]
+                        plan.append((image, slot, update[2]))
             elif cdb_plan_made and image.type == "SOC_ELF":
                 for update in plan:
                     if update[0].type == "CDB":
-                        plan.append((image, update[1].slot - 1, update[2]))
+                        slot = slots[int(update[1].slot) - 1]
+                        plan.append((image, slot, update[2]))
             else:
                 # Filter slots for this type
                 type_slots = [x for x in slots if

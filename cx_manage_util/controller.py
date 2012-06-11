@@ -58,17 +58,37 @@ class Controller:
 
             # Add all images from package
             for section in config.sections():
-                image_type = config.get(section, "type").upper()
                 filename = self.work_dir + "/" + section
-                version = 0
-                if config.has_option(section, "version"):
-                    version = config.getint(section, "version")
-                daddr = 0
-                if config.has_option(section, "daddr"):
-                    daddr = int(config.get(section, "daddr"), 16)
-                print image_type, filename, version, daddr
-                image = Image(image_type, filename, version, daddr,
-                        force_simg, skip_simg, skip_crc32)
+                image_type = config.get(section, "type").upper()
+
+                # Version
+                if version == None and config.has_option(section, "version"):
+                    image_version = config.getint(section, "version")
+                else:
+                    image_version = version
+                # Daddr
+                if daddr == None and config.has_option(section, "daddr"):
+                    image_daddr = int(config.get(section, "daddr"), 16)
+                else:
+                    image_daddr = daddr
+                # Force simg
+                if force_simg == False and config.has_option(section, "force_simg"):
+                    image_force_simg = config.getboolean(section, "force_simg")
+                else:
+                    image_force_simg = force_simg
+                # Skip simg
+                if skip_simg == False and config.has_option(section, "skip_simg"):
+                    image_skip_simg = config.getboolean(section, "skip_simg")
+                else:
+                    image_skip_simg = skip_simg
+                # Skip crc32
+                if skip_crc32 == False and config.has_option(section, "skip_crc32"):
+                    image_skip_crc32 = config.getboolean(section, "skip_crc32")
+                else:
+                    image_skip_crc32 = skip_crc32
+
+                image = Image(image_type, filename, image_version, image_daddr,
+                        image_force_simg, image_skip_simg, image_skip_crc32)
                 self.images.append(image)
 
         else:
