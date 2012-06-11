@@ -83,7 +83,7 @@ class Target:
         plan = []
 
         # Get all slots
-        slots = self.bmc.get_firmware_info()[:-1]
+        slots = [x for x in self.bmc.get_firmware_info() if hasattr(x, "slot")]
         if not slots:
             raise ValueError("Failed to retrieve firmware info")
 
