@@ -6,6 +6,8 @@ import atexit
 import shutil
 import tempfile
 import time
+import ConfigParser
+import tarfile
 
 from cx_manage_util.image import Image
 from cx_manage_util.target import Target
@@ -48,9 +50,31 @@ class Controller:
                   skip_simg=False,
                   skip_crc32=False):
         """ Add an image to our collection """
-        image = Image(image_type, filename, version, daddr,
-                force_simg, skip_simg, skip_crc32)
-        self.images.append(image)
+        if image_type == "PACKAGE":
+            # Extract files and read config
+            tarfile.open(filename, "r").extractall(self.work_dir)
+            config = ConfigParser.SafeConfigParser()
+            config.read(self.work_dir + "/MANIFEST")
+
+            # Add all images from package
+            for section in config.sections():
+                image_type = config.get(section, "type").upper()
+                filename = self.work_dir + "/" + section
+                version = 0
+                if config.has_option(section, "version"):
+                    version = config.getint(section, "version")
+                daddr = 0
+                if config.has_option(section, "daddr"):
+                    daddr = int(config.get(section, "daddr"), 16)
+                print image_type, filename, version, daddr
+                image = Image(image_type, filename, version, daddr,
+                        force_simg, skip_simg, skip_crc32)
+                self.images.append(image)
+
+        else:
+            image = Image(image_type, filename, version, daddr,
+                    force_simg, skip_simg, skip_crc32)
+            self.images.append(image)
 
 ###########################  Targets-specific methods #########################
 

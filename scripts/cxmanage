@@ -74,7 +74,8 @@ def build_parser():
                             'BOOT_LOG',
                             'UEFI_ENV',
                             'DIAG_ELF',
-                            'SPIF'
+                            'SPIF',
+                            'PACKAGE'
                         ]))
             )
     fwupdate.add_argument('filename', help='path to file to upload')
