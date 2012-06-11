@@ -43,44 +43,10 @@ class Target:
 
     def update_firmware(self, work_dir, tftp, images, slot_arg):
         """ Update firmware on this target. """
-        tftp_address = self._get_tftp_address(tftp)
-
         # Get all updates
         plan = self._get_update_plan(images, slot_arg)
         for image, slot, new_version in plan:
-            # Upload image to tftp server
-            filename = image.upload(work_dir, tftp, slot, new_version)
-
-            # Send firmware update command
-            slot_id = int(slot.slot)
-            image_type = image.type
-            if image_type == "SPIF":
-                image_type = slot.type.split()[1][1:-1]
-            result = self.bmc.update_firmware(filename,
-                    slot_id, image_type, tftp_address)
-            handle = result.tftp_handle_id
-
-            if image_type == "CDB":
-                time.sleep(9)
-
-            # Wait for update to finish
-            time.sleep(1)
-            status = self.bmc.get_firmware_status(handle).status
-            while status == "In progress":
-                time.sleep(1)
-                status = self.bmc.get_firmware_status(handle).status
-
-            # Activate firmware on completion
-            if status == "Complete":
-                if image.type != "SPIF":
-                    # Verify crc
-                    if not self.bmc.check_firmware(slot_id).error:
-                        # Activate
-                        self.bmc.activate_firmware(slot_id)
-                    else:
-                        raise ValueError("Node reported crc32 check failure")
-            else:
-                raise ValueError("Node reported transfer failure")
+            self._update_image(work_dir, tftp, image, slot, new_version)
 
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """
@@ -108,7 +74,7 @@ class Target:
         return "%s:%i" % (address, port)
 
     def _get_update_plan(self, images, slot_arg):
-        """ Get an update plan
+        """ Get an update plan.
         
         A plan consists of a list of tuples:
         (image, slot, version) """
@@ -139,9 +105,7 @@ class Target:
                 type_slots = [x for x in slots if
                         x.type.split()[1][1:-1] == image.type][:2]
 
-                # Sort slots by version
-                sorted_slots = sorted(type_slots, key=lambda x: x.version)
-                new_version = int(sorted_slots[-1].version, 16) + 1
+                new_version = max([int(x.version, 16) for x in type_slots]) + 1
 
                 if len(type_slots) < 1:
                     raise ValueError("No slots found on host")
@@ -150,16 +114,26 @@ class Target:
                 elif slot_arg == "SECOND":
                     plan.append((image, type_slots[1], new_version))
                 elif slot_arg == "BOTH":
-                    plan.append((image, type_slots[0], new_version))
-                    plan.append((image, type_slots[1], new_version))
-                elif slot_arg == "OLDEST":
-                    # Choose second slot if both are the same version
-                    if type_slots[0].version == type_slots[1].version:
+                    # Add "oldest" slot first -- in other words, when updating
+                    # both partitions, try to update the inactive one first.
+                    if type_slots[0].version < type_slots[1].version:
+                        plan.append((image, type_slots[0], new_version))
                         plan.append((image, type_slots[1], new_version))
                     else:
-                        plan.append((image, sorted_slots[0], new_version))
+                        plan.append((image, type_slots[1], new_version))
+                        plan.append((image, type_slots[0], new_version))
+                elif slot_arg == "OLDEST":
+                    # Choose second slot if both are the same version
+                    if type_slots[0].version < type_slots[1].version:
+                        plan.append((image, type_slots[0], new_version))
+                    else:
+                        plan.append((image, type_slots[1], new_version))
                 elif slot_arg == "NEWEST":
-                    plan.append((image, sorted_slots[1], new_version))
+                    # Choose first slot if both are the same version
+                    if type_slots[0].version >= type_slots[1].version:
+                        plan.append((image, type_slots[0], new_version))
+                    else:
+                        plan.append((image, type_slots[1], new_version))
                 else:
                     raise ValueError("Invalid slot argument")
 
@@ -169,3 +143,42 @@ class Target:
                     cdb_plan_made = True
 
         return plan
+
+    def _update_image(self, work_dir, tftp, image, slot, new_version):
+        """ Update a single image. This includes uploading the image,
+        performing the firmware update, crc32 check, and activation."""
+        tftp_address = self._get_tftp_address(tftp)
+
+        # Upload image to tftp server
+        filename = image.upload(work_dir, tftp, slot, new_version)
+
+        # Send firmware update command
+        slot_id = int(slot.slot)
+        image_type = image.type
+        if image_type == "SPIF":
+            image_type = slot.type.split()[1][1:-1]
+        result = self.bmc.update_firmware(filename,
+                slot_id, image_type, tftp_address)
+        handle = result.tftp_handle_id
+
+        if image_type == "CDB":
+            time.sleep(9)
+
+        # Wait for update to finish
+        time.sleep(1)
+        status = self.bmc.get_firmware_status(handle).status
+        while status == "In progress":
+            time.sleep(1)
+            status = self.bmc.get_firmware_status(handle).status
+
+        # Activate firmware on completion
+        if status == "Complete":
+            if image.type != "SPIF":
+                # Verify crc
+                if not self.bmc.check_firmware(slot_id).error:
+                    # Activate
+                    self.bmc.activate_firmware(slot_id)
+                else:
+                    raise ValueError("Node reported crc32 check failure")
+        else:
+            raise ValueError("Node reported transfer failure")

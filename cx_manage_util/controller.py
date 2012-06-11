@@ -167,16 +167,17 @@ class Controller:
                 target.update_firmware(self.work_dir, self.tftp, self.images, slot_arg)
                 successes.append(target.address)
 
-                # Reset MC upon completion
-                should_reset = False
-                for image in self.images:
-                    if image.type in ["SOC_ELF", "SPIF"]:
-                        should_reset = True
-                if should_reset and not skip_reset:
-                    target.mc_reset()
-
             except Exception as e:
                 errors.append("%s: %s" % (target.address, e))
+
+        # Reset MC upon completion
+        should_reset = False
+        for image in self.images:
+            if image.type in ["SOC_ELF", "SPIF"]:
+                should_reset = True
+        if should_reset and not skip_reset:
+            for target in self.targets:
+                target.mc_reset()
 
         # Print successful hosts
         if len(successes) > 0:

@@ -51,7 +51,7 @@ def display_simg(header):
     print('flags:       0x%08x' % tup[6])
     print('crc32:       0x%08x' % tup[7])
 
-def verify_simg(simg):
+def has_simg(simg):
     """Return true if infile has an SIMG header"""
     # Bail early if the file is too small
     if len(simg) < 28:
@@ -63,8 +63,6 @@ def verify_simg(simg):
     # Magic word
     if tup[0] != "SIMG":
         return False
-
-    # TODO: consider image offset, length, crc32?
 
     return True
 

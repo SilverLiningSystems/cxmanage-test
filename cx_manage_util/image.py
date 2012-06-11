@@ -3,7 +3,7 @@
 import os
 import tempfile
 
-from cx_manage_util.simg import create_simg, verify_simg
+from cx_manage_util.simg import create_simg, has_simg
 
 class Image:
     """ An image consists of an image type, a filename, and any info needed
@@ -30,7 +30,7 @@ class Image:
             end = start + int(slot.size, 16)
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(contents[start:end])
-        elif self.force_simg or not (self.skip_simg or verify_simg(contents)):
+        elif self.force_simg or not (self.skip_simg or has_simg(contents)):
             # Figure out version and daddr
             version = self.version
             daddr = self.daddr
