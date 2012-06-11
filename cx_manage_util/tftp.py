@@ -1,3 +1,5 @@
+#Copyright 2012 Calxeda, Inc.  All Rights Reserved. 
+
 """ Holds state about the tftp service to be used by a calxeda update
 application. """
 

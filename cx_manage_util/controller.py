@@ -1,3 +1,5 @@
+#Copyright 2012 Calxeda, Inc.  All Rights Reserved. 
+
 """ The controller object mediates between a UI and the application model.
 In this case, the controller understands the model's container structure
 and the objects it contains: tftp, images, targets and plans. """

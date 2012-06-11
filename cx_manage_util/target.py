@@ -1,3 +1,5 @@
+#Copyright 2012 Calxeda, Inc.  All rights reserved.
+
 """ Target objects used by the cx_manage_util controller """
 
 import socket, time

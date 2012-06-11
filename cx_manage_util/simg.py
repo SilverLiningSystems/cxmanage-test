@@ -1,3 +1,5 @@
+#Copyright 2012 Calxeda, Inc.  All rights reserved.
+
 """python for manipulating Calxeda SIMG headers"""
 import struct
 import argparse

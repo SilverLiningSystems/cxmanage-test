@@ -1,3 +1,5 @@
+#Copyright 2012 Calxeda, Inc.  All Rights Reserved. 
+
 """ Image objects used by the cx_manage_util controller """
 
 import os
