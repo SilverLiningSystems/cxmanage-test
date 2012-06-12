@@ -5,6 +5,7 @@ In this case, the controller understands the model's container structure
 and the objects it contains: tftp, images, targets and plans. """
 
 import atexit
+import os
 import shutil
 import tempfile
 import time
@@ -54,7 +55,14 @@ class Controller:
         """ Add an image to our collection """
         if image_type == "PACKAGE":
             # Extract files and read config
-            tarfile.open(filename, "r").extractall(self.work_dir)
+            try:
+                tarfile.open(filename, "r").extractall(self.work_dir)
+            except (IOError, tarfile.ReadError):
+                raise ValueError("%s is not a valid tar.gz package"
+                        % os.path.basename(filename))
+            if not os.path.exists(self.work_dir + "/MANIFEST"):
+                raise ValueError("%s is not a valid firmware package"
+                        % os.path.basename(filename))
             config = ConfigParser.SafeConfigParser()
             config.read(self.work_dir + "/MANIFEST")
 
@@ -206,12 +214,12 @@ class Controller:
         """ Send firmware update commands to all targets in group. """
 
         # Update firmware on all targets
-        successes = []
+        successful_targets = []
         errors = []
         for target in self.targets:
             try:
                 target.update_firmware(self.work_dir, self.tftp, self.images, slot_arg)
-                successes.append(target.address)
+                successful_targets.append(target)
 
             except Exception as e:
                 errors.append("%s: %s" % (target.address, e))
@@ -222,14 +230,14 @@ class Controller:
             if image.type in ["SOC_ELF", "SPIF"]:
                 should_reset = True
         if should_reset and not skip_reset:
-            for target in self.targets:
+            for target in successful_targets:
                 target.mc_reset()
 
         # Print successful hosts
-        if len(successes) > 0:
+        if len(successful_targets) > 0:
             print "\nFirmware updated successfully on the following hosts"
-            for host in successes:
-                print host
+            for target in successful_targets:
+                print target.address
 
         # Print errors
         if len(errors) > 0:
