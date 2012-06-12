@@ -2,7 +2,7 @@
 
 """ The controller object mediates between a UI and the application model.
 In this case, the controller understands the model's container structure
-and the objects it contains: tftp, images, targets and plans. """
+and the objects it contains: tftp, images, and targets. """
 
 import atexit
 import os
@@ -82,17 +82,20 @@ class Controller:
                 else:
                     image_daddr = daddr
                 # Force simg
-                if force_simg == False and config.has_option(section, "force_simg"):
+                if (force_simg == False and
+                        config.has_option(section, "force_simg")):
                     image_force_simg = config.getboolean(section, "force_simg")
                 else:
                     image_force_simg = force_simg
                 # Skip simg
-                if skip_simg == False and config.has_option(section, "skip_simg"):
+                if (skip_simg == False and 
+                        config.has_option(section, "skip_simg")):
                     image_skip_simg = config.getboolean(section, "skip_simg")
                 else:
                     image_skip_simg = skip_simg
                 # Skip crc32
-                if skip_crc32 == False and config.has_option(section, "skip_crc32"):
+                if (skip_crc32 == False and 
+                        config.has_option(section, "skip_crc32")):
                     image_skip_crc32 = config.getboolean(section, "skip_crc32")
                 else:
                     image_skip_crc32 = skip_crc32
@@ -148,7 +151,6 @@ class Controller:
 
         # Retrieve ip_info file
         target.get_fabric_ipinfo(self.tftp, "ip_info.txt")
-        # TODO: don't sleep on failure.
         time.sleep(1) # must delay before retrieving file
         ip_info_path = self.work_dir + "/ip_info.txt"
         self.tftp.get_file("ip_info.txt", ip_info_path)
@@ -182,7 +184,8 @@ class Controller:
 
         # Print successful hosts
         if len(successes) > 0:
-            print "\nPower %s command executed successfully on the following hosts" % command
+            print ("\nPower %s command executed successfully on these hosts"
+                    % command)
             for host in successes:
                 print host
 
@@ -218,7 +221,8 @@ class Controller:
         errors = []
         for target in self.targets:
             try:
-                target.update_firmware(self.work_dir, self.tftp, self.images, slot_arg)
+                target.update_firmware(self.work_dir,
+                        self.tftp, self.images, slot_arg)
                 successful_targets.append(target)
 
             except Exception as e:
@@ -246,7 +250,7 @@ class Controller:
                 print error
 
     def mc_reset(self):
-        """ Send the given power command to all targets """
+        """ Send an MC reset command to all targets """
         successes = []
         errors = []
         for target in self.targets:

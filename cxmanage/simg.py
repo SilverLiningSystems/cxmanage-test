@@ -3,9 +3,8 @@
 """python for manipulating Calxeda SIMG headers"""
 import struct
 import argparse
-import os
 
-from crc32 import get_crc32
+from cxmanage.crc32 import get_crc32
 
 def create_simg(contents, version=0, daddr=0, skip_crc32=False):
     """Create an SIMG version of a file
