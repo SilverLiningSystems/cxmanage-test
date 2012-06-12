@@ -229,6 +229,8 @@ class Controller:
                 errors.append("%s: %s" % (target.address, e))
 
         # Reset MC upon completion
+        # TODO: re-enable this once we know multi-node fabric can handle it
+        """
         should_reset = False
         for image in self.images:
             if image.type in ["SOC_ELF", "SPIF"]:
@@ -236,6 +238,7 @@ class Controller:
         if should_reset and not skip_reset:
             for target in successful_targets:
                 target.mc_reset()
+        """
 
         # Print successful hosts
         if len(successful_targets) > 0:
