@@ -76,9 +76,19 @@ class Image:
 
         file_type = subprocess.check_output(["file", self.filename]).split()[1]
 
-        if self.type == "SOC_ELF" and file_type == "ELF":
-            return True
-        elif file_type == "data":
-            return True
+        if self.type == "SOC_ELF":
+            return file_type == "ELF"
+        elif self.type == "CDB":
+            if file_type != "data":
+                return False
+
+            # Look for "CDBH"
+            contents = open(self.filename).read()
+            if self.has_simg:
+                return contents[28:32] == "CDBH"
+            else:
+                return contents[:4] == "CDBH"
+        else:
+            return file_type == "data"
 
         return False
