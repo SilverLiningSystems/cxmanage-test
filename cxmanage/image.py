@@ -3,6 +3,7 @@
 """ Image objects used by the cx_manage_util controller """
 
 import os
+import subprocess
 import tempfile
 
 from cxmanage.simg import create_simg, has_simg
@@ -17,9 +18,19 @@ class Image:
         self.filename = filename
         self.version = version
         self.daddr = daddr
-        self.force_simg = force_simg
-        self.skip_simg = skip_simg
         self.skip_crc32 = skip_crc32
+
+        if force_simg:
+            self.has_simg = False
+        elif skip_simg:
+            self.has_simg = True
+        else:
+            contents = open(filename).read()
+            self.has_simg = has_simg(contents)
+
+        if not self.valid_type():
+            raise ValueError("%s is not a valid %s image" % 
+                    (os.path.basename(filename), image_type))
 
     def upload(self, work_dir, tftp, slot, new_version):
         """ Create and upload an SIMG file """
@@ -32,7 +43,7 @@ class Image:
             end = start + int(slot.size, 16)
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(contents[start:end])
-        elif self.force_simg or not (self.skip_simg or has_simg(contents)):
+        elif not self.has_simg:
             # Figure out version and daddr
             version = self.version
             daddr = self.daddr
@@ -47,7 +58,28 @@ class Image:
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(simg)
 
+        # Verify image size
+        if os.path.getsize(filename) > int(slot.size, 16):
+            raise ValueError("%s is too large for slot %i" %
+                    (os.path.basename(self.filename), int(slot.slot, 16)))
+
         # Upload to tftp
         basename = os.path.basename(filename)
         tftp.put_file(filename, basename)
         return basename
+
+    def valid_type(self):
+        """ Make sure the file type (reported by the "file" tool) is valid
+        for this image type.
+        
+        Returns true/false """
+
+        file_type = subprocess.check_output(["file", self.filename]).split()[1]
+        print file_type
+
+        if self.type == "SOC_ELF" and file_type != "ELF":
+            return False
+        elif file_type != "data":
+            return False
+
+        return True
