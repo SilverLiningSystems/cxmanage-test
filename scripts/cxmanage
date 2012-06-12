@@ -7,7 +7,7 @@ import argparse
 import os
 import sys
 
-from cx_manage_util.controller import Controller
+from cxmanage.controller import Controller
 
 def build_parser():
     """setup the argparse parser"""

@@ -5,7 +5,7 @@
 import os
 import tempfile
 
-from cx_manage_util.simg import create_simg, has_simg
+from cxmanage.simg import create_simg, has_simg
 
 class Image:
     """ An image consists of an image type, a filename, and any info needed

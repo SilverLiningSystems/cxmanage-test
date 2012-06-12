@@ -11,13 +11,13 @@ import time
 import ConfigParser
 import tarfile
 
-from cx_manage_util.image import Image
-from cx_manage_util.target import Target
-from cx_manage_util.tftp import Tftp
+from cxmanage.image import Image
+from cxmanage.target import Target
+from cxmanage.tftp import Tftp
 
 class Controller:
     """ The controller class serves as a manager for all the internals of
-    cx_manage_util. Scripts or UIs can build on top of this to provide an user
+    cxmanage. Scripts or UIs can build on top of this to provide an user
     interface. """
 
     def __init__(self):
