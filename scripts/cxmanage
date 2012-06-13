@@ -221,10 +221,7 @@ def fwupdate_command(controller, args):
 
 def ecc_command(controller, args):
     """enable or disable ECC on a cluster or host"""
-    if args.ecc_mode == "on":
-        controller.ecc_enable()
-    else:
-        controller.ecc_disable()
+    controller.set_ecc(args.ecc_mode)
 
     return 0
 

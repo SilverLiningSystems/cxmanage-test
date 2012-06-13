@@ -38,7 +38,7 @@ class Target:
         try:
             self.bmc.set_chassis_policy(state)
         except IpmiError:
-            raise ValueError("Failed to set power policy to %s" % state)
+            raise ValueError("Failed to set power policy to \"%s\"" % state)
 
     def power_status(self):
         """ Return power status reported by IPMI """
@@ -50,13 +50,6 @@ class Target:
         except IpmiError:
             raise ValueError("Failed to retrieve power status")
 
-    def update_firmware(self, work_dir, tftp, images, slot_arg):
-        """ Update firmware on this target. """
-        # Get all updates
-        plan = self._get_update_plan(images, slot_arg)
-        for image, slot, new_version in plan:
-            self._update_image(work_dir, tftp, image, slot, new_version)
-
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """
         try:
@@ -64,25 +57,31 @@ class Target:
         except IpmiError:
             raise ValueError("Failed to send MC reset command")
 
-    def ecc_enable(self):
+    def update_firmware(self, work_dir, tftp, images, slot_arg):
+        """ Update firmware on this target. """
+        # Get all updates
+        plan = self._get_update_plan(images, slot_arg)
+        for image, slot, new_version in plan:
+            self._update_image(work_dir, tftp, image, slot, new_version)
+
+    def set_ecc(self, mode):
         """ Enable ECC on this target """
         try:
-            self.bmc.cdb_write(4, "02000002", "01000000")
-            result = self.bmc.cdb_read(4, "02000002")
-            if not hasattr(result, "value") or result.value != "01000000":
-                raise ValueError("Failed to enable ECC")
-        except IpmiError:
-            raise ValueError("Failed to enable ECC")
+            # Get value
+            if mode == "on":
+                value = "01000000"
+            elif mode == "off":
+                value = "00000000"
+            else:
+                raise ValueError("\"%s\" is not a valid ECC mode" % mode)
 
-    def ecc_disable(self):
-        """ Disable ECC on this target """
-        try:
-            self.bmc.cdb_write(4, "02000002", "00000000")
+            # Write to CDB and verify
+            self.bmc.cdb_write(4, "02000002", value)
             result = self.bmc.cdb_read(4, "02000002")
-            if not hasattr(result, "value") or result.value != "00000000":
-                raise ValueError("Failed to disable ECC")
+            if not hasattr(result, "value") or result.value != value:
+                raise ValueError("Failed to set ECC to \"%s\"" % mode)
         except IpmiError:
-            raise ValueError("Failed to disable ECC")
+            raise ValueError("Failed to set ECC to \"%s\"" % mode)
 
     def _get_tftp_address(self, tftp):
         """ Get the TFTP server address

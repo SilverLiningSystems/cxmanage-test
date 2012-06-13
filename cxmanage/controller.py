@@ -208,7 +208,8 @@ class Controller:
 
         # Print successful hosts
         if len(successes) > 0:
-            print "\nPower policy set to %s for the following hosts:" % state
+            print ("\nPower policy set to \"%s\" for the following hosts:"
+                    % state)
             for host in successes:
                 print host
 
@@ -235,6 +236,21 @@ class Controller:
                 print result
         else:
             print "\nERROR: Failed to retrieve power status info"
+
+    def mc_reset(self):
+        """ Send an MC reset command to all targets """
+        errors = []
+        for target in self.targets:
+            try:
+                target.mc_reset()
+            except Exception as e:
+                errors.append("%s: %s" % (target.address, e))
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured"
+            for error in errors:
+                print error
 
     def update_firmware(self, slot_arg, skip_reset=False):
         """ Send firmware update commands to all targets in group. """
@@ -275,58 +291,20 @@ class Controller:
             for error in errors:
                 print error
 
-    def mc_reset(self):
-        """ Send an MC reset command to all targets """
-        errors = []
-        for target in self.targets:
-            try:
-                target.mc_reset()
-            except Exception as e:
-                errors.append("%s: %s" % (target.address, e))
-
-        # Print errors
-        if len(errors) > 0:
-            print "\nThe following errors occured"
-            for error in errors:
-                print error
-
-    def ecc_enable(self):
-        """ Enable ECC on all targets """
+    def set_ecc(self, mode):
+        """ Enable or disable ECC on all targets """
         successes = []
         errors = []
         for target in self.targets:
             try:
-                target.ecc_enable()
+                target.set_ecc(mode)
                 successes.append(target.address)
             except Exception as e:
                 errors.append("%s: %s" % (target.address, e))
 
         # Print successful hosts
         if len(successes) > 0:
-            print "\nECC enabled successfully on the following hosts:"
-            for host in successes:
-                print host
-
-        # Print errors
-        if len(errors) > 0:
-            print "\nThe following errors occured"
-            for error in errors:
-                print error
-
-    def ecc_disable(self):
-        """ Disable ECC on all targets """
-        successes = []
-        errors = []
-        for target in self.targets:
-            try:
-                target.ecc_disable()
-                successes.append(target.address)
-            except Exception as e:
-                errors.append("%s: %s" % (target.address, e))
-
-        # Print successful hosts
-        if len(successes) > 0:
-            print "\nECC disabled successfully on the following hosts:"
+            print "\nECC set to \"%s\" for the following hosts:" % mode
             for host in successes:
                 print host
 
