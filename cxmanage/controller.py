@@ -184,7 +184,7 @@ class Controller:
 
         # Print successful hosts
         if len(successes) > 0:
-            print ("\nPower %s command executed successfully on these hosts"
+            print ("\nPower %s command executed successfully on the following hosts:"
                     % command)
             for host in successes:
                 print host
@@ -242,7 +242,7 @@ class Controller:
 
         # Print successful hosts
         if len(successful_targets) > 0:
-            print "\nFirmware updated successfully on the following hosts"
+            print "\nFirmware updated successfully on the following hosts:"
             for target in successful_targets:
                 print target.address
 
@@ -254,14 +254,58 @@ class Controller:
 
     def mc_reset(self):
         """ Send an MC reset command to all targets """
-        successes = []
         errors = []
         for target in self.targets:
             try:
                 target.mc_reset()
+            except Exception as e:
+                errors.append("%s: %s" % (target.address, e))
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured"
+            for error in errors:
+                print error
+
+    def ecc_enable(self):
+        """ Enable ECC on all targets """
+        successes = []
+        errors = []
+        for target in self.targets:
+            try:
+                target.ecc_enable()
                 successes.append(target.address)
             except Exception as e:
                 errors.append("%s: %s" % (target.address, e))
+
+        # Print successful hosts
+        if len(successes) > 0:
+            print "\nECC enabled successfully on the following hosts:"
+            for host in successes:
+                print host
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured"
+            for error in errors:
+                print error
+
+    def ecc_disable(self):
+        """ Disable ECC on all targets """
+        successes = []
+        errors = []
+        for target in self.targets:
+            try:
+                target.ecc_disable()
+                successes.append(target.address)
+            except Exception as e:
+                errors.append("%s: %s" % (target.address, e))
+
+        # Print successful hosts
+        if len(successes) > 0:
+            print "\nECC disabled successfully on the following hosts:"
+            for host in successes:
+                print host
 
         # Print errors
         if len(errors) > 0:

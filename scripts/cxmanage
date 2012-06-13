@@ -108,6 +108,18 @@ def build_parser():
                             default=False, action='store_true')
     fwupdate.set_defaults(func=fwupdate_command)
 
+    #ecc command
+    ecc = subparsers.add_parser('ecc', help='enable or disable ECC')
+    ecc_subs = ecc.add_subparsers()
+
+    ecc_on = ecc_subs.add_parser('on', help='enable ECC')
+    ecc_on.set_defaults(ecc_mode='on')
+
+    ecc_off = ecc_subs.add_parser('off', help='disable ECC')
+    ecc_off.set_defaults(ecc_mode='off')
+
+    ecc.set_defaults(func=ecc_command)
+
     parser.add_argument('hostname', help='hostname to target')
 
     return parser
@@ -197,6 +209,15 @@ def fwupdate_command(controller, args):
     controller.add_image(args.image_type, args.filename, args.version,
             args.daddr, args.force_simg, args.skip_simg, args.skip_crc32)
     controller.update_firmware(args.slot, args.no_reset)
+
+    return 0
+
+def ecc_command(controller, args):
+    """enable or disable ECC on a cluster or host"""
+    if args.ecc_mode == "on":
+        controller.ecc_enable()
+    else:
+        controller.ecc_disable()
 
     return 0
 

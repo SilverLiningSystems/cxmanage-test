@@ -57,6 +57,26 @@ class Target:
         except IpmiError:
             raise ValueError("Failed to send MC reset command")
 
+    def ecc_enable(self):
+        """ Enable ECC on this target """
+        try:
+            self.bmc.cdb_write(4, "02000002", "01000000")
+            result = self.bmc.cdb_read(4, "02000002")
+            if not hasattr(result, "value") or result.value != "01000000":
+                raise ValueError("Failed to enable ECC")
+        except IpmiError:
+            raise ValueError("Failed to enable ECC")
+
+    def ecc_disable(self):
+        """ Disable ECC on this target """
+        try:
+            self.bmc.cdb_write(4, "02000002", "00000000")
+            result = self.bmc.cdb_read(4, "02000002")
+            if not hasattr(result, "value") or result.value != "00000000":
+                raise ValueError("Failed to disable ECC")
+        except IpmiError:
+            raise ValueError("Failed to disable ECC")
+
     def _get_tftp_address(self, tftp):
         """ Get the TFTP server address
         Returns a string in ip:port format """
