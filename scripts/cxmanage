@@ -47,6 +47,11 @@ def build_parser():
     power_status = power_subs.add_parser('status', help='get a9 power status')
     power_status.set_defaults(power_mode='status')
 
+    power_policy = power_subs.add_parser('policy', help='set a9 power policy')
+    power_policy.add_argument('policy', help='Policy to set',
+                             choices=['always-on', 'always-off', 'previous'])
+    power_policy.set_defaults(power_mode='policy')
+
     power.set_defaults(func=power_command)
 
     #mcreset command
@@ -186,10 +191,12 @@ def main():
 
 def power_command(controller, args):
     """change the power state of a cluster or host"""
-    if args.power_mode == 'status':
+    if args.power_mode == 'policy':
+        controller.power_policy(args.policy)
+    elif args.power_mode == 'status':
         controller.power_status()
     else:
-        controller.power_command(args.power_mode)
+        controller.power(args.power_mode)
 
     return 0
 

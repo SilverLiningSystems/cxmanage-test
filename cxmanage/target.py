@@ -26,17 +26,24 @@ class Target:
         tftp_address = self._get_tftp_address(tftp)
         self.bmc.get_fabric_ipinfo(filename, tftp_address)
 
-    def power_command(self, command):
+    def power(self, mode):
         """ Send an IPMI power command to this target """
         try:
-            self.bmc.handle.chassis_control(mode=command)
+            self.bmc.set_chassis_power(mode=mode)
         except IpmiError:
-            raise ValueError("Failed to send power command")
+            raise ValueError("Failed to send power %s command" % mode)
+
+    def power_policy(self, state):
+        """ Set default power state for A9 """
+        try:
+            self.bmc.set_chassis_policy(state)
+        except IpmiError:
+            raise ValueError("Failed to set power policy to %s" % state)
 
     def power_status(self):
         """ Return power status reported by IPMI """
         try:
-            if self.bmc.handle.chassis_status().power_on:
+            if self.bmc.get_chassis_status().power_on:
                 return "on"
             else:
                 return "off"
@@ -97,7 +104,7 @@ class Target:
 
     def _get_update_plan(self, images, slot_arg):
         """ Get an update plan.
-        
+
         A plan consists of a list of tuples:
         (image, slot, version) """
         plan = []
@@ -109,7 +116,7 @@ class Target:
 
         soc_plan_made = False
         cdb_plan_made = False
-        for image in images:        
+        for image in images:
             if image.type == "SPIF":
                 # Add all slots
                 for slot in slots:

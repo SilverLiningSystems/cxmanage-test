@@ -1,4 +1,4 @@
-#Copyright 2012 Calxeda, Inc.  All Rights Reserved. 
+#Copyright 2012 Calxeda, Inc.  All Rights Reserved.
 
 """ The controller object mediates between a UI and the application model.
 In this case, the controller understands the model's container structure
@@ -88,13 +88,13 @@ class Controller:
                 else:
                     image_force_simg = force_simg
                 # Skip simg
-                if (skip_simg == False and 
+                if (skip_simg == False and
                         config.has_option(section, "skip_simg")):
                     image_skip_simg = config.getboolean(section, "skip_simg")
                 else:
                     image_skip_simg = skip_simg
                 # Skip crc32
-                if (skip_crc32 == False and 
+                if (skip_crc32 == False and
                         config.has_option(section, "skip_crc32")):
                     image_skip_crc32 = config.getboolean(section, "skip_crc32")
                 else:
@@ -171,13 +171,13 @@ class Controller:
 
 #########################    Execution methods    #########################
 
-    def power_command(self, command):
+    def power(self, mode):
         """ Send the given power command to all targets """
         successes = []
         errors = []
         for target in self.targets:
             try:
-                target.power_command(command)
+                target.power(mode)
                 successes.append(target.address)
             except Exception as e:
                 errors.append("%s: %s" % (target.address, e))
@@ -185,7 +185,30 @@ class Controller:
         # Print successful hosts
         if len(successes) > 0:
             print ("\nPower %s command executed successfully on the following hosts:"
-                    % command)
+                    % mode)
+            for host in successes:
+                print host
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured"
+            for error in errors:
+                print error
+
+    def power_policy(self, state):
+        """ Set the power policy for all targets """
+        successes = []
+        errors = []
+        for target in self.targets:
+            try:
+                target.power_policy(state)
+                successes.append(target.address)
+            except Exception as e:
+                errors.append("%s: %s" % (target.address, e))
+
+        # Print successful hosts
+        if len(successes) > 0:
+            print "\nPower policy set to %s for the following hosts:" % state
             for host in successes:
                 print host
 
