@@ -133,37 +133,56 @@ class Target:
             else:
                 # Filter slots for this type
                 type_slots = [x for x in slots if
-                        x.type.split()[1][1:-1] == image.type][:2]
+                        x.type.split()[1][1:-1] == image.type]
+                if len(type_slots) < 1:
+                    raise ValueError("No slots found on host")
 
                 new_version = max([int(x.version, 16) for x in type_slots]) + 1
 
-                if len(type_slots) < 1:
-                    raise ValueError("No slots found on host")
-                elif len(type_slots) < 2 or slot_arg == "FIRST":
+                if slot_arg == "FIRST":
                     plan.append((image, type_slots[0], new_version))
                 elif slot_arg == "SECOND":
+                    if len(type_slots) < 2:
+                        raise ValueError("No second slot found on host")
                     plan.append((image, type_slots[1], new_version))
+                elif slot_arg == "THIRD":
+                    if len(type_slots) < 3:
+                        raise ValueError("No third slot found on host")
+                    plan.append((image, type_slots[2], new_version))
                 elif slot_arg == "BOTH":
-                    # Add "oldest" slot first -- in other words, when updating
-                    # both partitions, try to update the inactive one first.
-                    if type_slots[0].version < type_slots[1].version:
-                        plan.append((image, type_slots[0], new_version))
-                        plan.append((image, type_slots[1], new_version))
-                    else:
-                        plan.append((image, type_slots[1], new_version))
-                        plan.append((image, type_slots[0], new_version))
+                    if len(type_slots) < 2:
+                        raise ValueError("No second slot found on host")
+                    plan.append((image, type_slots[0], new_version))
+                    plan.append((image, type_slots[1], new_version))
                 elif slot_arg == "OLDEST":
                     # Choose second slot if both are the same version
-                    if type_slots[0].version < type_slots[1].version:
-                        plan.append((image, type_slots[0], new_version))
+                    if (len(type_slots) == 1 or
+                            type_slots[0].version < type_slots[1].version):
+                        slot = type_slots[0]
                     else:
-                        plan.append((image, type_slots[1], new_version))
+                        slot = type_slots[1]
+                    plan.append((image, slot, new_version))
                 elif slot_arg == "NEWEST":
                     # Choose first slot if both are the same version
-                    if type_slots[0].version >= type_slots[1].version:
-                        plan.append((image, type_slots[0], new_version))
+                    if (len(type_slots) == 1 or
+                            type_slots[0].version >= type_slots[1].version):
+                        slot = type_slots[0]
                     else:
-                        plan.append((image, type_slots[1], new_version))
+                        slot = type_slots[1]
+                    plan.append((image, slot, new_version))
+                elif slot_arg == "INACTIVE":
+                    # Get inactive slots
+                    inactive_slots = [x for x in type_slots if x.in_use != "1"]
+                    if len(inactive_slots) < 1:
+                        raise ValueError("No inactive slots found on host")
+
+                    # Choose second slot if both are the same version
+                    if (len(inactive_slots) == 1 or inactive_slots[0].version
+                            < inactive_slots[1].version):
+                        slot = inactive_slots[0]
+                    else:
+                        slot = inactive_slots[1]
+                    plan.append((image, slot, new_version))
                 else:
                     raise ValueError("Invalid slot argument")
 

@@ -88,14 +88,16 @@ def build_parser():
             )
     fwupdate.add_argument('filename', help='path to file to upload')
     fwupdate.add_argument('--slot', help='Specify slot to update',
-                            default='OLDEST',
+                            default='INACTIVE',
                             type=lambda string: string.upper(),
                             choices = list(sorted([
                                 'FIRST',
                                 'SECOND',
+                                'THIRD',
                                 'BOTH',
                                 'OLDEST',
-                                'NEWEST'
+                                'NEWEST',
+                                'INACTIVE'
                             ]))
             )
     fwupdate.add_argument('--no-reset', help='Don\'t reset the MC after updating',
