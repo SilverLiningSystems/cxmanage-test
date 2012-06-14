@@ -317,20 +317,46 @@ class Controller:
     def get_sdr(self, name):
         """ Get SDR readings from all targets """
         results = []
+        errors = []
         for target in self.targets:
             try:
-                status = target.get_sdr(name)
-                results.append("%s: %s" % (target.address, status))
+                value = target.get_sdr(name)
+                results.append((target.address, value))
             except Exception as e:
-                results.append("%s: %s" % (target.address, e))
+                errors.append("%s: %s" % (target.address, e))
 
-        # Print results
         if len(results) > 0:
             print "\nSDR readings for \"%s\"" % name
+
+            # Remove "(+/- 0)" from results
+            results = [(x[0], x[1].replace("(+/- 0) ", "")) for x in results]
+
+            try:
+                # Get suffix
+                suffix = " ".join(results[0][1].split()[1:])
+
+                # Get values and average
+                values = {}
+                for result in results:
+                    values[result] = float(result[1].split()[0])
+                average = sum([values[x] for x in results]) / len(results)
+
+                # Set new results
+                results = [(x[0], "%.2f %s" % (values[x], suffix))
+                        for x in results]
+                results.append(("Average", "%.2f %s" % (average, suffix)))
+            except ValueError:
+                pass
+
+            # Print results
             for result in results:
-                print result
-        else:
-            print "\nERROR: Failed to retrieve SDR info"
+                print "%s: %s" % (result[0].ljust(16), result[1])
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured"
+            for error in errors:
+                print error
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
