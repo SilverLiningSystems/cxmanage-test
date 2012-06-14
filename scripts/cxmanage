@@ -132,6 +132,13 @@ def build_parser():
     sdr.add_argument('sensor_name', help='Sensor name to read')
     sdr.set_defaults(func=sdr_command)
 
+    #ipmitool command
+    ipmitool = subparsers.add_parser('ipmitool',
+            help='run an arbitrary ipmitool command')
+    ipmitool.add_argument('ipmitool_args', nargs="+",
+            help="ipmitool arguments")
+    ipmitool.set_defaults(func=ipmitool_command)
+
     parser.add_argument('hostname', help='hostname to target')
 
     return parser
@@ -235,6 +242,12 @@ def ecc_command(controller, args):
 def sdr_command(controller, args):
     """read values from SDR"""
     controller.get_sdr(args.sensor_name)
+
+    return 0
+
+def ipmitool_command(controller, args):
+    """run arbitrary ipmitool command"""
+    controller.ipmitool_command(args.ipmitool_args)
 
     return 0
 

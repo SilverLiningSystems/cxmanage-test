@@ -331,3 +331,18 @@ class Controller:
                 print result
         else:
             print "\nERROR: Failed to retrieve SDR info"
+
+    def ipmitool_command(self, ipmitool_args):
+        """ Run an arbitrary ipmitool command on all targets """
+        errors = []
+        for target in self.targets:
+            try:
+                target.ipmitool_command(ipmitool_args)
+            except Exception as e:
+                errors.append("%s: %s" % (target.address, e))
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured"
+            for error in errors:
+                print error

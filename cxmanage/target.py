@@ -1,8 +1,10 @@
 #Copyright 2012 Calxeda, Inc.  All rights reserved.
 
-""" Target objects used by the cx_manage_util controller """
+""" Target objects used by the cxmanage controller """
 
-import socket, time
+import socket
+import subprocess
+import time
 
 from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC
@@ -92,6 +94,14 @@ class Target:
             return sensors[0].sensor_reading
         except IpmiError:
             raise ValueError("Failed to retrieve SDR info")
+
+    def ipmitool_command(self, ipmitool_args):
+        """ Execute an arbitrary ipmitool command """
+        command = ["ipmitool", "-U", self.username, "-P", self.password, "-H",
+                self.address]
+        command += ipmitool_args
+        print "Running %s" % " ".join(command)
+        subprocess.call(command)
 
     def _get_tftp_address(self, tftp):
         """ Get the TFTP server address
