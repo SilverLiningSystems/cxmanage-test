@@ -222,20 +222,25 @@ class Controller:
     def power_status(self):
         """ Retrieve power status from all targets in group """
         results = []
+        errors = []
         for target in self.targets:
             try:
                 status = target.power_status()
-                results.append("%s: %s" % (target.address, status))
+                results.append((target.address, status))
             except Exception as e:
-                results.append("%s: %s" % (target.address, e))
+                errors.append("%s: %s" % (target.address, e))
 
         # Print results
         if len(results) > 0:
-            print "\nPower status"
+            print "\nChassis power status"
             for result in results:
-                print result
-        else:
-            print "\nERROR: Failed to retrieve power status info"
+                print "%s: %s" % (result[0].ljust(16), result[1])
+
+        # Print errors
+        if len(errors) > 0:
+            print "\nThe following errors occured"
+            for error in errors:
+                print error
 
     def mc_reset(self):
         """ Send an MC reset command to all targets """
