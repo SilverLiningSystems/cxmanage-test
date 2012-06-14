@@ -127,6 +127,11 @@ def build_parser():
 
     ecc.set_defaults(func=ecc_command)
 
+    #sdr command
+    sdr = subparsers.add_parser('sdr', help='read SDR records')
+    sdr.add_argument('sensor_name', help='Sensor name to read')
+    sdr.set_defaults(func=sdr_command)
+
     parser.add_argument('hostname', help='hostname to target')
 
     return parser
@@ -224,6 +229,12 @@ def fwupdate_command(controller, args):
 def ecc_command(controller, args):
     """enable or disable ECC on a cluster or host"""
     controller.set_ecc(args.ecc_mode)
+
+    return 0
+
+def sdr_command(controller, args):
+    """read values from SDR"""
+    controller.get_sdr(args.sensor_name)
 
     return 0
 

@@ -313,3 +313,21 @@ class Controller:
             print "\nThe following errors occured"
             for error in errors:
                 print error
+
+    def get_sdr(self, name):
+        """ Get SDR readings from all targets """
+        results = []
+        for target in self.targets:
+            try:
+                status = target.get_sdr(name)
+                results.append("%s: %s" % (target.address, status))
+            except Exception as e:
+                results.append("%s: %s" % (target.address, e))
+
+        # Print results
+        if len(results) > 0:
+            print "\nSDR readings for \"%s\"" % name
+            for result in results:
+                print result
+        else:
+            print "\nERROR: Failed to retrieve SDR info"

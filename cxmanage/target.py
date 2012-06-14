@@ -83,6 +83,16 @@ class Target:
         except IpmiError:
             raise ValueError("Failed to set ECC to \"%s\"" % mode)
 
+    def get_sdr(self, name):
+        """ Read an SDR record from this target """
+        try:
+            sensors = [x for x in self.bmc.sdr_list() if x.sensor_name == name]
+            if len(sensors) < 1:
+                raise ValueError("SDR record \"%s\" not found" % name)
+            return sensors[0].sensor_reading
+        except IpmiError:
+            raise ValueError("Failed to retrieve SDR info")
+
     def _get_tftp_address(self, tftp):
         """ Get the TFTP server address
         Returns a string in ip:port format """
