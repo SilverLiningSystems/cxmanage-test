@@ -244,7 +244,8 @@ class Target:
         if status == "Complete":
             if image.type != "SPIF":
                 # Verify crc
-                if not self.bmc.check_firmware(slot_id).error:
+                result = self.bmc.check_firmware(slot_id)
+                if hasattr(result, "crc32") and not hasattr(result, "error"):
                     # Activate
                     self.bmc.activate_firmware(slot_id)
                 else:
