@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+
+#Copyright 2012 Calxeda, Inc.  All rights reserved.
+
+"""Command line tool for creating a Calxeda firmware package"""
+
+import argparse
+import os
+import sys
+
+from cxmanage.controller import Controller
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+            description='Calxeda firmware package creator')
+    subparsers = parser.add_subparsers()
+
+    #info command
+    info = subparsers.add_parser('info', help='Display package info')
+    info.set_defaults(func=info_command)
+
+    #add command
+    add = subparsers.add_parser('add',
+            help='Create or add to a firmware package')
+    add.add_argument('image_type', metavar='IMAGE_TYPE',
+                        help='type of image to update',
+                        type=lambda string: string.upper(),
+                        choices = list(sorted([
+                            'DEL',
+                            'DEL1',
+                            'S2_ELF',
+                            'SOC_ELF',
+                            'A9_UEFI',
+                            'A9_UBOOT',
+                            'A9_EXEC',
+                            'A9_ELF',
+                            'SOCDATA',
+                            'DTB',
+                            'CDB',
+                            'UBOOTENV',
+                            'SEL',
+                            'BOOT_LOG',
+                            'UEFI_ENV',
+                            'DIAG_ELF',
+                        ]))
+            )
+    add.add_argument('filename', help='image path')
+    add.set_defaults(func=add_command)
+
+    parser.add_argument('package', help='target package')
+
+    return parser
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+
+    controller = Controller()
+
+    sys.exit(args.func(controller, args))
+
+def info_command(controller, args):
+    controller.add_image(args.package, 'PACKAGE')
+
+    print
+    controller.print_images()
+
+    return 0
+
+def add_command(controller, args):
+    if os.path.exists(args.package):
+        controller.add_image(args.package, 'PACKAGE')
+    controller.add_image(args.filename, args.image_type)
+    controller.save_package(args.package)
+
+    return 0
+
+if __name__ == "__main__":
+    main()
