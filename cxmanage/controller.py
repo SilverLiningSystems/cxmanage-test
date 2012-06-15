@@ -141,9 +141,9 @@ class Controller:
 
 ###########################  Targets-specific methods #########################
 
-    def add_target(self, address, username, password):
+    def add_target(self, address, username, password, verbose=False):
         """ Add the target to the list of targets for the group. """
-        self.targets.append(Target(address, username, password))
+        self.targets.append(Target(address, username, password, verbose))
 
     def get_targets_in_range(self, start, end):
         """ Return a list of addresses in the given IP range """
@@ -214,14 +214,14 @@ class Controller:
 
         # Print successful hosts
         if len(successes) > 0:
-            print ("\nPower %s command executed successfully on the following hosts:"
+            print ("Power %s command executed successfully on the following hosts:"
                     % mode)
             for host in successes:
                 print host
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured"
+            print "The following errors occured"
             for error in errors:
                 print error
 
@@ -238,14 +238,14 @@ class Controller:
 
         # Print successful hosts
         if len(successes) > 0:
-            print ("\nPower policy set to \"%s\" for the following hosts:"
+            print ("Power policy set to \"%s\" for the following hosts:"
                     % state)
             for host in successes:
                 print host
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured"
+            print "The following errors occured"
             for error in errors:
                 print error
 
@@ -262,13 +262,13 @@ class Controller:
 
         # Print results
         if len(results) > 0:
-            print "\nChassis power status"
+            print "Chassis power status"
             for result in results:
                 print "%s: %s" % (result[0].ljust(16), result[1])
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured"
+            print "The following errors occured"
             for error in errors:
                 print error
 
@@ -283,7 +283,7 @@ class Controller:
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured"
+            print "The following errors occured"
             for error in errors:
                 print error
 
@@ -316,13 +316,13 @@ class Controller:
 
         # Print successful hosts
         if len(successful_targets) > 0:
-            print "\nFirmware updated successfully on the following hosts:"
+            print "Firmware updated successfully on the following hosts:"
             for target in successful_targets:
                 print target.address
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured"
+            print "The following errors occured"
             for error in errors:
                 print error
 
@@ -339,13 +339,13 @@ class Controller:
 
         # Print successful hosts
         if len(successes) > 0:
-            print "\nECC set to \"%s\" for the following hosts:" % mode
+            print "ECC set to \"%s\" for the following hosts:" % mode
             for host in successes:
                 print host
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured"
+            print "The following errors occured"
             for error in errors:
                 print error
 
@@ -361,7 +361,7 @@ class Controller:
                 errors.append("%s: %s" % (target.address, e))
 
         if len(results) > 0:
-            print "\nSensor readings for \"%s\"" % name
+            print "Sensor readings for \"%s\"" % name
 
             # Remove "(+/- 0)" from results
             results = [(x[0], x[1].replace("(+/- 0) ", "")) for x in results]
@@ -389,7 +389,7 @@ class Controller:
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured"
+            print "The following errors occured"
             for error in errors:
                 print error
 
@@ -404,6 +404,6 @@ class Controller:
 
         # Print errors
         if len(errors) > 0:
-            print "\nThe following errors occured"
+            print "The following errors occured"
             for error in errors:
                 print error

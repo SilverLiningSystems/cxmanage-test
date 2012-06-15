@@ -13,12 +13,13 @@ class Target:
     """ Contains info for a single target. A target consists of a hostname,
     an username, and a password. """
 
-    def __init__(self, address, username, password):
+    def __init__(self, address, username, password, verbose=False):
         self.address = address
         self.username = username
         self.password = password
+        self.verbose = verbose
         self.bmc = make_bmc(LanBMC, hostname=address,
-                username=username, password=password)
+                username=username, password=password, verbose=verbose)
 
     def get_fabric_ipinfo(self, tftp, filename):
         """ Send an IPMI get_fabric_ipinfo command to this target
@@ -100,7 +101,8 @@ class Target:
         command = ["ipmitool", "-U", self.username, "-P", self.password, "-H",
                 self.address]
         command += ipmitool_args
-        print "Running %s" % " ".join(command)
+        if self.verbose:
+            print "Running %s" % " ".join(command)
         subprocess.call(command)
 
     def _get_tftp_address(self, tftp):
