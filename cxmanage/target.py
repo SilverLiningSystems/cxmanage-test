@@ -85,15 +85,15 @@ class Target:
         except IpmiError:
             raise ValueError("Failed to set ECC to \"%s\"" % mode)
 
-    def get_sdr(self, name):
-        """ Read an SDR record from this target """
+    def get_sensor(self, name):
+        """ Read a sensor value from this target """
         try:
             sensors = [x for x in self.bmc.sdr_list() if x.sensor_name == name]
             if len(sensors) < 1:
-                raise ValueError("SDR record \"%s\" not found" % name)
+                raise ValueError("Sensor \"%s\" not found" % name)
             return sensors[0].sensor_reading
         except IpmiError:
-            raise ValueError("Failed to retrieve SDR info")
+            raise ValueError("Failed to retrieve sensor value")
 
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """

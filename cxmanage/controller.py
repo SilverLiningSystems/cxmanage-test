@@ -319,19 +319,19 @@ class Controller:
             for error in errors:
                 print error
 
-    def get_sdr(self, name):
-        """ Get SDR readings from all targets """
+    def get_sensor(self, name):
+        """ Get sensor readings from all targets """
         results = []
         errors = []
         for target in self.targets:
             try:
-                value = target.get_sdr(name)
+                value = target.get_sensor(name)
                 results.append((target.address, value))
             except Exception as e:
                 errors.append("%s: %s" % (target.address, e))
 
         if len(results) > 0:
-            print "\nSDR readings for \"%s\"" % name
+            print "\nSensor readings for \"%s\"" % name
 
             # Remove "(+/- 0)" from results
             results = [(x[0], x[1].replace("(+/- 0) ", "")) for x in results]
