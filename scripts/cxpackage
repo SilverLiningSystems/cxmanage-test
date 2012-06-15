@@ -11,6 +11,7 @@ import sys
 from cxmanage.controller import Controller
 
 def build_parser():
+    """setup the argparse parser"""
     parser = argparse.ArgumentParser(
             description='Calxeda firmware package creator')
     subparsers = parser.add_subparsers()
@@ -44,6 +45,17 @@ def build_parser():
                             'DIAG_ELF',
                         ]))
             )
+    simg_args = add.add_mutually_exclusive_group()
+    simg_args.add_argument('--force-simg', help='Force addition of SIMG header',
+                            default=False, action='store_true')
+    simg_args.add_argument('--skip-simg', help='Skip addition of SIMG header',
+                            default=False, action='store_true')
+    add.add_argument('-v', '--version', help='Version for SIMG header',
+                            default=None, type=int)
+    add.add_argument('-d', '--daddr', help='Destination address for SIMG',
+                            default=None, type=lambda x : int(x, 16))
+    add.add_argument('--skip-crc32', help='Skip crc32 calculation for SIMG',
+                            default=False, action='store_true')
     add.add_argument('filename', help='image path')
     add.set_defaults(func=add_command)
 
@@ -51,15 +63,28 @@ def build_parser():
 
     return parser
 
+def validate_args(args):
+    """ Bail out if the arguments don't make sense"""
+    if args.func == add_command:
+        if args.skip_simg and args.version:
+            sys.exit('Invalid argument --version when supplied with --skip-simg')
+        if args.skip_simg and args.daddr:
+            sys.exit('Invalid argument --daddr when supplied with --skip-simg')
+        if args.skip_simg and args.skip_crc32:
+            sys.exit('Invalid argument --skip-crc32 when supplied with --skip-simg')
+
 def main():
+    """Get args and go"""
     parser = build_parser()
     args = parser.parse_args()
+    validate_args(args)
 
     controller = Controller()
 
     sys.exit(args.func(controller, args))
 
 def info_command(controller, args):
+    """ Get package info """
     controller.add_image(args.package, 'PACKAGE')
 
     print
@@ -68,9 +93,18 @@ def info_command(controller, args):
     return 0
 
 def add_command(controller, args):
+    """ Create or add to a firmware package """
     if os.path.exists(args.package):
         controller.add_image(args.package, 'PACKAGE')
-    controller.add_image(args.filename, args.image_type)
+
+    simg = None
+    if args.force_simg:
+        simg = False
+    elif args.skip_simg:
+        simg = True
+
+    controller.add_image(args.filename, args.image_type,
+            simg, args.version, args.daddr, args.skip_crc32)
     controller.save_package(args.package)
 
     return 0
