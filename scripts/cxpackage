@@ -59,6 +59,10 @@ def build_parser():
     add.add_argument('filename', help='image path')
     add.set_defaults(func=add_command)
 
+    #default command
+    default = subparsers.add_parser('default', help='Create a default package')
+    default.set_defaults(func=default_command)
+
     parser.add_argument('package', help='target package')
 
     return parser
@@ -105,6 +109,19 @@ def add_command(controller, args):
 
     controller.add_image(args.filename, args.image_type,
             simg, args.version, args.daddr, args.skip_crc32)
+    controller.save_package(args.package)
+
+    return 0
+
+def default_command(controller, args):
+    """ Create a default firmware package """
+    controller.add_image('stage2boot.bin', 'S2_ELF')
+    controller.add_image('socmanager.elf', 'SOC_ELF')
+    controller.add_image('factory.cdb', 'CDB')
+    controller.add_image('a9boot.bin', 'A9_EXEC')
+    controller.add_image('u-boot.bin', 'A9_UBOOT')
+    controller.add_image('u-boot-env.bin', 'UBOOTENV')
+
     controller.save_package(args.package)
 
     return 0
