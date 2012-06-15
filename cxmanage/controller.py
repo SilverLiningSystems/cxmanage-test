@@ -45,12 +45,11 @@ class Controller:
 ###########################  Images-specific methods ##########################
 
     def add_image(self,
-                  image_type,
                   filename,
+                  image_type,
+                  simg=None,
                   version=None,
                   daddr=None,
-                  force_simg=False,
-                  skip_simg=False,
                   skip_crc32=False):
         """ Add an image to our collection """
         if image_type == "PACKAGE":
@@ -70,7 +69,11 @@ class Controller:
             for section in config.sections():
                 filename = self.work_dir + "/" + section
                 image_type = config.get(section, "type").upper()
-
+                # SIMG
+                if simg == None and config.has_option(section, "simg"):
+                    image_simg = config.getboolean(section, "simg")
+                else:
+                    image_simg = simg
                 # Version
                 if version == None and config.has_option(section, "version"):
                     image_version = config.getint(section, "version")
@@ -81,18 +84,6 @@ class Controller:
                     image_daddr = int(config.get(section, "daddr"), 16)
                 else:
                     image_daddr = daddr
-                # Force simg
-                if (force_simg == False and
-                        config.has_option(section, "force_simg")):
-                    image_force_simg = config.getboolean(section, "force_simg")
-                else:
-                    image_force_simg = force_simg
-                # Skip simg
-                if (skip_simg == False and
-                        config.has_option(section, "skip_simg")):
-                    image_skip_simg = config.getboolean(section, "skip_simg")
-                else:
-                    image_skip_simg = skip_simg
                 # Skip crc32
                 if (skip_crc32 == False and
                         config.has_option(section, "skip_crc32")):
@@ -100,14 +91,53 @@ class Controller:
                 else:
                     image_skip_crc32 = skip_crc32
 
-                image = Image(image_type, filename, image_version, image_daddr,
-                        image_force_simg, image_skip_simg, image_skip_crc32)
+                image = Image(filename, image_type, image_simg,
+                        image_version, image_daddr, image_skip_crc32)
                 self.images.append(image)
 
         else:
-            image = Image(image_type, filename, version, daddr,
-                    force_simg, skip_simg, skip_crc32)
+            image = Image(filename, image_type, simg,
+                    version, daddr, skip_crc32)
             self.images.append(image)
+
+    def save_package(self, filename):
+        """ Save all images as a firmware package """
+        # Create the manifest
+        config = ConfigParser.SafeConfigParser()
+        for image in self.images:
+            section = os.path.basename(image.filename)
+            config.add_section(section)
+            config.set(section, "type", image.type)
+            config.set(section, "simg", str(image.simg))
+            if image.version != None:
+                config.set(section, "version", str(image.version))
+            if image.daddr != None:
+                config.set(section, "daddr", "%x" % image.daddr)
+            if image.skip_crc32 != None:
+                config.set(section, "skip_crc32", str(image.skip_crc32))
+        manifest = open("%s/MANIFEST" % self.work_dir, "w")
+        config.write(manifest)
+        manifest.close()
+
+        # Create the tar.gz package
+        tar = tarfile.open(filename, "w")
+        tar.add("%s/MANIFEST" % self.work_dir, "MANIFEST")
+        for image in self.images:
+            tar.add(image.filename, os.path.basename(image.filename))
+        tar.close()
+
+    def print_images(self):
+        """ Print image info """
+        for image in self.images:
+            print "File: %s" % os.path.basename(image.filename)
+            print "Type: %s" % image.type
+            print "SIMG: %s" % image.simg
+            if image.version != None:
+                print "Version: %i" % image.version
+            if image.daddr != None:
+                print "Daddr: %x" % image.daddr
+            print
+
 
 ###########################  Targets-specific methods #########################
 

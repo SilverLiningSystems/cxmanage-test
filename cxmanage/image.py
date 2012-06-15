@@ -1,4 +1,4 @@
-#Copyright 2012 Calxeda, Inc.  All Rights Reserved. 
+#Copyright 2012 Calxeda, Inc.  All Rights Reserved.
 
 """ Image objects used by the cx_manage_util controller """
 
@@ -12,21 +12,19 @@ class Image:
     """ An image consists of an image type, a filename, and any info needed
     to build an SIMG out of it. """
 
-    def __init__(self, image_type, filename, version, daddr,
-            force_simg, skip_simg, skip_crc32):
-        self.type = image_type
+    def __init__(self, filename, image_type,
+            simg, version, daddr, skip_crc32):
         self.filename = filename
+        self.type = image_type
         self.version = version
         self.daddr = daddr
         self.skip_crc32 = skip_crc32
 
-        if force_simg:
-            self.has_simg = False
-        elif skip_simg:
-            self.has_simg = True
-        else:
+        if simg == None:
             contents = open(filename).read()
-            self.has_simg = has_simg(contents)
+            self.simg = has_simg(contents)
+        else:
+            self.simg = simg
 
         if not self.valid_type():
             raise ValueError("%s is not a valid %s image" %
@@ -43,7 +41,7 @@ class Image:
             end = start + int(slot.size, 16)
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(contents[start:end])
-        elif not self.has_simg:
+        elif not self.simg:
             # Figure out version and daddr
             version = self.version
             daddr = self.daddr
@@ -84,7 +82,7 @@ class Image:
 
             # Look for "CDBH"
             contents = open(self.filename).read()
-            if self.has_simg:
+            if self.simg:
                 return contents[28:32] == "CDBH"
             else:
                 return contents[:4] == "CDBH"

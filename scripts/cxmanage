@@ -226,9 +226,15 @@ def fwupdate_command(controller, args):
         print 'ERROR: File %s does not exist' % args.filename
         return 1
 
+    simg = None
+    if args.force_simg:
+        simg = False
+    elif args.skip_simg:
+        simg = True
+
     # Add image and execute command
-    controller.add_image(args.image_type, args.filename, args.version,
-            args.daddr, args.force_simg, args.skip_simg, args.skip_crc32)
+    controller.add_image(args.filename, args.image_type,
+            simg, args.version, args.daddr, args.skip_crc32)
     controller.update_firmware(args.slot, args.no_reset)
 
     return 0
