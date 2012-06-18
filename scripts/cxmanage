@@ -22,8 +22,11 @@ def build_parser():
                         help='Password for login')
     parser.add_argument('-a', '--all-nodes', action='store_true',
                         help='Send command to all nodes reported by fabric')
-    parser.add_argument('-v', '--verbose', action='store_true',
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument('-v', '--verbose', action='store_true',
                         help='Verbose output')
+    verbosity.add_argument('-q', '--quiet', action='store_true',
+                        help='Quiet output')
     tftp_type = parser.add_mutually_exclusive_group()
     tftp_type.add_argument('-t', '--tftp',
             help='Connect to remote TFTP server at <ip:port>')
@@ -171,10 +174,11 @@ def main():
 
     validate_args(args)
 
+    verbosity = 1
     if args.verbose:
         verbosity = 2
-    else:
-        verbosity = 1
+    elif args.quiet:
+        verbosity = 0
     controller = Controller(verbosity)
 
     if args.tftp:
@@ -187,7 +191,7 @@ def main():
             tftp_port = int(tftp_args[1])
         else:
             print "ERROR: %s is not a valid argument for --tftp" % args.tftp
-            return 1
+            sys.exit(1)
         controller.set_external_tftp_server(tftp_address, tftp_port)
     elif args.internal_tftp:
         tftp_args = args.internal_tftp.split(':')
@@ -200,7 +204,7 @@ def main():
         else:
             print ("ERROR: %s is not a valid argument for --internal-tftp"
                     % args.tftp)
-            return 1
+            sys.exit(1)
         controller.set_internal_tftp_server(tftp_address, tftp_port)
     else:
         controller.set_internal_tftp_server()
@@ -209,7 +213,7 @@ def main():
         get_addresses(controller, args)
     except ValueError:
         print 'ERROR: Failed to get IP addresses'
-        return 1
+        sys.exit(1)
 
     sys.exit(args.func(controller, args))
 

@@ -5,6 +5,7 @@
 import os
 import socket
 import subprocess
+import sys
 import time
 
 from pyipmi import make_bmc, IpmiError
@@ -20,7 +21,7 @@ class Target:
         self.password = password
         self.verbosity = verbosity
 
-        verbose = verbosity > 1
+        verbose = verbosity >= 2
         self.bmc = make_bmc(LanBMC, hostname=address,
                 username=username, password=password, verbose=verbose)
 
@@ -71,9 +72,14 @@ class Target:
     def update_firmware(self, work_dir, tftp, images, slot_arg):
         """ Update firmware on this target. """
         # Get all updates
-        plan = self._get_update_plan(images, slot_arg)
-        for image, slot, new_version in plan:
-            self._update_image(work_dir, tftp, image, slot, new_version)
+        self._vwrite(1, "Updating %s" % self.address)
+
+        try:
+            plan = self._get_update_plan(images, slot_arg)
+            for image, slot, new_version in plan:
+                self._update_image(work_dir, tftp, image, slot, new_version)
+        finally:
+            self._vwrite(1, "\n")
 
     def set_ecc(self, mode):
         """ Enable ECC on this target """
@@ -109,8 +115,8 @@ class Target:
         command = ["ipmitool", "-U", self.username, "-P", self.password, "-H",
                 self.address]
         command += ipmitool_args
-        if self.verbose:
-            print "Running %s" % " ".join(command)
+
+        self._vwrite(2, "Running %s\n" % " ".join(command))
         subprocess.call(command)
 
     def _get_tftp_address(self, tftp):
@@ -240,15 +246,19 @@ class Target:
                 slot_id, image_type, tftp_address)
         handle = result.tftp_handle_id
 
-        if image_type == "CDB":
-            time.sleep(9)
+        # TODO: remove this
+        if image.type == "SPIF" and image_type == "CDB":
+            for a in range(9):
+                time.sleep(1)
+                self._vwrite(1, ".")
 
         # Wait for update to finish
-        time.sleep(1)
-        status = self.bmc.get_firmware_status(handle).status
-        while status == "In progress":
+        while True:
             time.sleep(1)
+            self._vwrite(1, ".")
             status = self.bmc.get_firmware_status(handle).status
+            if status != "In progress":
+                break
 
         # Activate firmware on completion
         if status == "Complete":
@@ -262,3 +272,9 @@ class Target:
                     raise ValueError("Node reported crc32 check failure")
         else:
             raise ValueError("Node reported transfer failure")
+
+    def _vwrite(self, verbosity, text):
+        """ Write to stdout if we're at the right verbosity level """
+        if self.verbosity == verbosity:
+            sys.stdout.write(text)
+            sys.stdout.flush()
