@@ -220,18 +220,20 @@ def main():
 def power_command(controller, args):
     """change the power state of a cluster or host"""
     if args.power_mode == 'policy':
-        controller.power_policy(args.policy)
+        if controller.power_policy(args.policy):
+            return 1
     elif args.power_mode == 'status':
-        controller.power_status()
+        if controller.power_status():
+            return 1
     else:
-        controller.power(args.power_mode)
-
+        if controller.power(args.power_mode):
+            return 1
     return 0
 
 def mcreset_command(controller, args):
     """reset the management controllers of a cluster or host"""
-    controller.mc_reset()
-
+    if controller.mc_reset():
+        return 1
     return 0
 
 def fwupdate_command(controller, args):
@@ -246,35 +248,37 @@ def fwupdate_command(controller, args):
     elif args.skip_simg:
         simg = True
 
-    # Add image and execute command
+    # Add image
     controller.add_image(args.filename, args.image_type,
             simg, args.version, args.daddr, args.skip_crc32)
-    controller.update_firmware(args.slot, args.no_reset)
 
+    # Do firmware update
+    if controller.update_firmware(args.slot, args.no_reset):
+        return 1
     return 0
 
 def ecc_command(controller, args):
     """enable or disable ECC on a cluster or host"""
-    controller.set_ecc(args.ecc_mode)
-
+    if controller.set_ecc(args.ecc_mode):
+        return 1
     return 0
 
 def sensor_command(controller, args):
     """read sensor values from a cluster or host"""
-    controller.get_sensor(args.sensor_name)
-
+    if controller.get_sensor(args.sensor_name):
+        return 1
     return 0
 
 def ipinfo_command(controller, args):
     """get ip info from a cluster or host"""
-    controller.get_ipinfo()
-
+    if controller.get_ipinfo():
+        return 1
     return 0
 
 def ipmitool_command(controller, args):
     """run arbitrary ipmitool command"""
-    controller.ipmitool_command(args.ipmitool_args)
-
+    if controller.ipmitool_command(args.ipmitool_args):
+        return 1
     return 0
 
 def get_addresses(controller, args):

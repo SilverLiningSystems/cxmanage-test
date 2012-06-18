@@ -216,11 +216,9 @@ class Controller:
             for host in successes:
                 print host
 
-        # Print errors
-        if len(errors) > 0:
-            print "The following errors occured"
-            for error in errors:
-                print error
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def power_policy(self, state):
         """ Set the power policy for all targets """
@@ -240,11 +238,9 @@ class Controller:
             for host in successes:
                 print host
 
-        # Print errors
-        if len(errors) > 0:
-            print "The following errors occured"
-            for error in errors:
-                print error
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def power_status(self):
         """ Retrieve power status from all targets in group """
@@ -263,11 +259,9 @@ class Controller:
             for result in results:
                 print "%s: %s" % (result[0].ljust(16), result[1])
 
-        # Print errors
-        if len(errors) > 0:
-            print "The following errors occured"
-            for error in errors:
-                print error
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def mc_reset(self):
         """ Send an MC reset command to all targets """
@@ -278,11 +272,9 @@ class Controller:
             except Exception as e:
                 errors.append("%s: %s" % (target.address, e))
 
-        # Print errors
-        if len(errors) > 0:
-            print "The following errors occured"
-            for error in errors:
-                print error
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def update_firmware(self, slot_arg, skip_reset=False):
         """ Send firmware update commands to all targets in group. """
@@ -317,11 +309,9 @@ class Controller:
             for target in successful_targets:
                 print target.address
 
-        # Print errors
-        if len(errors) > 0:
-            print "The following errors occured"
-            for error in errors:
-                print error
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def set_ecc(self, mode):
         """ Enable or disable ECC on all targets """
@@ -340,11 +330,9 @@ class Controller:
             for host in successes:
                 print host
 
-        # Print errors
-        if len(errors) > 0:
-            print "The following errors occured"
-            for error in errors:
-                print error
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def get_sensor(self, name):
         """ Get sensor readings from all targets """
@@ -384,11 +372,9 @@ class Controller:
             for result in results:
                 print "%s: %s" % (result[0].ljust(16), result[1])
 
-        # Print errors
-        if len(errors) > 0:
-            print "The following errors occured"
-            for error in errors:
-                print error
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def get_ipinfo(self):
         """ Get IP info from all targets """
@@ -406,10 +392,9 @@ class Controller:
         for result in results:
             print result
 
-        if len(errors) > 0:
-            print "The following errors occured"
-            for error in errors:
-                print error
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
@@ -421,6 +406,12 @@ class Controller:
                 errors.append("%s: %s" % (target.address, e))
 
         # Print errors
+        self._print_errors(errors)
+
+        return len(errors) > 0
+
+    def _print_errors(self, errors):
+        """ Print errors if they occured """
         if len(errors) > 0:
             print "The following errors occured"
             for error in errors:
