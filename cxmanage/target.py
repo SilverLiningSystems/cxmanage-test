@@ -2,6 +2,7 @@
 
 """ Target objects used by the cxmanage controller """
 
+import os
 import socket
 import subprocess
 import time
@@ -22,12 +23,17 @@ class Target:
                 username=username, password=password, verbose=verbose)
 
     def get_fabric_ipinfo(self, tftp, filename):
-        """ Send an IPMI get_fabric_ipinfo command to this target
-
-        Note that this method puts the ip_info file on the TFTP server
-        but does not retrieve it locally. """
-        tftp_address = self._get_tftp_address(tftp)
-        self.bmc.get_fabric_ipinfo(filename, tftp_address)
+        """ Download IP info from this target """
+        try:
+            tftp_address = self._get_tftp_address(tftp)
+            basename = os.path.basename(filename)
+            self.bmc.get_fabric_ipinfo(basename, tftp_address)
+            time.sleep(1)
+            tftp.get_file(basename, filename)
+            if not os.path.exists(filename):
+                raise ValueError
+        except:
+            raise ValueError("Failed to retrieve IP info")
 
     def power(self, mode):
         """ Send an IPMI power command to this target """

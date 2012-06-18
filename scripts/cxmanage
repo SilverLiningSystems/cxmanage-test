@@ -134,6 +134,10 @@ def build_parser():
     sensor.add_argument('sensor_name', help='Sensor name to read')
     sensor.set_defaults(func=sensor_command)
 
+    #ipinfo command
+    ipinfo = subparsers.add_parser('ipinfo', help='get IP info')
+    ipinfo.set_defaults(func=ipinfo_command)
+
     #ipmitool command
     ipmitool = subparsers.add_parser('ipmitool',
             help='run an arbitrary ipmitool command')
@@ -250,6 +254,12 @@ def ecc_command(controller, args):
 def sensor_command(controller, args):
     """read sensor values from a cluster or host"""
     controller.get_sensor(args.sensor_name)
+
+    return 0
+
+def ipinfo_command(controller, args):
+    """get ip info from a cluster or host"""
+    controller.get_ipinfo()
 
     return 0
 

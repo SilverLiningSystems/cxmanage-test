@@ -8,7 +8,6 @@ import atexit
 import os
 import shutil
 import tempfile
-import time
 import ConfigParser
 import tarfile
 
@@ -180,22 +179,17 @@ class Controller:
         target = Target(address, username, password)
 
         # Retrieve ip_info file
-        target.get_fabric_ipinfo(self.tftp, "ip_info.txt")
-        time.sleep(1) # must delay before retrieving file
-        ip_info_path = self.work_dir + "/ip_info.txt"
-        self.tftp.get_file("ip_info.txt", ip_info_path)
+        filename = "%s/ip_%s" % (self.work_dir, target.address)
+        target.get_fabric_ipinfo(self.tftp, filename)
 
         # Parse addresses from ip_info file
         addresses = []
-        ip_info_file = open(ip_info_path, "r")
-        for line in ip_info_file:
+        for line in open(filename, "r"):
             address = line.split()[-1]
 
             # TODO: question this -- is it necessary/proper?
             if address != "0.0.0.0":
                 addresses.append(address)
-
-        ip_info_file.close()
 
         return addresses
 
@@ -388,6 +382,27 @@ class Controller:
                 print "%s: %s" % (result[0].ljust(16), result[1])
 
         # Print errors
+        if len(errors) > 0:
+            print "The following errors occured"
+            for error in errors:
+                print error
+
+    def get_ipinfo(self):
+        """ Get IP info from all targets """
+        results = []
+        errors = []
+        for target in self.targets:
+            try:
+                filename = "%s/ip_%s" % (self.work_dir, target.address)
+                target.get_fabric_ipinfo(self.tftp, filename)
+                contents = open(filename).read().rstrip("\n")
+                results.append("IP info from %s\n%s" % (target.address, contents))
+            except Exception as e:
+                errors.append("%s: %s" % (target.address, e))
+
+        for result in results:
+            print result
+
         if len(errors) > 0:
             print "The following errors occured"
             for error in errors:
