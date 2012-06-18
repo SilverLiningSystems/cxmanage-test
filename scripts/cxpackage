@@ -79,7 +79,7 @@ def main():
     args = parser.parse_args()
     validate_args(args)
 
-    controller = Controller()
+    controller = Controller(1)
 
     sys.exit(args.func(controller, args))
 

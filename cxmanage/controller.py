@@ -20,12 +20,14 @@ class Controller:
     cxmanage. Scripts or UIs can build on top of this to provide an user
     interface. """
 
-    def __init__(self):
+    def __init__(self, verbosity):
         self.tftp = Tftp()
         self.targets = []
         self.images = []
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage-")
         atexit.register(self._cleanup)
+
+        self.verbosity = verbosity
 
     def _cleanup(self):
         """ Clean up temporary files """
@@ -140,9 +142,10 @@ class Controller:
 
 ###########################  Targets-specific methods #########################
 
-    def add_target(self, address, username, password, verbose=False):
+    def add_target(self, address, username, password):
         """ Add the target to the list of targets for the group. """
-        self.targets.append(Target(address, username, password, verbose))
+        target = Target(address, username, password, self.verbosity)
+        self.targets.append(target)
 
     def get_targets_in_range(self, start, end):
         """ Return a list of addresses in the given IP range """

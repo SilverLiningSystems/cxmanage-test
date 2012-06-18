@@ -14,11 +14,13 @@ class Target:
     """ Contains info for a single target. A target consists of a hostname,
     an username, and a password. """
 
-    def __init__(self, address, username, password, verbose=False):
+    def __init__(self, address, username, password, verbosity):
         self.address = address
         self.username = username
         self.password = password
-        self.verbose = verbose
+        self.verbosity = verbosity
+
+        verbose = verbosity > 1
         self.bmc = make_bmc(LanBMC, hostname=address,
                 username=username, password=password, verbose=verbose)
 

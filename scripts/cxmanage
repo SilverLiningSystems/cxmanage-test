@@ -171,7 +171,11 @@ def main():
 
     validate_args(args)
 
-    controller = Controller()
+    if args.verbose:
+        verbosity = 2
+    else:
+        verbosity = 1
+    controller = Controller(verbosity)
 
     if args.tftp:
         tftp_args = args.tftp.split(':')
@@ -293,7 +297,7 @@ def get_addresses(controller, args):
 
     # Add addresses to target group
     for address in addresses:
-        controller.add_target(address, args.user, args.password, verbose=args.verbose)
+        controller.add_target(address, args.user, args.password)
 
 if __name__ == '__main__':
     main()
