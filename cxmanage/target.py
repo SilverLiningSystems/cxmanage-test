@@ -173,7 +173,11 @@ class Target:
                 if len(type_slots) < 1:
                     raise ValueError("No slots found on host")
 
-                new_version = max([int(x.version, 16) for x in type_slots]) + 1
+                versions = [int(x.version, 16) for x in type_slots]
+                versions = [x for x in versions if x != 0xFFFF]
+                new_version = 0
+                if len(versions) > 0:
+                    new_version = max(0xffff, max(versions) + 1)
 
                 if slot_arg == "FIRST":
                     plan.append((image, type_slots[0], new_version))
@@ -256,12 +260,14 @@ class Target:
         while True:
             time.sleep(1)
             self._vwrite(1, ".")
-            status = self.bmc.get_firmware_status(handle).status
-            if status != "In progress":
+            result = self.bmc.get_firmware_status(handle)
+            if not hasattr(result, "status"):
+                raise ValueError("Unable to retrieve transfer info")
+            if result.status != "In progress":
                 break
 
         # Activate firmware on completion
-        if status == "Complete":
+        if result.status == "Complete":
             if image.type != "SPIF":
                 # Verify crc
                 result = self.bmc.check_firmware(slot_id)
