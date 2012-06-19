@@ -266,12 +266,20 @@ class Controller:
 
     def mc_reset(self):
         """ Send an MC reset command to all targets """
+        successes = []
         errors = []
         for target in self.targets:
             try:
                 target.mc_reset()
+                successes.append(target.address)
             except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
+
+        # Print successful hosts
+        if len(successes) > 0:
+            print "MC reset successfully on the following hosts:"
+            for host in successes:
+                print host
 
         self._print_errors(errors)
 

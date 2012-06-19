@@ -66,7 +66,9 @@ class Target:
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """
         try:
-            self.bmc.mc_reset("cold")
+            result = self.bmc.mc_reset("cold")
+            if hasattr(result, "error"):
+                raise CxmanageError("Failed to send MC reset command")
         except IpmiError:
             raise CxmanageError("Failed to send MC reset command")
 
