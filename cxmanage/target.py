@@ -8,6 +8,8 @@ import subprocess
 import sys
 import time
 
+from cxmanage import CxmanageError
+
 from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC
 
@@ -27,30 +29,29 @@ class Target:
 
     def get_fabric_ipinfo(self, tftp, filename):
         """ Download IP info from this target """
+        tftp_address = self._get_tftp_address(tftp)
+        basename = os.path.basename(filename)
+
         try:
-            tftp_address = self._get_tftp_address(tftp)
-            basename = os.path.basename(filename)
             self.bmc.get_fabric_ipinfo(basename, tftp_address)
             time.sleep(1)
             tftp.get_file(basename, filename)
-            if not os.path.exists(filename):
-                raise ValueError
-        except:
-            raise ValueError("Failed to retrieve IP info")
+        except (IpmiError, CxmanageError):
+            raise CxmanageError("Failed to retrieve IP info")
 
     def power(self, mode):
         """ Send an IPMI power command to this target """
         try:
             self.bmc.set_chassis_power(mode=mode)
         except IpmiError:
-            raise ValueError("Failed to send power %s command" % mode)
+            raise CxmanageError("Failed to send power %s command" % mode)
 
     def power_policy(self, state):
         """ Set default power state for A9 """
         try:
             self.bmc.set_chassis_policy(state)
         except IpmiError:
-            raise ValueError("Failed to set power policy to \"%s\"" % state)
+            raise CxmanageError("Failed to set power policy to \"%s\"" % state)
 
     def power_status(self):
         """ Return power status reported by IPMI """
@@ -60,14 +61,14 @@ class Target:
             else:
                 return "off"
         except IpmiError:
-            raise ValueError("Failed to retrieve power status")
+            raise CxmanageError("Failed to retrieve power status")
 
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """
         try:
             self.bmc.mc_reset("cold")
         except IpmiError:
-            raise ValueError("Failed to send MC reset command")
+            raise CxmanageError("Failed to send MC reset command")
 
     def update_firmware(self, work_dir, tftp, images, slot_arg):
         """ Update firmware on this target. """
@@ -96,19 +97,19 @@ class Target:
             self.bmc.cdb_write(4, "02000002", value)
             result = self.bmc.cdb_read(4, "02000002")
             if not hasattr(result, "value") or result.value != value:
-                raise ValueError("Failed to set ECC to \"%s\"" % mode)
+                raise CxmanageError("Failed to set ECC to \"%s\"" % mode)
         except IpmiError:
-            raise ValueError("Failed to set ECC to \"%s\"" % mode)
+            raise CxmanageError("Failed to set ECC to \"%s\"" % mode)
 
     def get_sensor(self, name):
         """ Read a sensor value from this target """
         try:
             sensors = [x for x in self.bmc.sdr_list() if x.sensor_name == name]
             if len(sensors) < 1:
-                raise ValueError("Sensor \"%s\" not found" % name)
+                raise CxmanageError("Sensor \"%s\" not found" % name)
             return sensors[0].sensor_reading
         except IpmiError:
-            raise ValueError("Failed to retrieve sensor value")
+            raise CxmanageError("Failed to retrieve sensor value")
 
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """
@@ -145,9 +146,13 @@ class Target:
         plan = []
 
         # Get all slots
-        slots = [x for x in self.bmc.get_firmware_info() if hasattr(x, "slot")]
+        try:
+            slots = [x for x in self.bmc.get_firmware_info()
+                    if hasattr(x, "slot")]
+        except IpmiError:
+            raise CxmanageError("Failed to retrieve firmware info")
         if not slots:
-            raise ValueError("Failed to retrieve firmware info")
+            raise CxmanageError("Failed to retrieve firmware info")
 
         soc_plan_made = False
         cdb_plan_made = False
@@ -171,7 +176,7 @@ class Target:
                 type_slots = [x for x in slots if
                         x.type.split()[1][1:-1] == image.type]
                 if len(type_slots) < 1:
-                    raise ValueError("No slots found on host")
+                    raise CxmanageError("No slots found on host")
 
                 versions = [int(x.version, 16) for x in type_slots]
                 versions = [x for x in versions if x != 0xFFFF]
@@ -183,15 +188,15 @@ class Target:
                     plan.append((image, type_slots[0], new_version))
                 elif slot_arg == "SECOND":
                     if len(type_slots) < 2:
-                        raise ValueError("No second slot found on host")
+                        raise CxmanageError("No second slot found on host")
                     plan.append((image, type_slots[1], new_version))
                 elif slot_arg == "THIRD":
                     if len(type_slots) < 3:
-                        raise ValueError("No third slot found on host")
+                        raise CxmanageError("No third slot found on host")
                     plan.append((image, type_slots[2], new_version))
                 elif slot_arg == "BOTH":
                     if len(type_slots) < 2:
-                        raise ValueError("No second slot found on host")
+                        raise CxmanageError("No second slot found on host")
                     plan.append((image, type_slots[0], new_version))
                     plan.append((image, type_slots[1], new_version))
                 elif slot_arg == "OLDEST":
@@ -214,7 +219,7 @@ class Target:
                     # Get inactive slots
                     inactive_slots = [x for x in type_slots if x.in_use != "1"]
                     if len(inactive_slots) < 1:
-                        raise ValueError("No inactive slots found on host")
+                        raise CxmanageError("No inactive slots found on host")
 
                     # Choose second slot if both are the same version
                     if (len(inactive_slots) == 1 or inactive_slots[0].version
@@ -262,7 +267,7 @@ class Target:
             self._vwrite(1, ".")
             result = self.bmc.get_firmware_status(handle)
             if not hasattr(result, "status"):
-                raise ValueError("Unable to retrieve transfer info")
+                raise CxmanageError("Unable to retrieve transfer info")
             if result.status != "In progress":
                 break
 
@@ -275,9 +280,9 @@ class Target:
                     # Activate
                     self.bmc.activate_firmware(slot_id)
                 else:
-                    raise ValueError("Node reported crc32 check failure")
+                    raise CxmanageError("Node reported crc32 check failure")
         else:
-            raise ValueError("Node reported transfer failure")
+            raise CxmanageError("Node reported transfer failure")
 
     def _vwrite(self, verbosity, text):
         """ Write to stdout if we're at the right verbosity level """

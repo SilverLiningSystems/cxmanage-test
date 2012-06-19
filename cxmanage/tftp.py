@@ -1,4 +1,4 @@
-#Copyright 2012 Calxeda, Inc.  All Rights Reserved. 
+#Copyright 2012 Calxeda, Inc.  All Rights Reserved.
 
 """ Holds state about the tftp service to be used by a calxeda update
 application. """
@@ -9,7 +9,10 @@ import signal
 import shutil
 import subprocess
 
+from cxmanage import CxmanageError
+
 from tftpy import TftpClient, TftpServer
+from tftpy.TftpShared import TftpException
 
 class Tftp:
     """ Contains info about a remote or local TFTP server """
@@ -131,24 +134,28 @@ class Tftp:
         try:
             if self._isinternal:
                 tftppath = self._root_dir + "/" + tftppath
+                if not os.path.exists(tftppath):
+                    raise CxmanageError("File does not exist on TFTP server")
                 if tftppath != localpath:
                     shutil.copy(tftppath, localpath)
             else:
                 self._client.download(tftppath, localpath)
-        except:
-            raise ValueError("Failed to download file from TFTP server")
+        except (IOError, TftpException):
+            raise CxmanageError("Failed to download file from TFTP server")
 
     def put_file(self, localpath, tftppath):
         """ Upload a file to the tftp server """
         try:
             if self._isinternal:
                 tftppath = self._root_dir + "/" + tftppath
+                if not os.path.exists(localpath):
+                    raise CxmanageError("File does not exist on local disk")
                 if tftppath != localpath:
                     shutil.copy(localpath, tftppath)
             else:
                 self._client.upload(tftppath, localpath)
-        except:
-            raise ValueError("Failed to upload file to TFTP server")
+        except (IOError, TftpException):
+            raise CxmanageError("Failed to upload file to TFTP server")
 
     def _discover_port(self):
         """ Discover what port an internal server is bound to.
@@ -160,4 +167,4 @@ class Tftp:
             port = int(line.split()[8].split(":")[1])
             return port
         except (OSError, ValueError):
-            raise ValueError("Unable to discover internal TFTP port")
+            raise CxmanageError("Failed to discover internal TFTP port")

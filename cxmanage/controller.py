@@ -11,6 +11,7 @@ import tempfile
 import ConfigParser
 import tarfile
 
+from cxmanage import CxmanageError
 from cxmanage.image import Image
 from cxmanage.target import Target
 from cxmanage.tftp import Tftp
@@ -173,13 +174,13 @@ class Controller:
             return addresses
 
         except IndexError:
-            raise ValueError
+            raise ValueError("Invalid arguments to get_targets_in_range")
 
     def get_targets_from_fabric(self, address, username, password):
         """ Get a list of targets reported by fabric """
 
         # Create initial target
-        target = Target(address, username, password)
+        target = Target(address, username, password, self.verbosity)
 
         # Retrieve ip_info file
         filename = "%s/ip_%s" % (self.work_dir, target.address)
@@ -206,7 +207,7 @@ class Controller:
             try:
                 target.power(mode)
                 successes.append(target.address)
-            except Exception as e:
+            except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         # Print successful hosts
@@ -228,7 +229,7 @@ class Controller:
             try:
                 target.power_policy(state)
                 successes.append(target.address)
-            except Exception as e:
+            except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         # Print successful hosts
@@ -250,7 +251,7 @@ class Controller:
             try:
                 status = target.power_status()
                 results.append((target.address, status))
-            except Exception as e:
+            except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         # Print results
@@ -269,7 +270,7 @@ class Controller:
         for target in self.targets:
             try:
                 target.mc_reset()
-            except Exception as e:
+            except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         self._print_errors(errors)
@@ -288,7 +289,7 @@ class Controller:
                         self.tftp, self.images, slot_arg)
                 successful_targets.append(target)
 
-            except Exception as e:
+            except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         # Reset MC upon completion
@@ -321,7 +322,7 @@ class Controller:
             try:
                 target.set_ecc(mode)
                 successes.append(target.address)
-            except Exception as e:
+            except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         # Print successful hosts
@@ -342,7 +343,7 @@ class Controller:
             try:
                 value = target.get_sensor(name)
                 results.append((target.address, value))
-            except Exception as e:
+            except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         if len(results) > 0:
@@ -366,6 +367,8 @@ class Controller:
                         for x in results]
                 results.append(("Average", "%.2f %s" % (average, suffix)))
             except ValueError:
+                # Not all sensors returned numerical values, so just print
+                # their output directly with no average
                 pass
 
             # Print results
@@ -386,7 +389,7 @@ class Controller:
                 target.get_fabric_ipinfo(self.tftp, filename)
                 contents = open(filename).read().rstrip("\n")
                 results.append("IP info from %s\n%s" % (target.address, contents))
-            except Exception as e:
+            except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         for result in results:
@@ -402,7 +405,7 @@ class Controller:
         for target in self.targets:
             try:
                 target.ipmitool_command(ipmitool_args)
-            except Exception as e:
+            except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         # Print errors

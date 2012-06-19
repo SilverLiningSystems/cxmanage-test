@@ -6,6 +6,7 @@ import os
 import subprocess
 import tempfile
 
+from cxmanage import CxmanageError
 from cxmanage.simg import create_simg, has_simg
 
 class Image:
@@ -27,7 +28,7 @@ class Image:
             self.simg = simg
 
         if not self.valid_type():
-            raise ValueError("%s is not a valid %s image" %
+            raise CxmanageError("%s is not a valid %s image" %
                     (os.path.basename(filename), image_type))
 
     def upload(self, work_dir, tftp, slot, new_version):
@@ -58,7 +59,7 @@ class Image:
 
         # Verify image size
         if os.path.getsize(filename) > int(slot.size, 16):
-            raise ValueError("%s is too large for slot %i" %
+            raise CxmanageError("%s is too large for slot %i" %
                     (os.path.basename(self.filename), int(slot.slot)))
 
         # Upload to tftp
