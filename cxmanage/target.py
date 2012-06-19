@@ -198,7 +198,7 @@ class Target:
                 versions = [x for x in versions if x != 0xFFFF]
                 new_version = 0
                 if len(versions) > 0:
-                    new_version = max(0xffff, max(versions) + 1)
+                    new_version = min(0xffff, max(versions) + 1)
 
                 if slot_arg == "FIRST":
                     plan.append((image, type_slots[0], new_version))
