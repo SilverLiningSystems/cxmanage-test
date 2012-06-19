@@ -120,18 +120,6 @@ def build_parser():
                             default=False, action='store_true')
     fwupdate.set_defaults(func=fwupdate_command)
 
-    #ecc command
-    ecc = subparsers.add_parser('ecc', help='enable or disable ECC')
-    ecc_subs = ecc.add_subparsers()
-
-    ecc_on = ecc_subs.add_parser('on', help='enable ECC')
-    ecc_on.set_defaults(ecc_mode='on')
-
-    ecc_off = ecc_subs.add_parser('off', help='disable ECC')
-    ecc_off.set_defaults(ecc_mode='off')
-
-    ecc.set_defaults(func=ecc_command)
-
     #sensor command
     sensor = subparsers.add_parser('sensor', help='read sensor value')
     sensor.add_argument('sensor_name', help='Sensor name to read')
@@ -140,6 +128,18 @@ def build_parser():
     #ipinfo command
     ipinfo = subparsers.add_parser('ipinfo', help='get IP info')
     ipinfo.set_defaults(func=ipinfo_command)
+
+    #config command
+    config = subparsers.add_parser('config', help='configure hosts')
+    config_subs = config.add_subparsers()
+
+    reset = config_subs.add_parser('reset', help='reset to factory default')
+    reset.set_defaults(func=config_reset_command)
+
+    ecc = config_subs.add_parser('ecc', help='enable or disable ECC')
+    ecc.add_argument('ecc_mode', help='ECC mode',
+            type=lambda string: string.lower(), choices=['on', 'off'])
+    ecc.set_defaults(func=config_ecc_command)
 
     #ipmitool command
     ipmitool = subparsers.add_parser('ipmitool',
@@ -272,6 +272,16 @@ def sensor_command(controller, args):
 def ipinfo_command(controller, args):
     """get ip info from a cluster or host"""
     if controller.get_ipinfo():
+        return 1
+    return 0
+
+def config_reset_command(controller, args):
+    if controller.config_reset():
+        return 1
+    return 0
+
+def config_ecc_command(controller, args):
+    if controller.config_ecc(args.ecc_mode):
         return 1
     return 0
 

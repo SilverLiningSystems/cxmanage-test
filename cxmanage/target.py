@@ -84,8 +84,32 @@ class Target:
         finally:
             self._vwrite(1, "\n")
 
-    def set_ecc(self, mode):
-        """ Enable ECC on this target """
+    def get_sensor(self, name):
+        """ Read a sensor value from this target """
+        try:
+            sensors = [x for x in self.bmc.sdr_list() if x.sensor_name == name]
+            if len(sensors) < 1:
+                raise CxmanageError("Sensor \"%s\" not found" % name)
+            return sensors[0].sensor_reading
+        except IpmiError:
+            raise CxmanageError("Failed to retrieve sensor value")
+
+    def config_reset(self):
+        """ Reset configuration to factory default """
+        try:
+            # Reset CDB
+            result = self.bmc.reset_firmware()
+            if hasattr(result, "error"):
+                raise CxmanageError("Failed to reset configuration")
+
+            # Clear SEL
+            self.bmc.sel_clear()
+
+        except IpmiError:
+            raise CxmanageError("Failed to reset configuration")
+
+    def config_ecc(self, mode):
+        """ Set ECC mode on this target """
         try:
             # Get value
             if mode == "on":
@@ -102,16 +126,6 @@ class Target:
                 raise CxmanageError("Failed to set ECC to \"%s\"" % mode)
         except IpmiError:
             raise CxmanageError("Failed to set ECC to \"%s\"" % mode)
-
-    def get_sensor(self, name):
-        """ Read a sensor value from this target """
-        try:
-            sensors = [x for x in self.bmc.sdr_list() if x.sensor_name == name]
-            if len(sensors) < 1:
-                raise CxmanageError("Sensor \"%s\" not found" % name)
-            return sensors[0].sensor_reading
-        except IpmiError:
-            raise CxmanageError("Failed to retrieve sensor value")
 
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """
