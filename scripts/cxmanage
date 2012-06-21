@@ -8,66 +8,69 @@ import argparse
 import os
 import sys
 
+from cxmanage.plugins import add_args
 from cxmanage.controller import Controller
 
 def build_parser():
     """setup the argparse parser"""
-    parser = argparse.ArgumentParser(
+    p = {}
+
+    p['parser'] = argparse.ArgumentParser(
             description='Calxeda Server Management Utility')
 
     #global arguments
-    parser.add_argument('-u', '--user', default='admin',
+    p['parser'].add_argument('-u', '--user', default='admin',
                         help='Username for login')
-    parser.add_argument('-p', '--password', default='admin',
+    p['parser'].add_argument('-p', '--password', default='admin',
                         help='Password for login')
-    parser.add_argument('-a', '--all-nodes', action='store_true',
+    p['parser'].add_argument('-a', '--all-nodes', action='store_true',
                         help='Send command to all nodes reported by fabric')
-    verbosity = parser.add_mutually_exclusive_group()
-    verbosity.add_argument('-v', '--verbose', action='store_true',
+    p['verbosity'] = p['parser'].add_mutually_exclusive_group()
+    p['verbosity'].add_argument('-v', '--verbose', action='store_true',
                         help='Verbose output')
-    verbosity.add_argument('-q', '--quiet', action='store_true',
+    p['verbosity'].add_argument('-q', '--quiet', action='store_true',
                         help='Quiet output')
-    tftp_type = parser.add_mutually_exclusive_group()
-    tftp_type.add_argument('-t', '--tftp',
+    p['tftp_type'] = p['parser'].add_mutually_exclusive_group()
+    p['tftp_type'].add_argument('-t', '--tftp',
             help='Connect to remote TFTP server at <ip:port>')
-    tftp_type.add_argument('--internal-tftp',
+    p['tftp_type'].add_argument('--internal-tftp',
             help='Host an internal TFTP server listening on <ip:port>')
 
-    subparsers = parser.add_subparsers()
+    p['subparsers'] = p['parser'].add_subparsers()
 
     #power command
-    power = subparsers.add_parser('power',
+    p['power'] = p['subparsers'].add_parser('power',
                                   help='control a9 power')
-    power_subs = power.add_subparsers()
+    p['power_subs'] = p['power'].add_subparsers()
 
-    power_on = power_subs.add_parser('on', help='boot the a9')
-    power_on.set_defaults(power_mode='on')
+    p['power_on'] = p['power_subs'].add_parser('on', help='boot the a9')
+    p['power_on'].set_defaults(power_mode='on')
 
-    power_off = power_subs.add_parser('off', help='shut the a9 off')
-    power_off.set_defaults(power_mode='off')
+    p['power_off'] = p['power_subs'].add_parser('off', help='shut the a9 off')
+    p['power_off'].set_defaults(power_mode='off')
 
-    power_reset = power_subs.add_parser('reset', help='reset the a9')
-    power_reset.set_defaults(power_mode='reset')
+    p['power_reset'] = p['power_subs'].add_parser('reset', help='reset the a9')
+    p['power_reset'].set_defaults(power_mode='reset')
 
-    power_status = power_subs.add_parser('status', help='get a9 power status')
-    power_status.set_defaults(power_mode='status')
+    p['power_status'] = p['power_subs'].add_parser('status', help='get a9 power status')
+    p['power_status'].set_defaults(power_mode='status')
 
-    power_policy = power_subs.add_parser('policy', help='set a9 power policy')
-    power_policy.add_argument('policy', help='Policy to set',
+    p['power_policy'] = p['power_subs'].add_parser('policy', help='set a9 power policy')
+    p['power_policy'].add_argument('policy', help='Policy to set',
                              choices=['always-on', 'always-off', 'previous'])
-    power_policy.set_defaults(power_mode='policy')
+    p['power_policy'].set_defaults(power_mode='policy')
 
-    power.set_defaults(func=power_command)
+    p['power'].set_defaults(func=power_command)
 
     #mcreset command
-    mcreset = subparsers.add_parser('mcreset',
+    p['mcreset'] = p['subparsers'].add_parser('mcreset',
                                   help='reset the management controller')
-    mcreset.set_defaults(func=mcreset_command)
+    p['mcreset'].set_defaults(func=mcreset_command)
 
     #fwupdate command
-    fwupdate = subparsers.add_parser('fwupdate', help='update firmware')
+    p['fwupdate'] = p['subparsers'].add_parser('fwupdate', help='update firmware')
 
-    fwupdate.add_argument('image_type', metavar='IMAGE_TYPE',
+    p['fwupdate'].add_argument('image_type', metavar='IMAGE_TYPE',
                         help='type of image to update',
                         type=lambda string: string.upper(),
                         choices = list(sorted([
@@ -91,8 +94,8 @@ def build_parser():
                             'PACKAGE'
                         ]))
             )
-    fwupdate.add_argument('filename', help='path to file to upload')
-    fwupdate.add_argument('--slot', help='Specify slot to update',
+    p['fwupdate'].add_argument('filename', help='path to file to upload')
+    p['fwupdate'].add_argument('--slot', help='Specify slot to update',
                             default='INACTIVE',
                             type=lambda string: string.upper(),
                             choices = list(sorted([
@@ -105,52 +108,50 @@ def build_parser():
                                 'INACTIVE'
                             ]))
             )
-    fwupdate.add_argument('--no-reset', help='Don\'t reset the MC after updating',
+    p['fwupdate'].add_argument('--no-reset', help='Don\'t reset the MC after updating',
                             default=False, action='store_true')
-    simg_args = fwupdate.add_mutually_exclusive_group()
-    simg_args.add_argument('--force-simg', help='Force addition of SIMG header',
+    p['simg_args'] = p['fwupdate'].add_mutually_exclusive_group()
+    p['simg_args'].add_argument('--force-simg', help='Force addition of SIMG header',
                             default=False, action='store_true')
-    simg_args.add_argument('--skip-simg', help='Skip addition of SIMG header',
+    p['simg_args'].add_argument('--skip-simg', help='Skip addition of SIMG header',
                             default=False, action='store_true')
-    fwupdate.add_argument('--version', help='Version for SIMG header',
+    p['fwupdate'].add_argument('--version', help='Version for SIMG header',
                             default=None, type=int)
-    fwupdate.add_argument('-d', '--daddr', help='Destination address for SIMG',
+    p['fwupdate'].add_argument('-d', '--daddr', help='Destination address for SIMG',
                             default=None, type=lambda x : int(x, 16))
-    fwupdate.add_argument('--skip-crc32', help='Skip crc32 calculation for SIMG',
+    p['fwupdate'].add_argument('--skip-crc32', help='Skip crc32 calculation for SIMG',
                             default=False, action='store_true')
-    fwupdate.set_defaults(func=fwupdate_command)
+    p['fwupdate'].set_defaults(func=fwupdate_command)
 
     #sensor command
-    sensor = subparsers.add_parser('sensor', help='read sensor value')
-    sensor.add_argument('sensor_name', help='Sensor name to read')
-    sensor.set_defaults(func=sensor_command)
+    p['sensor'] = p['subparsers'].add_parser('sensor', help='read sensor value')
+    p['sensor'].add_argument('sensor_name', help='Sensor name to read')
+    p['sensor'].set_defaults(func=sensor_command)
 
     #ipinfo command
-    ipinfo = subparsers.add_parser('ipinfo', help='get IP info')
-    ipinfo.set_defaults(func=ipinfo_command)
+    p['ipinfo'] = p['subparsers'].add_parser('ipinfo', help='get IP info')
+    p['ipinfo'].set_defaults(func=ipinfo_command)
 
     #config command
-    config = subparsers.add_parser('config', help='configure hosts')
-    config_subs = config.add_subparsers()
+    p['config'] = p['subparsers'].add_parser('config', help='configure hosts')
+    p['config_subs'] = p['config'].add_subparsers()
 
-    reset = config_subs.add_parser('reset', help='reset to factory default')
-    reset.set_defaults(func=config_reset_command)
-
-    ecc = config_subs.add_parser('ecc', help='enable or disable ECC')
-    ecc.add_argument('ecc_mode', help='ECC mode',
-            type=lambda string: string.lower(), choices=['on', 'off'])
-    ecc.set_defaults(func=config_ecc_command)
+    p['reset'] = p['config_subs'].add_parser('reset', help='reset to factory default')
+    p['reset'].set_defaults(func=config_reset_command)
 
     #ipmitool command
-    ipmitool = subparsers.add_parser('ipmitool',
+    p['ipmitool'] = p['subparsers'].add_parser('ipmitool',
             help='run an arbitrary ipmitool command')
-    ipmitool.add_argument('ipmitool_args', nargs="+",
+    p['ipmitool'].add_argument('ipmitool_args', nargs="+",
             help="ipmitool arguments")
-    ipmitool.set_defaults(func=ipmitool_command)
+    p['ipmitool'].set_defaults(func=ipmitool_command)
 
-    parser.add_argument('hostname', help='hostname to target')
+    p['parser'].add_argument('hostname', help='hostname to target')
 
-    return parser
+    add_args(p)
+
+    return p['parser']
+
 
 def validate_args(args):
     """ Bail out if the arguments don't make sense"""
@@ -165,6 +166,7 @@ def validate_args(args):
             sys.exit('Invalid argument --daddr when supplied with --skip-simg')
         if args.skip_simg and args.skip_crc32:
             sys.exit('Invalid argument --skip-crc32 when supplied with --skip-simg')
+
 
 def main():
     """Get args and go"""
@@ -217,6 +219,7 @@ def main():
 
     sys.exit(args.func(controller, args))
 
+
 def power_command(controller, args):
     """change the power state of a cluster or host"""
     if args.power_mode == 'policy':
@@ -230,11 +233,13 @@ def power_command(controller, args):
             return 1
     return 0
 
+
 def mcreset_command(controller, args):
     """reset the management controllers of a cluster or host"""
     if controller.mc_reset():
         return 1
     return 0
+
 
 def fwupdate_command(controller, args):
     """update firmware on a cluster or host"""
@@ -257,11 +262,6 @@ def fwupdate_command(controller, args):
         return 1
     return 0
 
-def ecc_command(controller, args):
-    """enable or disable ECC on a cluster or host"""
-    if controller.set_ecc(args.ecc_mode):
-        return 1
-    return 0
 
 def sensor_command(controller, args):
     """read sensor values from a cluster or host"""
@@ -269,27 +269,26 @@ def sensor_command(controller, args):
         return 1
     return 0
 
+
 def ipinfo_command(controller, args):
     """get ip info from a cluster or host"""
     if controller.get_ipinfo():
         return 1
     return 0
 
+
 def config_reset_command(controller, args):
     if controller.config_reset():
         return 1
     return 0
 
-def config_ecc_command(controller, args):
-    if controller.config_ecc(args.ecc_mode):
-        return 1
-    return 0
 
 def ipmitool_command(controller, args):
     """run arbitrary ipmitool command"""
     if controller.ipmitool_command(args.ipmitool_args):
         return 1
     return 0
+
 
 def get_addresses(controller, args):
     """get initial addresses"""
@@ -316,6 +315,7 @@ def get_addresses(controller, args):
     # Add addresses to target group
     for address in addresses:
         controller.add_target(address, args.user, args.password)
+
 
 if __name__ == '__main__':
     main()
