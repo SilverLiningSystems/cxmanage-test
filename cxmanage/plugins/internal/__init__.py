@@ -9,8 +9,6 @@ def add_args(p):
     p['spifupdate'] = p['subparsers'].add_parser(
             'spifupdate', help='update spi flash')
     p['spifupdate'].add_argument('filename', help='path to file to upload')
-    p['spifupdate'].add_argument('--no-reset', default=False,
-            action='store_true', help='Don\'t reset the MC after updating')
     p['spifupdate'].set_defaults(func=spifupdate_command)
 
     #ecc command
@@ -21,7 +19,7 @@ def add_args(p):
 
 def spifupdate_command(controller, args):
     # Do firmware update
-    if controller_update_spiflash(controller, args.filename, args.no_reset):
+    if controller_update_spiflash(controller, args.filename, True):
         return 1
     return 0
 

@@ -19,12 +19,9 @@ def controller_update_spiflash(self, filename, skip_reset=False):
             errors.append("%s: %s" % (target.address, e))
 
     # Reset MC upon completion
-    # TODO: re-enable this once we know multi-node fabric can handle it
-    """
     if not skip_reset:
         for target in successful_targets:
             target.mc_reset()
-    """
 
     # Print successful hosts
     if len(successful_targets) > 0:

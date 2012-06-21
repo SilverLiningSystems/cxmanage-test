@@ -301,15 +301,12 @@ class Controller:
                 errors.append("%s: %s" % (target.address, e))
 
         # Reset MC upon completion
-        # TODO: re-enable this once we know multi-node fabric can handle it
-        """
         if not skip_reset:
             for image in self.images:
                 if image.type == "SOC_ELF":
                     for target in successful_targets:
                         target.mc_reset()
                     break
-        """
 
         # Print successful hosts
         if len(successful_targets) > 0:
