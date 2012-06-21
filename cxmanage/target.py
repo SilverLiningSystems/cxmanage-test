@@ -154,11 +154,7 @@ class Target:
         soc_plan_made = False
         cdb_plan_made = False
         for image in images:
-            if image.type == "SPIF":
-                # Add all slots
-                for slot in slots:
-                    plan.append((image, slot, 0))
-            elif soc_plan_made and image.type == "CDB":
+            if soc_plan_made and image.type == "CDB":
                 for update in plan:
                     if update[0].type == "SOC_ELF":
                         slot = slots[int(update[1].slot) + 1]
@@ -246,17 +242,9 @@ class Target:
         # Send firmware update command
         slot_id = int(slot.slot)
         image_type = image.type
-        if image_type == "SPIF":
-            image_type = slot.type.split()[1][1:-1]
         result = self.bmc.update_firmware(filename,
                 slot_id, image_type, tftp_address)
         handle = result.tftp_handle_id
-
-        # TODO: remove this
-        if image.type == "SPIF" and image_type == "CDB":
-            for a in range(9):
-                time.sleep(1)
-                self._vwrite(1, ".")
 
         # Wait for update to finish
         while True:
@@ -270,14 +258,13 @@ class Target:
 
         # Activate firmware on completion
         if result.status == "Complete":
-            if image.type != "SPIF":
-                # Verify crc
-                result = self.bmc.check_firmware(slot_id)
-                if hasattr(result, "crc32") and not result.error != None:
-                    # Activate
-                    self.bmc.activate_firmware(slot_id)
-                else:
-                    raise CxmanageError("Node reported crc32 check failure")
+            # Verify crc
+            result = self.bmc.check_firmware(slot_id)
+            if hasattr(result, "crc32") and not result.error != None:
+                # Activate
+                self.bmc.activate_firmware(slot_id)
+            else:
+                raise CxmanageError("Node reported crc32 check failure")
         else:
             raise CxmanageError("Node reported transfer failure")
 

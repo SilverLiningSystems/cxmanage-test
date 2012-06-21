@@ -303,13 +303,12 @@ class Controller:
         # Reset MC upon completion
         # TODO: re-enable this once we know multi-node fabric can handle it
         """
-        should_reset = False
-        for image in self.images:
-            if image.type in ["SOC_ELF", "SPIF"]:
-                should_reset = True
-        if should_reset and not skip_reset:
-            for target in successful_targets:
-                target.mc_reset()
+        if not skip_reset:
+            for image in self.images:
+                if image.type == "SOC_ELF":
+                    for target in successful_targets:
+                        target.mc_reset()
+                    break
         """
 
         # Print successful hosts

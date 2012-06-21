@@ -37,12 +37,7 @@ class Image:
 
         # Create new image if necessary
         contents = open(filename).read()
-        if self.type == "SPIF":
-            start = int(slot.offset, 16)
-            end = start + int(slot.size, 16)
-            filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
-            open(filename, "w").write(contents[start:end])
-        elif not self.simg:
+        if not self.simg:
             # Figure out version and daddr
             version = self.version
             daddr = self.daddr
