@@ -243,6 +243,27 @@ class Controller:
 
         return len(errors) > 0
 
+    def power_policy_status(self):
+        """ Get power policy status for all targets """
+        results = []
+        errors = []
+        for target in self.targets:
+            try:
+                status = target.power_policy_status()
+                results.append((target.address, status))
+            except CxmanageError as e:
+                errors.append("%s: %s" % (target.address, e))
+
+        # Print results
+        if len(results) > 0:
+            print "Power policy status"
+            for result in results:
+                print "%s: %s" % (result[0].ljust(16), result[1])
+
+        self._print_errors(errors)
+
+        return len(errors) > 0
+
     def power_status(self):
         """ Retrieve power status from all targets in group """
         results = []

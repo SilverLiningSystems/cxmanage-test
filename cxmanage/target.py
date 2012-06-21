@@ -53,6 +53,13 @@ class Target:
         except IpmiError:
             raise CxmanageError("Failed to set power policy to \"%s\"" % state)
 
+    def power_policy_status(self):
+        """ Return power status reported by IPMI """
+        try:
+            return self.bmc.get_chassis_status().power_restore_policy
+        except IpmiError:
+            raise CxmanageError("Failed to retrieve power status")
+
     def power_status(self):
         """ Return power status reported by IPMI """
         try:

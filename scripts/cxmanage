@@ -58,7 +58,7 @@ def build_parser():
     p['power_policy'] = p['power_subs'].add_parser('policy',
             help='set a9 power policy')
     p['power_policy'].add_argument('policy', help='Policy to set',
-            choices=['always-on', 'always-off', 'previous'])
+            choices=['always-on', 'always-off', 'previous', 'status'])
     p['power_policy'].set_defaults(power_mode='policy')
 
     p['power'].set_defaults(func=power_command)
@@ -221,15 +221,25 @@ def main():
 
 def power_command(controller, args):
     """change the power state of a cluster or host"""
+
+    # power policy
     if args.power_mode == 'policy':
-        if controller.power_policy(args.policy):
+        if args.policy == 'status':
+            if controller.power_policy_status():
+                return 1
+        elif controller.power_policy(args.policy):
             return 1
+
+    # power status
     elif args.power_mode == 'status':
         if controller.power_status():
             return 1
+
+    # power on/off/reset
     else:
         if controller.power(args.power_mode):
             return 1
+
     return 0
 
 
