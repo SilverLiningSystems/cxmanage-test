@@ -1,6 +1,6 @@
 #Copyright 2012 Calxeda, Inc.  All Rights Reserved.
 
-""" Image objects used by the cx_manage_util controller """
+""" Image objects used by the cxmanage controller """
 
 import os
 import subprocess
@@ -36,8 +36,9 @@ class Image:
         filename = self.filename
 
         # Create new image if necessary
-        contents = open(filename).read()
         if not self.simg:
+            contents = open(filename).read()
+
             # Figure out version and daddr
             version = self.version
             daddr = self.daddr

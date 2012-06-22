@@ -404,6 +404,7 @@ class Controller:
         return len(errors) > 0
 
     def config_reset(self):
+        """ Send config reset command to all targets """
         successes = []
         errors = []
         for target in self.targets:

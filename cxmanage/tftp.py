@@ -7,6 +7,7 @@ import atexit
 import os
 import signal
 import shutil
+import socket
 import subprocess
 
 from cxmanage import CxmanageError
@@ -29,39 +30,6 @@ class Tftp:
         self._hasbeengood = False
 
         atexit.register(self.kill_server)
-
-    def is_set(self):
-        """ Return true if a server has been set """
-        return self._ipaddr != None
-
-    def is_internal(self):
-        """ Return true if we're using an internal server """
-        return self._isinternal
-
-    def is_reachable(self):
-        """ Attempt to reach the tftp server. Return true if the server was
-        reached successfully. """
-        if self._ipaddr != None:
-            # Create a small file to send
-            f = open("testfile_a", "w")
-            f.write("")
-            f.close()
-
-            # Try sending and receiving the file
-            try:
-                self.put_file("testfile", "testfile_a")
-                self.get_file("testfile", "testfile_b")
-            except:
-                pass
-
-            # Check if we completed successfully
-            os.remove("testfile_a")
-            if os.path.exists("testfile_b"):
-                os.remove("testfile_b")
-                self._hasbeengood = True
-                return True
-
-        return False
 
     def set_internal_server(self, root_dir, addr=None, port=0):
         """ Shut down any server that's currently running, then start an
@@ -107,22 +75,26 @@ class Tftp:
         self._isinternal = False
         self._hasbeengood = False
 
-    def restart_server(self):
-        """ Reset the server model; this will also restart the server if it's
-        internal. """
-        if self._isinternal:
-            self.set_internal_server(self._ipaddr, self._port)
-        else:
-            self.set_external_server(self._ipaddr, self._port)
-
     def kill_server(self):
         """ Kill the internal server if we're running one """
         if self._server != None:
             os.kill(self._server, signal.SIGTERM)
             self._server = None
 
-    def get_address(self):
-        """ Return the address of this server """
+    def get_address(self, relative_host=None):
+        """ Return the address of this server.
+
+        If this is an internal server, and we're given a relative host,
+        then discover our address to them automatically. """
+
+        # Get address relative to host
+        if self._isinternal and relative_host != None:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((relative_host, self._port))
+            address = s.getsockname()[0]
+            s.close()
+            return address
+
         return self._ipaddr
 
     def get_port(self):

@@ -290,6 +290,7 @@ def ipinfo_command(controller, args):
 
 
 def config_reset_command(controller, args):
+    """reset to factory default settings"""
     if controller.config_reset():
         return 1
     return 0

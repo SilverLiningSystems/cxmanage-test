@@ -29,7 +29,8 @@ class Target:
 
     def get_fabric_ipinfo(self, tftp, filename):
         """ Download IP info from this target """
-        tftp_address = self._get_tftp_address(tftp)
+        tftp_address = "%s:%s" % (tftp.get_address(self.address),
+                tftp.get_port())
         basename = os.path.basename(filename)
 
         # Send ipinfo command
@@ -137,24 +138,6 @@ class Target:
         self._vwrite(2, "Running %s\n" % " ".join(command))
         subprocess.call(command)
 
-    def _get_tftp_address(self, tftp):
-        """ Get the TFTP server address
-        Returns a string in ip:port format """
-        # Get address
-        if tftp.is_internal() and tftp.get_address() == None:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect((self.address, 0))
-            address = s.getsockname()[0]
-            s.close()
-        else:
-            address = tftp.get_address()
-
-        # Get port
-        port = tftp.get_port()
-
-        # Return in address:port form
-        return "%s:%i" % (address, port)
-
     def _get_update_plan(self, images, slot_arg):
         """ Get an update plan.
 
@@ -254,7 +237,8 @@ class Target:
     def _update_image(self, work_dir, tftp, image, slot, new_version):
         """ Update a single image. This includes uploading the image,
         performing the firmware update, crc32 check, and activation."""
-        tftp_address = self._get_tftp_address(tftp)
+        tftp_address = "%s:%s" % (tftp.get_address(self.address),
+                tftp.get_port())
 
         # Upload image to tftp server
         filename = image.upload(work_dir, tftp, slot, new_version)
