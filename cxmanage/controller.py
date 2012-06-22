@@ -182,11 +182,11 @@ class Controller:
         # Create initial target
         target = Target(address, username, password, self.verbosity)
 
-        # Retrieve ip_info file
+        # Retrieve ipinfo file
         filename = "%s/ip_%s" % (self.work_dir, target.address)
         target.get_fabric_ipinfo(self.tftp, filename)
 
-        # Parse addresses from ip_info file
+        # Parse addresses from ipinfo file
         addresses = []
         for line in open(filename, "r"):
             address = line.split()[-1]

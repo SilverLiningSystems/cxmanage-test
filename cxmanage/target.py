@@ -32,11 +32,24 @@ class Target:
         tftp_address = self._get_tftp_address(tftp)
         basename = os.path.basename(filename)
 
+        # Send ipinfo command
         try:
             self.bmc.get_fabric_ipinfo(basename, tftp_address)
-            time.sleep(1)
-            tftp.get_file(basename, filename)
-        except (IpmiError, CxmanageError):
+        except IpmiError:
+            raise CxmanageError("Failed to retrieve IP info")
+
+        # Wait for file
+        for a in range(10):
+            try:
+                time.sleep(1)
+                tftp.get_file(basename, filename)
+                if os.path.getsize(filename) > 0:
+                    break
+            except CxmanageError:
+                pass
+
+        # Ensure file is present and not empty
+        if not os.path.exists(filename) or os.path.getsize(filename) == 0:
             raise CxmanageError("Failed to retrieve IP info")
 
     def power(self, mode):
