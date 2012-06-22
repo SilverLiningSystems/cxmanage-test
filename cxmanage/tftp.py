@@ -162,8 +162,8 @@ class Tftp:
         This uses the 'lsof' command line utility """
         try:
             command = "lsof -p%i -a -i4" % self._server
-            output = subprocess.check_output(command.split())
-            line = output.split("\n")[1]
+            output = subprocess.check_output(command.split()).rstrip()
+            line = output.split("\n")[-1]
             port = int(line.split()[8].split(":")[1])
             return port
         except (OSError, ValueError):
