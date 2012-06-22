@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+import unittest
+
+from tests import tftp_test
+test_modules = [tftp_test]
+
+def main():
+    loader = unittest.TestLoader()
+    suite = unittest.TestSuite()
+    for module in test_modules:
+        suite.addTest(loader.loadTestsFromModule(module))
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+if __name__ == "__main__":
+    main()
