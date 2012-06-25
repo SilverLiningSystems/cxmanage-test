@@ -13,8 +13,8 @@ class Image:
     """ An image consists of an image type, a filename, and any info needed
     to build an SIMG out of it. """
 
-    def __init__(self, filename, image_type,
-            simg, version, daddr, skip_crc32):
+    def __init__(self, filename, image_type, simg=None,
+            version=None, daddr=None, skip_crc32=False):
         self.filename = filename
         self.type = image_type
         self.version = version

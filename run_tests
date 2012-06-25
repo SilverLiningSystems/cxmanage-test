@@ -2,8 +2,8 @@
 
 import unittest
 
-from tests import tftp_test
-test_modules = [tftp_test]
+from tests import tftp_test, image_test
+test_modules = [tftp_test, image_test]
 
 def main():
     loader = unittest.TestLoader()

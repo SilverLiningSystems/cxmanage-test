@@ -1,9 +1,7 @@
 import os
 import random
 import shutil
-import string
 import tempfile
-import time
 import unittest
 
 from cxmanage.tftp import Tftp
