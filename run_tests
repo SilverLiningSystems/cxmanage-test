@@ -2,10 +2,11 @@
 
 import unittest
 
-from tests import tftp_test, image_test
-test_modules = [tftp_test, image_test]
+from cxmanage_test import tftp_test, image_test, target_test
+test_modules = [tftp_test, image_test, target_test]
 
 def main():
+    """ Load and run tests """
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
     for module in test_modules:

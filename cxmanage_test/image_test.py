@@ -1,7 +1,5 @@
-import os
 import random
 import shutil
-import struct
 import tempfile
 import unittest
 
@@ -9,16 +7,7 @@ from cxmanage.simg import get_simg_header
 from cxmanage.image import Image
 from cxmanage.tftp import Tftp
 
-# TODO: move this to a better place
-class Slot:
-    def __init__(self, slot="00", offset="00000000", size="00000000",
-            version="00000000", daddr="00000000", in_use="Unknown"):
-        self.slot = slot
-        self.offset = offset
-        self.size = size
-        self.version = version
-        self.daddr = daddr
-        self.in_use = in_use
+from cxmanage_test import TestFWInfoResult
 
 class ImageTest(unittest.TestCase):
     """ Tests involving cxmanage images
@@ -40,6 +29,7 @@ class ImageTest(unittest.TestCase):
 
     def test_upload(self):
         """ Test image creation and upload """
+
         imglen = 1024
         daddr = 12345
         new_version = 1
@@ -49,10 +39,10 @@ class ImageTest(unittest.TestCase):
                 for a in range(imglen)])
         filename = tempfile.mkstemp(prefix="%s/" % self.work_dir)[1]
         open(filename, "w").write(contents)
-        image = Image(filename, "DUMMY")
+        image = Image(filename, "RAW")
 
         # Create slot
-        slot = Slot(size = "%8x" % (imglen + 28), daddr = "%8x" % daddr)
+        slot = TestFWInfoResult(size=imglen + 28, daddr=daddr)
 
         # Upload image
         image_filename = image.upload(self.work_dir, self.tftp, slot, new_version)

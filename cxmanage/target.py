@@ -17,7 +17,8 @@ class Target:
     """ Contains info for a single target. A target consists of a hostname,
     an username, and a password. """
 
-    def __init__(self, address, username, password, verbosity):
+    def __init__(self, address, username="admin",
+            password="admin", verbosity=1):
         self.address = address
         self.username = username
         self.password = password
