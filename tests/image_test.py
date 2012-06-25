@@ -5,7 +5,7 @@ import struct
 import tempfile
 import unittest
 
-from cxmanage.simg import has_simg
+from cxmanage.simg import get_simg_header
 from cxmanage.image import Image
 from cxmanage.tftp import Tftp
 
@@ -59,12 +59,8 @@ class ImageTest(unittest.TestCase):
 
         # Examine uploaded image
         simg = open("%s/%s" % (self.tftp_dir, image_filename)).read()
-        self.assertTrue(has_simg(simg))
-        self.assertEqual(simg[28:], contents)
-
-        # Examine uploaded simg header
-        # TODO: replace this when we refactor SIMG
-        tup = struct.unpack('<4sHHIIIII', simg[:28])
-        self.assertEqual(tup[2], new_version)
-        self.assertEqual(tup[4], imglen)
-        self.assertEqual(tup[5], daddr)
+        header = get_simg_header(simg)
+        self.assertEqual(header.version, new_version)
+        self.assertEqual(header.imglen, imglen)
+        self.assertEqual(header.daddr, daddr)
+        self.assertEqual(simg[header.imgoff:], contents)
