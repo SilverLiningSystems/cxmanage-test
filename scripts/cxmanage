@@ -5,15 +5,14 @@
 """Command line tool for managing a Calxeda cluster"""
 
 import argparse
+import pkgutil
 import sys
-
-from pkgutil import walk_packages
 
 from cxmanage.controller import Controller
 
 # Load plugins
 prefix = "cxmanage_plugin"
-plugins = [__import__(x[1]) for x in walk_packages()
+plugins = [__import__(x[1]) for x in pkgutil.iter_modules()
         if x[1].startswith(prefix)]
 
 def build_parser():
