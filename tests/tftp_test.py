@@ -9,6 +9,8 @@ import unittest
 from cxmanage.tftp import Tftp
 
 class InternalTftpTest(unittest.TestCase):
+    """ Tests involving an internal TFTP server """
+
     def setUp(self):
         self.work_dir = tempfile.mkdtemp()
 
@@ -20,6 +22,8 @@ class InternalTftpTest(unittest.TestCase):
         shutil.rmtree(self.work_dir)
 
     def test_put_and_get(self):
+        """ Test file transfers on an internal host """
+
         # Create file
         contents = "".join([chr(random.randint(0, 255)) for a in range(1024)])
         filename = tempfile.mkstemp(prefix="%s/" % self.work_dir)[1]
@@ -36,6 +40,11 @@ class InternalTftpTest(unittest.TestCase):
         self.assertEqual(open(filename).read(), contents)
 
 class ExternalTftpTest(unittest.TestCase):
+    """ Tests involving an external TFTP server.
+
+    For testing purposes the 'external' server points to an internally hosted
+    one, but it allows us to make sure the actual TFTP protocol is working. """
+
     def setUp(self):
         self.work_dir = tempfile.mkdtemp()
         self.tftp_dir = tempfile.mkdtemp()
@@ -57,35 +66,9 @@ class ExternalTftpTest(unittest.TestCase):
         shutil.rmtree(self.tftp_dir)
         shutil.rmtree(self.work_dir)
 
-    def test_put(self):
-        # Create file
-        contents = "".join([chr(random.randint(0, 255)) for a in range(1024)])
-        filename = tempfile.mkstemp(prefix="%s/" % self.work_dir)[1]
-        open(filename, "w").write(contents)
-
-        # Upload
-        basename = os.path.basename(filename)
-        self.tftp.put_file(filename, basename)
-
-        # Verify match
-        self.assertEqual(contents,
-                open("%s/%s" % (self.tftp_dir, basename)).read())
-
-    def test_get(self):
-        # Create file
-        contents = "".join([chr(random.randint(0, 255)) for a in range(1024)])
-        filename = tempfile.mkstemp(prefix="%s/" % self.tftp_dir)[1]
-        open(filename, "w").write(contents)
-
-        # Download
-        basename = os.path.basename(filename)
-        self.tftp.get_file(basename, "%s/%s" % (self.work_dir, basename))
-
-        # Verify match
-        self.assertEqual(contents,
-                open("%s/%s" % (self.work_dir, basename)).read())
-
     def test_put_and_get(self):
+        """ Test file transfers on an external host """
+
         # Create file
         contents = "".join([chr(random.randint(0, 255)) for a in range(1024)])
         filename = tempfile.mkstemp(prefix="%s/" % self.work_dir)[1]
@@ -95,6 +78,7 @@ class ExternalTftpTest(unittest.TestCase):
         basename = os.path.basename(filename)
         self.tftp.put_file(filename, basename)
         os.remove(filename)
+        self.assertFalse(os.path.exists(filename))
 
         # Download
         self.tftp.get_file(basename, filename)
