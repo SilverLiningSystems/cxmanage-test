@@ -27,10 +27,12 @@ class Target:
         self.bmc = make_bmc(LanBMC, hostname=address,
                 username=username, password=password, verbose=verbose)
 
-    def get_fabric_ipinfo(self, tftp, filename):
+    def get_ipinfo(self, work_dir, tftp):
         """ Download IP info from this target """
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
+
+        filename = "%s/ip_%s" % (work_dir, self.address)
         basename = os.path.basename(filename)
 
         # Send ipinfo command
@@ -52,6 +54,17 @@ class Target:
         # Ensure file is present and not empty
         if not os.path.exists(filename) or os.path.getsize(filename) == 0:
             raise CxmanageError("Failed to retrieve IP info")
+
+        # Parse addresses from ipinfo file
+        addresses = []
+        for line in open(filename):
+            address = line.split()[-1]
+
+            # TODO: question this -- is it necessary/proper?
+            if address != "0.0.0.0":
+                addresses.append(address)
+
+        return addresses
 
     def power(self, mode):
         """ Send an IPMI power command to this target """

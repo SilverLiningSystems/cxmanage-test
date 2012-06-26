@@ -38,16 +38,13 @@ class TargetTest(unittest.TestCase):
         shutil.rmtree(self.work_dir)
 
     def test_ipinfo(self):
-        """ Download and verify IP info file """
-        filename = "%s/ip_info.txt" % self.work_dir
+        """ Test ipinfo command """
+        # Get IP info
+        ipinfo = self.targets[0].get_ipinfo(self.work_dir, self.tftp)
 
-        # Download IP info file
-        self.targets[0].get_fabric_ipinfo(self.tftp, filename)
-
-        # Read file
-        lines = open(filename).read().split("\n")
+        # Verify
         for i in range(len(self.targets)):
-            self.assertEqual(self.targets[i].address, lines[i].split()[-1])
+            self.assertEqual(self.targets[i].address, ipinfo[i])
 
     def test_power(self):
         """ Test power commands """

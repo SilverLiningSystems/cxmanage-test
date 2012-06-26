@@ -143,12 +143,21 @@ class Controller:
 
 ###########################  Targets-specific methods #########################
 
-    def add_target(self, address, username, password):
+    def add_target(self, address, username, password, all_nodes=False):
         """ Add the target to the list of targets for the group. """
-        target = Target(address, username, password, self.verbosity)
-        self.targets.append(target)
+        # Do nothing if the target is already present
+        for target in self.targets:
+            if target.address == address:
+                return
 
-    def get_targets_in_range(self, start, end):
+        target = Target(address, username, password, self.verbosity)
+        if all_nodes:
+            for address in target.get_ipinfo(self.work_dir, self.tftp):
+                self.add_target(address, username, password)
+        else:
+            self.targets.append(target)
+
+    def get_addresses_in_range(self, start, end):
         """ Return a list of addresses in the given IP range """
         try:
             # Convert startaddr to int
@@ -175,27 +184,6 @@ class Controller:
 
         except IndexError:
             raise ValueError("Invalid arguments to get_targets_in_range")
-
-    def get_targets_from_fabric(self, address, username, password):
-        """ Get a list of targets reported by fabric """
-
-        # Create initial target
-        target = Target(address, username, password, self.verbosity)
-
-        # Retrieve ipinfo file
-        filename = "%s/ip_%s" % (self.work_dir, target.address)
-        target.get_fabric_ipinfo(self.tftp, filename)
-
-        # Parse addresses from ipinfo file
-        addresses = []
-        for line in open(filename, "r"):
-            address = line.split()[-1]
-
-            # TODO: question this -- is it necessary/proper?
-            if address != "0.0.0.0":
-                addresses.append(address)
-
-        return addresses
 
 #########################    Execution methods    #########################
 
@@ -401,15 +389,18 @@ class Controller:
         errors = []
         for target in self.targets:
             try:
-                filename = "%s/ip_%s" % (self.work_dir, target.address)
-                target.get_fabric_ipinfo(self.tftp, filename)
-                contents = open(filename).read().rstrip("\n")
-                results.append("IP info from %s\n%s" % (target.address, contents))
+                ipinfo = target.get_ipinfo(self.work_dir, self.tftp)
+                results.append((target.address, ipinfo))
             except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         for result in results:
-            print result
+            address, ipinfo = result
+            print "IP info from %s" % address
+            for i in range(len(ipinfo)):
+                print "Node %i: %s" % (i, ipinfo[i])
+            if result != results[-1]:
+                print
 
         self._print_errors(errors)
 

@@ -216,11 +216,7 @@ def main():
     else:
         controller.set_internal_tftp_server()
 
-    try:
-        get_addresses(controller, args)
-    except ValueError:
-        print 'ERROR: Failed to get IP addresses'
-        sys.exit(1)
+    set_targets(controller, args)
 
     sys.exit(args.func(controller, args))
 
@@ -305,31 +301,20 @@ def ipmitool_command(controller, args):
     return 0
 
 
-def get_addresses(controller, args):
-    """get initial addresses"""
-    addresses = set()
+def set_targets(controller, args):
+    """get target addresses"""
     for entry in args.hostname.split(','):
         try:
             # Treat the entry as an IP range
             start, end = entry.split('-')
-            addresses.update(controller.get_targets_in_range(start, end))
+            addresses = controller.get_addresses_in_range(start, end)
+            for address in addresses:
+                controller.add_target(address, args.user,
+                        args.password, args.all_nodes)
         except ValueError:
             # Not an IP range, just add the address directly
-            addresses.add(entry)
-
-    if args.all_nodes:
-        # Get targets from fabric
-        fabric_addresses = set()
-        for address in addresses:
-            if not address in fabric_addresses:
-                new_addresses = controller.get_targets_from_fabric(address,
-                        args.user, args.password)
-                fabric_addresses.update(new_addresses)
-        addresses = addresses.union(fabric_addresses)
-
-    # Add addresses to target group
-    for address in addresses:
-        controller.add_target(address, args.user, args.password)
+            controller.add_target(entry, args.user,
+                    args.password, args.all_nodes)
 
 
 if __name__ == '__main__':
