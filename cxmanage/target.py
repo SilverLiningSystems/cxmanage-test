@@ -3,7 +3,6 @@
 """ Target objects used by the cxmanage controller """
 
 import os
-import socket
 import subprocess
 import sys
 import time
@@ -106,13 +105,10 @@ class Target:
         finally:
             self._vwrite(1, "\n")
 
-    def get_sensor(self, name):
-        """ Read a sensor value from this target """
+    def get_sensors(self):
+        """ Get a list of sensor (name, reading) tuples from this target """
         try:
-            sensors = [x for x in self.bmc.sdr_list() if x.sensor_name == name]
-            if len(sensors) < 1:
-                raise CxmanageError("Sensor \"%s\" not found" % name)
-            return sensors[0].sensor_reading
+            return self.bmc.sdr_list()
         except IpmiError:
             raise CxmanageError("Failed to retrieve sensor value")
 

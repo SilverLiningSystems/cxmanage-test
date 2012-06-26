@@ -339,45 +339,57 @@ class Controller:
 
         return len(errors) > 0
 
-    def get_sensor(self, name):
+    def get_sensors(self, name=None):
         """ Get sensor readings from all targets """
-        results = []
+        sensor_names = []
+        results = {}
         errors = []
         for target in self.targets:
             try:
-                value = target.get_sensor(name)
-                results.append((target.address, value))
+                sensors = target.get_sensors()
+                if name:
+                    sensors = [x for x in sensors if x.sensor_name == name]
+                for sensor in sensors:
+                    if not sensor.sensor_name in sensor_names:
+                        sensor_names.append(sensor.sensor_name)
+
+                results[target.address] = sensors
             except CxmanageError as e:
                 errors.append("%s: %s" % (target.address, e))
 
         if len(results) > 0:
-            print "Sensor readings for \"%s\"" % name
+            for sensor_name in sensor_names:
+                print sensor_name
 
-            # Remove "(+/- 0)" from results
-            results = [(x[0], x[1].replace("(+/- 0) ", "")) for x in results]
+                average = 0.0
+                for target in self.targets:
+                    address = target.address
 
-            try:
-                # Get suffix
-                suffix = " ".join(results[0][1].split()[1:])
+                    # Get sensor reading
+                    sensor = [x for x in results[address]
+                            if x.sensor_name == sensor_name][0]
+                    reading = sensor.sensor_reading.replace("(+/- 0) ", "")
 
-                # Get values and average
-                values = {}
-                for result in results:
-                    values[result] = float(result[1].split()[0])
-                average = sum([values[x] for x in results]) / len(results)
+                    # Add to average and print
+                    try:
+                        value = float(reading.split()[0])
+                        if average != None:
+                            average += value
+                            suffix = reading.lstrip("%f " % value)
+                        print "%s: %.2f %s" % (address.ljust(16),
+                                value, suffix)
+                    except ValueError:
+                        average = None
+                        print "%s: %s" % (address.ljust(16), reading)
+                if average != None:
+                    average /= len(self.targets)
 
-                # Set new results
-                results = [(x[0], "%.2f %s" % (values[x], suffix))
-                        for x in results]
-                results.append(("Average", "%.2f %s" % (average, suffix)))
-            except ValueError:
-                # Not all sensors returned numerical values, so just print
-                # their output directly with no average
-                pass
-
-            # Print results
-            for result in results:
-                print "%s: %s" % (result[0].ljust(16), result[1])
+                # Print average
+                if len(self.targets) > 1 and average != None:
+                    print "%s: %.2f %s" % ("Average".ljust(16),
+                            average, suffix)
+                if sensor_name != sensor_names[-1]:
+                    print
 
         self._print_errors(errors)
 

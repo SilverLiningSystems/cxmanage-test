@@ -130,8 +130,8 @@ def build_parser():
     p['fwupdate'].set_defaults(func=fwupdate_command)
 
     #sensor command
-    p['sensor'] = p['subparsers'].add_parser(
-            'sensor', help='read sensor value')
+    p['sensor'] = p['subparsers'].add_parser('sensor',
+            help='read sensor value')
     p['sensor'].add_argument('sensor_name', help='Sensor name to read')
     p['sensor'].set_defaults(func=sensor_command)
 
@@ -276,7 +276,10 @@ def fwupdate_command(controller, args):
 
 def sensor_command(controller, args):
     """read sensor values from a cluster or host"""
-    if controller.get_sensor(args.sensor_name):
+    if args.sensor_name.upper() == "LIST":
+        if controller.get_sensors():
+            return 1
+    elif controller.get_sensors(args.sensor_name):
         return 1
     return 0
 

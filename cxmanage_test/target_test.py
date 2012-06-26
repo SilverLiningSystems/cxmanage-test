@@ -91,14 +91,18 @@ class TargetTest(unittest.TestCase):
     def test_sensor(self):
         """ Test sensor read command """
         for target in self.targets:
+            sensors = target.get_sensors()
+
             # Read node power
-            reading = target.get_sensor("Node Power")
+            reading = [x.sensor_reading for x in sensors
+                    if x.sensor_name == "Node Power"][0]
             value = float(reading.split()[0])
             suffix = reading.lstrip("%f " % value)
             self.assertEqual(suffix, "(+/- 0) Watts")
 
             # Read board temp
-            reading = target.get_sensor("Board Temp")
+            reading = [x.sensor_reading for x in sensors
+                    if x.sensor_name == "Board Temp"][0]
             value = float(reading.split()[0])
             suffix = reading.lstrip("%f " % value)
             self.assertEqual(suffix, "(+/- 0) degrees C")
