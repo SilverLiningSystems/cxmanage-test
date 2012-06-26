@@ -7,7 +7,7 @@ import tempfile
 from pyipmi import IpmiError
 
 from cxmanage.tftp import Tftp
-from cxmanage.simg import create_simg, get_simg_header
+from cxmanage.simg import create_simg, get_simg_header, valid_simg
 
 class TestPartition:
     """ A partition on a node """
@@ -204,8 +204,12 @@ class TestBMC:
         class Result:
             def __init__(self, partition):
                 header = get_simg_header(partition.contents)
-                self.crc32 = header.crc32
-                self.error = None
+                if valid_simg(partition.contents):
+                    self.crc32 = header.crc32
+                    self.error = None
+                else:
+                    # TODO: what's the real error?
+                    self.error = True
 
         return Result(self.node.partitions[slot_id])
 

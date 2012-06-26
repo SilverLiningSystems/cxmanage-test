@@ -67,16 +67,41 @@ def create_simg(contents, version=0, daddr=0, skip_crc32=False):
 
 
 def has_simg(simg):
-    """Return true if infile has an SIMG header"""
+    """Return true if this string has an SIMG header"""
 
-    # Bail early if the file is too small
     if len(simg) < 28:
         return False
-
     header = SIMGHeader(simg[:28])
 
     # Check for magic word
     return header.magic_string == 'SIMG'
+
+
+def valid_simg(simg):
+    """Return true if this is a valid SIMG"""
+
+    if not has_simg(simg):
+        return False
+    header = SIMGHeader(simg[:28])
+    contents = simg[28:]
+
+    # Check offset
+    if header.imgoff != 28:
+        return False
+
+    # Check length
+    if len(contents) < header.imglen:
+        return False
+
+    # Check crc32
+    crc32 = header.crc32
+    if crc32 != 0:
+        header.flags = 0
+        header.crc32 = 0
+        if crc32 != get_crc32(contents, get_crc32(str(header))):
+            return False
+
+    return True
 
 
 def get_simg_header(simg):

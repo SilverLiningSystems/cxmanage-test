@@ -8,7 +8,7 @@ from tftpy import setLogLevel
 
 from cxmanage import CxmanageError
 from cxmanage.image import Image
-from cxmanage.simg import get_simg_header
+from cxmanage.simg import get_simg_header, valid_simg
 from cxmanage.target import Target
 from cxmanage.tftp import Tftp
 
@@ -24,7 +24,7 @@ class TargetTest(unittest.TestCase):
         self.cluster = TestCluster(4)
         self.targets = []
         for node in self.cluster.nodes:
-            target = Target(node.address)
+            target = Target(node.address, verbosity=0)
             target.bmc = TestBMC(node)
             self.targets.append(target)
 
@@ -157,9 +157,11 @@ class TargetTest(unittest.TestCase):
                     if not x in changed_partitions]
             for partition in changed_partitions:
                 header = get_simg_header(partition.contents)
+                self.assertTrue(valid_simg(partition.contents))
                 self.assertEqual(header.version, 1)
             for partition in unchanged_partitions:
                 header = get_simg_header(partition.contents)
+                self.assertTrue(valid_simg(partition.contents))
                 self.assertEqual(header.version, 0)
 
             # Examine contents

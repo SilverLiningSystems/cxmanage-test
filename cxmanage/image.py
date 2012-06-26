@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 
 from cxmanage import CxmanageError
-from cxmanage.simg import create_simg, has_simg
+from cxmanage.simg import create_simg, has_simg, valid_simg
 
 class Image:
     """ An image consists of an image type, a filename, and any info needed
@@ -53,10 +53,13 @@ class Image:
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(simg)
 
-        # Verify image size
+        # Verify image
         if os.path.getsize(filename) > int(slot.size, 16):
             raise CxmanageError("%s is too large for slot %i" %
                     (os.path.basename(self.filename), int(slot.slot)))
+        if not valid_simg(open(filename).read()):
+            raise CxmanageError("%s is not a valid SIMG" %
+                    os.path.basename(self.filename))
 
         # Upload to tftp
         basename = os.path.basename(filename)
