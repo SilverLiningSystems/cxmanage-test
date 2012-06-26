@@ -1,8 +1,11 @@
+import logging
 import os
 import random
 import shutil
 import tempfile
 import unittest
+
+from tftpy import setLogLevel
 
 from cxmanage.tftp import Tftp
 
@@ -14,6 +17,7 @@ class InternalTftpTest(unittest.TestCase):
 
         self.tftp = Tftp()
         self.tftp.set_internal_server(self.work_dir)
+        setLogLevel(logging.ERROR)
 
     def tearDown(self):
         self.tftp.kill_server()
@@ -58,6 +62,7 @@ class ExternalTftpTest(unittest.TestCase):
         # Set up an external server
         self.tftp = Tftp()
         self.tftp.set_external_server(address, port)
+        setLogLevel(logging.ERROR)
 
     def tearDown(self):
         self.internal_tftp.kill_server()

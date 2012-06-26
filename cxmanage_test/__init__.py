@@ -56,25 +56,25 @@ class TestNode:
         self.power = "off"
         self.policy = "always-off"
 
+        def add_partition(image_type, size, in_use=None):
+            """ Add a partition to this node """
+            if len(self.partitions) == 0:
+                offset = 0
+            else:
+                offset = self.partitions[-1].offset + self.partitions[-1].size
+
+            partition = TestPartition(image_type, offset, size, in_use)
+
+            self.partitions.append(partition)
+
         # Add partitions: two S2_ELF, two SOC_ELF/CDB pairs, one running CDB
-        self._add_partition(image_type=2, size=20480)
-        self._add_partition(image_type=2, size=20480)
-        self._add_partition(image_type=3, size=393216, in_use=True)
-        self._add_partition(image_type=10, size=196608)
-        self._add_partition(image_type=3, size=393216, in_use=False)
-        self._add_partition(image_type=10, size=196608)
-        self._add_partition(image_type=10, size=196608)
-
-    def _add_partition(self, image_type, size, in_use=None):
-        """ Add a partition to this node """
-        if len(self.partitions) == 0:
-            offset = 0
-        else:
-            offset = self.partitions[-1].offset + self.partitions[-1].size
-
-        partition = TestPartition(image_type, offset, size, in_use)
-
-        self.partitions.append(partition)
+        add_partition(image_type=2, size=20480)
+        add_partition(image_type=2, size=20480)
+        add_partition(image_type=3, size=393216, in_use=True)
+        add_partition(image_type=10, size=196608)
+        add_partition(image_type=3, size=393216, in_use=False)
+        add_partition(image_type=10, size=196608)
+        add_partition(image_type=10, size=196608)
 
 class TestBMC:
     """ BMC handle for a virtual node """
@@ -139,8 +139,10 @@ class TestBMC:
 
     def reset_firmware(self):
         """ Reset the running CDB """
-        # TODO
-        pass
+        partition = [x for x in self.node.partitions if x.image_type == 10][-1]
+        size = partition.size
+        raw_contents = "".join([chr(0xFF) for a in range(size - 28)])
+        partition.contents = (partition.contents[:28] + raw_contents)
 
     def sel_clear(self):
         """ Clear SEL """
@@ -153,9 +155,9 @@ class TestBMC:
         for a in range(len(self.node.partitions)):
             partition = self.node.partitions[a]
             header = get_simg_header(partition.contents)
-            result = TestFWInfoResult(a, partition.type, partition.offset,
-                    partition.size, header.version, header.daddr,
-                    partition.in_use)
+            result = TestFWInfoResult(a, partition.image_type,
+                    partition.offset, partition.size, header.version,
+                    header.daddr, partition.in_use)
             results.append(result)
 
         return results
@@ -164,8 +166,54 @@ class TestBMC:
         """ Download a file from a TFTP server to a given slot.
 
         Make sure the image type matches. """
-        # TODO
-        pass
+
+        work_dir = tempfile.mkdtemp()
+
+        partition = self.node.partitions[slot_id]
+        image_type = {"S2_ELF": 2, "SOC_ELF": 3, "CDB": 10}[image_type]
+        if partition.image_type != image_type:
+            raise IpmiError
+
+        # Download from TFTP server
+        tftp = Tftp()
+        address, port = tftp_address.split(":")
+        port = int(port)
+        tftp.set_external_server(address, port)
+        tftp.get_file(filename, "%s/%s" % (work_dir, filename))
+
+        # Update partition and clean up
+        partition.contents = open("%s/%s" % (work_dir, filename)).read()
+        shutil.rmtree(work_dir)
+
+        # Return result
+        class Result:
+            def __init__(self, handle=0):
+                self.tftp_handle_id = handle
+        return Result()
+
+    def get_firmware_status(self, handle):
+        class Result:
+            def __init__(self, status=None):
+                if status == None:
+                    self.status = random.choice(["In progress", "Complete"])
+                else:
+                    self.status = status
+        return Result()
+
+    def check_firmware(self, slot_id):
+        class Result:
+            def __init__(self, partition):
+                header = get_simg_header(partition.contents)
+                self.crc32 = header.crc32
+                self.error = None
+
+        return Result(self.node.partitions[slot_id])
+
+    def activate_firmware(self, slot_id):
+        partition = self.node.partitions[slot_id]
+        header = get_simg_header(partition.contents)
+        header.flags = header.flags & 0xFFFFFFFE
+        partition.contents = str(header) + partition.contents[28:]
 
     def sdr_list(self):
         """ Get sensor info from the node.

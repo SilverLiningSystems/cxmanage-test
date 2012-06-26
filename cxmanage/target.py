@@ -265,7 +265,7 @@ class Target:
         if result.status == "Complete":
             # Verify crc
             result = self.bmc.check_firmware(slot_id)
-            if hasattr(result, "crc32") and not result.error != None:
+            if hasattr(result, "crc32") and result.error == None:
                 # Activate
                 self.bmc.activate_firmware(slot_id)
             else:
