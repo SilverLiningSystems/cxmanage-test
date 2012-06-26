@@ -1,27 +1,21 @@
-import logging
 import os
 import random
 import shutil
 import tempfile
 import unittest
 
-from tftpy import setLogLevel
-
-from cxmanage.tftp import Tftp
+from cxmanage.tftp import InternalTftp, ExternalTftp
 
 class InternalTftpTest(unittest.TestCase):
     """ Tests involving an internal TFTP server """
 
     def setUp(self):
         self.work_dir = tempfile.mkdtemp()
-
-        self.tftp = Tftp()
-        self.tftp.set_internal_server(self.work_dir)
-        setLogLevel(logging.ERROR)
+        self.tftp = InternalTftp()
 
     def tearDown(self):
-        self.tftp.kill_server()
         shutil.rmtree(self.work_dir)
+        self.tftp.kill()
 
     def test_put_and_get(self):
         """ Test file transfers on an internal host """
@@ -31,9 +25,11 @@ class InternalTftpTest(unittest.TestCase):
         filename = tempfile.mkstemp(prefix="%s/" % self.work_dir)[1]
         open(filename, "w").write(contents)
 
-        # Upload
+        # Upload and remove
         basename = os.path.basename(filename)
         self.tftp.put_file(filename, basename)
+        os.remove(filename)
+        self.assertFalse(os.path.exists(filename))
 
         # Download
         self.tftp.get_file(basename, filename)
@@ -49,25 +45,18 @@ class ExternalTftpTest(unittest.TestCase):
 
     def setUp(self):
         self.work_dir = tempfile.mkdtemp()
-        self.tftp_dir = tempfile.mkdtemp()
 
         # Set up an internal server
-        self.internal_tftp = Tftp()
-        self.internal_tftp.set_internal_server(self.tftp_dir)
+        self.internal_tftp = InternalTftp()
 
-        # Get address and port
+        # Set up external server
         address = "localhost"
         port = self.internal_tftp.get_port()
-
-        # Set up an external server
-        self.tftp = Tftp()
-        self.tftp.set_external_server(address, port)
-        setLogLevel(logging.ERROR)
+        self.tftp = ExternalTftp(address, port)
 
     def tearDown(self):
-        self.internal_tftp.kill_server()
-        shutil.rmtree(self.tftp_dir)
         shutil.rmtree(self.work_dir)
+        self.internal_tftp.kill()
 
     def test_put_and_get(self):
         """ Test file transfers on an external host """

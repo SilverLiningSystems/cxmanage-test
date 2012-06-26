@@ -6,7 +6,7 @@ import tempfile
 
 from pyipmi import IpmiError
 
-from cxmanage.tftp import Tftp
+from cxmanage.tftp import ExternalTftp
 from cxmanage.simg import create_simg, get_simg_header, valid_simg
 
 class TestPartition:
@@ -84,10 +84,9 @@ class TestBMC:
     def get_fabric_ipinfo(self, filename, tftp_address):
         """ Upload an ipinfo file from the node to TFTP"""
         # Set up TFTP client
-        tftp = Tftp()
         address, port = tftp_address.split(":")
         port = int(port)
-        tftp.set_external_server(address, port)
+        tftp = ExternalTftp(address, port)
 
         # Create file
         work_dir = tempfile.mkdtemp()
@@ -175,10 +174,9 @@ class TestBMC:
             raise IpmiError
 
         # Download from TFTP server
-        tftp = Tftp()
         address, port = tftp_address.split(":")
         port = int(port)
-        tftp.set_external_server(address, port)
+        tftp = ExternalTftp(address, port)
         tftp.get_file(filename, "%s/%s" % (work_dir, filename))
 
         # Update partition and clean up

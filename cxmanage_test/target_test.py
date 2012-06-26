@@ -1,16 +1,13 @@
-import logging
 import random
 import shutil
 import tempfile
 import unittest
 
-from tftpy import setLogLevel
-
 from cxmanage import CxmanageError
 from cxmanage.image import Image
 from cxmanage.simg import get_simg_header, valid_simg
 from cxmanage.target import Target
-from cxmanage.tftp import Tftp
+from cxmanage.tftp import InternalTftp
 
 from cxmanage_test import TestCluster, TestBMC
 
@@ -29,13 +26,11 @@ class TargetTest(unittest.TestCase):
             self.targets.append(target)
 
         # Set up an internal server
-        self.tftp = Tftp()
-        self.tftp.set_internal_server(self.work_dir)
-        setLogLevel(logging.ERROR)
+        self.tftp = InternalTftp()
 
     def tearDown(self):
-        self.tftp.kill_server()
         shutil.rmtree(self.work_dir)
+        self.tftp.kill()
 
     def test_ipinfo(self):
         """ Test ipinfo command """

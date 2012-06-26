@@ -14,7 +14,7 @@ import tarfile
 from cxmanage import CxmanageError
 from cxmanage.image import Image
 from cxmanage.target import Target
-from cxmanage.tftp import Tftp
+from cxmanage.tftp import InternalTftp, ExternalTftp
 
 class Controller:
     """ The controller class serves as a manager for all the internals of
@@ -22,27 +22,34 @@ class Controller:
     interface. """
 
     def __init__(self, verbosity):
-        self.tftp = Tftp()
+        self.tftp = None
         self.targets = []
         self.images = []
-        self.work_dir = tempfile.mkdtemp(prefix="cxmanage-")
-        atexit.register(self._cleanup)
-
         self.verbosity = verbosity
-
-    def _cleanup(self):
-        """ Clean up temporary files """
-        shutil.rmtree(self.work_dir)
+        self.work_dir = tempfile.mkdtemp(prefix="cxmanage-")
+        atexit.register(lambda: shutil.rmtree(self.work_dir))
 
 ###########################  TFTP-specific methods ###########################
 
     def set_internal_tftp_server(self, address=None, port=0):
         """ Set up a TFTP server to be hosted locally """
-        self.tftp.set_internal_server(self.work_dir, address, port)
+        # Kill the server if we can
+        try:
+            self.tftp.kill()
+        except AttributeError:
+            pass
+
+        self.tftp = InternalTftp(address, port, self.verbosity)
 
     def set_external_tftp_server(self, address, port=69):
         """ Set up a remote TFTP server """
-        self.tftp.set_external_server(address, port)
+        # Kill the server if we can
+        try:
+            self.tftp.kill()
+        except AttributeError:
+            pass
+
+        self.tftp = ExternalTftp(address, port, self.verbosity)
 
 ###########################  Images-specific methods ##########################
 
