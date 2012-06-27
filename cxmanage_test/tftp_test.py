@@ -1,10 +1,11 @@
 import os
-import random
 import shutil
 import tempfile
 import unittest
 
 from cxmanage.tftp import InternalTftp, ExternalTftp
+
+from cxmanage_test import random_file
 
 class InternalTftpTest(unittest.TestCase):
     """ Tests involving an internal TFTP server """
@@ -21,9 +22,8 @@ class InternalTftpTest(unittest.TestCase):
         """ Test file transfers on an internal host """
 
         # Create file
-        contents = "".join([chr(random.randint(0, 255)) for a in range(1024)])
-        filename = tempfile.mkstemp(prefix="%s/" % self.work_dir)[1]
-        open(filename, "w").write(contents)
+        filename = random_file(self.work_dir, 1024)
+        contents = open(filename).read()
 
         # Upload and remove
         basename = os.path.basename(filename)
@@ -62,9 +62,8 @@ class ExternalTftpTest(unittest.TestCase):
         """ Test file transfers on an external host """
 
         # Create file
-        contents = "".join([chr(random.randint(0, 255)) for a in range(1024)])
-        filename = tempfile.mkstemp(prefix="%s/" % self.work_dir)[1]
-        open(filename, "w").write(contents)
+        filename = random_file(self.work_dir, 1024)
+        contents = open(filename).read()
 
         # Upload and remove original file
         basename = os.path.basename(filename)

@@ -21,33 +21,38 @@ class Controller:
     cxmanage. Scripts or UIs can build on top of this to provide an user
     interface. """
 
-    def __init__(self, verbosity):
+    def __init__(self, verbosity=0, image_class=Image, target_class=Target):
         self.tftp = None
         self.targets = []
         self.images = []
         self.verbosity = verbosity
+        self.target_class = target_class
+        self.image_class = image_class
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage-")
-        atexit.register(lambda: shutil.rmtree(self.work_dir))
+        atexit.register(self.kill)
+
+    def kill(self):
+        """ Clean up working directory and tftp server """
+        if os.path.exists(self.work_dir):
+            shutil.rmtree(self.work_dir)
+        if self.tftp != None:
+            self.tftp.kill()
 
 ###########################  TFTP-specific methods ###########################
 
     def set_internal_tftp_server(self, address=None, port=0):
         """ Set up a TFTP server to be hosted locally """
         # Kill the server if we can
-        try:
+        if self.tftp != None:
             self.tftp.kill()
-        except AttributeError:
-            pass
 
         self.tftp = InternalTftp(address, port, self.verbosity)
 
     def set_external_tftp_server(self, address, port=69):
         """ Set up a remote TFTP server """
         # Kill the server if we can
-        try:
+        if self.tftp != None:
             self.tftp.kill()
-        except AttributeError:
-            pass
 
         self.tftp = ExternalTftp(address, port, self.verbosity)
 
@@ -100,12 +105,12 @@ class Controller:
                 else:
                     image_skip_crc32 = skip_crc32
 
-                image = Image(filename, image_type, image_simg,
+                image = self.image_class(filename, image_type, image_simg,
                         image_version, image_daddr, image_skip_crc32)
                 self.images.append(image)
 
         else:
-            image = Image(filename, image_type, simg,
+            image = self.image_class(filename, image_type, simg,
                     version, daddr, skip_crc32)
             self.images.append(image)
 
@@ -157,7 +162,7 @@ class Controller:
             if target.address == address:
                 return
 
-        target = Target(address, username, password, self.verbosity)
+        target = self.target_class(address, username, password, self.verbosity)
         if all_nodes:
             for address in target.get_ipinfo(self.work_dir, self.tftp):
                 self.add_target(address, username, password)
@@ -301,7 +306,7 @@ class Controller:
 
         return len(errors) > 0
 
-    def update_firmware(self, slot_arg, skip_reset=False):
+    def update_firmware(self, slot_arg="INACTIVE", skip_reset=False):
         """ Send firmware update commands to all targets in group. """
 
         # Update firmware on all targets

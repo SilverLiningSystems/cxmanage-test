@@ -235,7 +235,7 @@ class Target:
                         slot = inactive_slots[1]
                     plan.append((image, slot, new_version))
                 else:
-                    raise ValueError("Invalid slot argument")
+                    raise ValueError("Invalid slot argument: %s" % slot_arg)
 
                 if image.type == "SOC_ELF":
                     soc_plan_made = True

@@ -1,5 +1,4 @@
 import os
-import random
 import shutil
 import tempfile
 import unittest
@@ -8,7 +7,7 @@ from cxmanage.simg import get_simg_header
 from cxmanage.image import Image
 from cxmanage.tftp import InternalTftp
 
-from cxmanage_test import TestFWInfoResult
+from cxmanage_test import TestSlot, random_file
 
 class ImageTest(unittest.TestCase):
     """ Tests involving cxmanage images
@@ -28,20 +27,21 @@ class ImageTest(unittest.TestCase):
     def test_upload(self):
         """ Test image creation and upload """
 
+        class TestImage(Image):
+            def valid_type(self):
+                return True
+
         imglen = 1024
         daddr = 12345
         new_version = 1
 
         # Create image
-        random.seed(0) # use a known random seed that won't have a weird type
-        contents = "".join([chr(random.randint(0, 255))
-                for a in range(imglen)])
-        filename = tempfile.mkstemp(prefix="%s/" % self.work_dir)[1]
-        open(filename, "w").write(contents)
-        image = Image(filename, "RAW")
+        filename = random_file(self.work_dir, imglen)
+        contents = open(filename).read()
+        image = TestImage(filename, "RAW")
 
         # Create slot
-        slot = TestFWInfoResult(size=imglen + 28, daddr=daddr)
+        slot = TestSlot(size=imglen + 28, daddr=daddr)
 
         # Upload image and delete file
         image_filename = image.upload(self.work_dir,
