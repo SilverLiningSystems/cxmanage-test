@@ -35,10 +35,10 @@ def build_parser():
     p['verbosity'].add_argument('-q', '--quiet', action='store_true',
             help='Quiet output')
     p['tftp_type'] = p['parser'].add_mutually_exclusive_group()
-    p['tftp_type'].add_argument('-t', '--tftp',
-            help='Connect to remote TFTP server at <ip:port>')
-    p['tftp_type'].add_argument('--internal-tftp',
-            help='Host an internal TFTP server listening on <ip:port>')
+    p['tftp_type'].add_argument('-t', '--tftp', metavar="IP:PORT",
+            help='Connect to remote TFTP server at ip:port')
+    p['tftp_type'].add_argument('--internal-tftp', metavar="IP:PORT",
+            help='Host an internal TFTP server listening on ip:port')
 
     p['subparsers'] = p['parser'].add_subparsers()
 
@@ -138,6 +138,10 @@ def build_parser():
     #ipinfo command
     p['ipinfo'] = p['subparsers'].add_parser('ipinfo', help='get IP info')
     p['ipinfo'].set_defaults(func=ipinfo_command)
+
+    #macaddrs command
+    p['macaddrs'] = p['subparsers'].add_parser('macaddrs', help='get mac addresses')
+    p['macaddrs'].set_defaults(func=macaddrs_command)
 
     #config command
     p['config'] = p['subparsers'].add_parser('config', help='configure hosts')
@@ -283,6 +287,13 @@ def sensor_command(controller, args):
 def ipinfo_command(controller, args):
     """get ip info from a cluster or host"""
     if controller.get_ipinfo():
+        return 1
+    return 0
+
+
+def macaddrs_command(controller, args):
+    """get mac addresses from a cluster or host"""
+    if controller.get_macaddrs():
         return 1
     return 0
 

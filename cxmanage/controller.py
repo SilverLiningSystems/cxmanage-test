@@ -169,8 +169,8 @@ class Controller:
 
         target = self.target_class(address, username, password, self.verbosity)
         if all_nodes:
-            for address in target.get_ipinfo(self.work_dir, self.tftp):
-                self.add_target(address, username, password)
+            for entry in target.get_ipinfo(self.work_dir, self.tftp):
+                self.add_target(entry[1], username, password)
         else:
             self.targets.append(target)
 
@@ -415,7 +415,30 @@ class Controller:
             address, ipinfo = result
             print "IP info from %s" % address
             for i in range(len(ipinfo)):
-                print "Node %i: %s" % (i, ipinfo[i])
+                print "Node %i: %s" % ipinfo[i]
+            if result != results[-1]:
+                print
+
+        self._print_errors(errors)
+
+        return len(errors) > 0
+
+    def get_macaddrs(self):
+        """ Get mac addresses from all targets """
+        results = []
+        errors = []
+        for target in self.targets:
+            try:
+                macaddrs = target.get_macaddrs(self.work_dir, self.tftp)
+                results.append((target.address, macaddrs))
+            except CxmanageError as e:
+                errors.append("%s: %s" % (target.address, e))
+
+        for result in results:
+            address, macaddrs = result
+            print "Mac addresses from %s" % address
+            for i in range(len(macaddrs)):
+                print "Node %i, Port %i: %s" % macaddrs[i]
             if result != results[-1]:
                 print
 

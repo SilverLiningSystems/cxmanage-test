@@ -51,20 +51,69 @@ class Target:
             except CxmanageError:
                 pass
 
-        # Ensure file is present and not empty
-        if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+        # Ensure file is present
+        if not os.path.exists(filename):
             raise CxmanageError("Failed to retrieve IP info")
 
         # Parse addresses from ipinfo file
-        addresses = []
+        results = []
         for line in open(filename):
-            address = line.split()[-1]
+            if line.startswith("Node"):
+                elements = line.split()
+                node = int(elements[1].rstrip(":"))
+                address = elements[2]
+                if address != "0.0.0.0":
+                    results.append((node, address))
 
-            # TODO: question this -- is it necessary/proper?
-            if address != "0.0.0.0":
-                addresses.append(address)
+        # Make sure we found something
+        if len(results) == 0:
+            raise CxmanageError("Failed to retrieve IP info")
 
-        return addresses
+        return results
+
+    def get_macaddrs(self, work_dir, tftp):
+        """ Download mac addresses from this target """
+        tftp_address = "%s:%s" % (tftp.get_address(self.address),
+                tftp.get_port())
+
+        filename = "%s/mac_%s" % (work_dir, self.address)
+        basename = os.path.basename(filename)
+
+        # Send ipinfo command
+        try:
+            self.bmc.get_fabric_macaddresses(basename, tftp_address)
+        except IpmiError:
+            raise CxmanageError("Failed to retrieve mac addresses")
+
+        # Wait for file
+        for a in range(10):
+            try:
+                time.sleep(1)
+                tftp.get_file(basename, filename)
+                if os.path.getsize(filename) > 0:
+                    break
+            except CxmanageError:
+                pass
+
+        # Ensure file is present
+        if not os.path.exists(filename):
+            raise CxmanageError("Failed to retrieve mac addresses")
+
+        # Parse addresses from ipinfo file
+        results = []
+        for line in open(filename):
+            if line.startswith("Node"):
+                elements = line.split()
+                node = int(elements[1].rstrip(","))
+                port = int(elements[3].rstrip(":"))
+                address = elements[4]
+                results.append((node, port, address))
+
+        # Make sure we found something
+        if len(results) == 0:
+            raise CxmanageError("Failed to retrieve mac addresses")
+
+        return results
 
     def power(self, mode):
         """ Send an IPMI power command to this target """
