@@ -12,15 +12,15 @@ class ControllerTest(unittest.TestCase):
             """ Dummy target for the controller tests """
             def __init__(self, address, username="admin", password="admin", verbosity=0):
                 self.address = address
-                self.updated_image_types = []
+                self.executed = []
 
             def get_ipinfo(self, work_dir, tftp):
-                return addresses
+                self.executed.append(self.get_ipinfo)
+                return list(enumerate(addresses))
 
             def update_firmware(self, work_dir, tftp, images, slot_arg):
+                self.executed.append((self.update_firmware, images))
                 time.sleep(random.randint(0, 5))
-                for image in images:
-                    self.updated_image_types.append(image.type)
 
         class DummyImage:
             def __init__(self, filename, image_type, simg=None,
@@ -28,8 +28,10 @@ class ControllerTest(unittest.TestCase):
                 self.filename = filename
                 self.type = image_type
 
-        addresses = ["192.168.100.100", "192.168.100.101",
-                "192.168.100.102", "192.168.100.103"]
+        num_nodes = 4
+        addresses = []
+        for a in range(num_nodes):
+            addresses.append("192.168.100.%i" % (a+1))
         self.addresses = addresses
 
         # Set up the controller
@@ -101,6 +103,7 @@ class ControllerTest(unittest.TestCase):
                     if x.address == address][0]
 
             # Check updated types
-            self.assertEqual(len(target.updated_image_types), 3)
+            self.assertEqual(len(target.executed), 1)
+            updated_types = [x.type for x in target.executed[0][1]]
             for image_type in ["S2_ELF", "SOC_ELF", "CDB"]:
-                self.assertTrue(image_type in target.updated_image_types)
+                self.assertTrue(image_type in updated_types)
