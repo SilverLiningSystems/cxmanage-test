@@ -217,8 +217,7 @@ class Controller:
             for target in self.targets:
                 if target.address in results:
                     print target.address
-            if len(errors) > 0:
-                print
+            print
 
         self._print_errors(errors)
 
@@ -235,8 +234,7 @@ class Controller:
                 if target.address in results:
                     print "%s: %s" % (target.address.ljust(16),
                             results[target.address])
-            if len(errors) > 0:
-                print
+            print
 
         # Print errors
         self._print_errors(errors)
@@ -254,8 +252,7 @@ class Controller:
             for target in self.targets:
                 if target.address in results:
                     print target.address
-            if len(errors) > 0:
-                print
+            print
 
         self._print_errors(errors)
 
@@ -272,8 +269,7 @@ class Controller:
                 if target.address in results:
                     print "%s: %s" % (target.address.ljust(16),
                             results[target.address])
-            if len(errors) > 0:
-                print
+            print
 
         # Print errors
         self._print_errors(errors)
@@ -290,8 +286,7 @@ class Controller:
             for target in self.targets:
                 if target.address in results:
                     print target.address
-            if len(errors) > 0:
-                print
+            print
 
         self._print_errors(errors)
 
@@ -315,8 +310,7 @@ class Controller:
             for target in self.targets:
                 if target.address in results:
                     print target.address
-            if len(errors) > 0:
-                print
+            print
 
         self._print_errors(errors)
 
@@ -328,6 +322,7 @@ class Controller:
 
         if len(results) > 0:
             sensors = {}
+            sensor_names = []
             for target in self.targets:
                 for sensor in results[target.address]:
                     sensor_name = sensor.sensor_name
@@ -335,9 +330,10 @@ class Controller:
                     if name in [None, sensor_name]:
                         if not sensor_name in sensors:
                             sensors[sensor_name] = {}
+                            sensor_names.append(sensor_name)
                         sensors[sensor_name][target.address] = reading
 
-            for sensor_name in sensors:
+            for sensor_name in sensor_names:
                 print sensor_name
 
                 average = 0.0
@@ -363,8 +359,8 @@ class Controller:
                     average /= len(self.targets)
                     print "%s: %.2f %s" % ("Average".ljust(16),
                             average, suffix)
-                if sensor_name != sensors.keys()[-1]:
-                    print
+
+                print
 
         self._print_errors(errors)
 
@@ -383,10 +379,7 @@ class Controller:
                     ipinfo = results[target.address]
                     for i in range(len(ipinfo)):
                         print "Node %i: %s" % ipinfo[i]
-                        if target != self.targets[-1]:
-                            print
-            if len(errors) > 0:
-                print
+                    print
 
         self._print_errors(errors)
 
@@ -405,10 +398,7 @@ class Controller:
                     macaddrs = results[target.address]
                     for i in range(len(macaddrs)):
                         print "Node %i, Port %i: %s" % macaddrs[i]
-                        if target != self.targets[-1]:
-                            print
-            if len(errors) > 0:
-                print
+                    print
 
         self._print_errors(errors)
 
@@ -424,8 +414,7 @@ class Controller:
             for target in self.targets:
                 if target.address in results:
                     print target.address
-            if len(errors) > 0:
-                print
+            print
 
         self._print_errors(errors)
 
@@ -488,3 +477,4 @@ class Controller:
                 if target.address in errors:
                     print "%s: %s" % (target.address.ljust(16),
                             errors[target.address])
+            print
