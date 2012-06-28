@@ -258,6 +258,17 @@ def mcreset_command(controller, args):
 
 def fwupdate_command(controller, args):
     """update firmware on a cluster or host"""
+    if not args.all_nodes:
+        sys.stdout.write("WARNING: Updating firmware without --all-nodes is dangerous.")
+        sys.stdout.write(" Continue? (y/n) ")
+        sys.stdout.flush()
+        while True:
+            command = raw_input().rstrip().lstrip().lower()
+            if command in ["y", "yes"]:
+                break
+            elif command in ["n", "no"]:
+                return 1
+
     simg = None
     if args.force_simg:
         simg = False
