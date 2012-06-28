@@ -454,6 +454,9 @@ class Controller:
             def run(self):
                 target = self.target
                 address = target.address
+
+                # We need to be careful with thread safety here. In this case,
+                # since no thread shares a key, we should be ok without a lock.
                 try:
                     results[address] = getattr(target, name)(*args)
                 except CxmanageError as e:

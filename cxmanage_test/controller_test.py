@@ -67,15 +67,15 @@ class ControllerTargetTest(unittest.TestCase):
                 self.filename = filename
                 self.type = image_type
 
-        num_nodes = 16
+        num_nodes = 128
         addresses = []
         for a in range(num_nodes):
             addresses.append("192.168.100.%i" % (a+1))
         self.addresses = addresses
 
         # Set up the controller
-        self.controller = Controller(image_class=DummyImage,
-                target_class=DummyTarget)
+        self.controller = Controller(max_threads=32,
+                image_class=DummyImage, target_class=DummyTarget)
 
     def tearDown(self):
         self.controller.kill()
@@ -216,7 +216,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_get_ipinfo(self):
         """ Test controller get ipinfo command """
         # Add targets
-        self.controller.add_target(self.addresses[0], "admin", "admin", True)
+        self.controller.add_target(self.addresses[0], "admin", "admin")
 
         # Send get ipinfo command
         self.assertFalse(self.controller.get_ipinfo())
@@ -229,7 +229,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_get_macaddrs(self):
         """ Test controller get macaddrs command """
         # Add targets
-        self.controller.add_target(self.addresses[0], "admin", "admin", True)
+        self.controller.add_target(self.addresses[0], "admin", "admin")
 
         # Send get macaddrs command
         self.assertFalse(self.controller.get_macaddrs())
