@@ -7,6 +7,7 @@ and the objects it contains: tftp, images, and targets. """
 import atexit
 import os
 import shutil
+import sys
 import tempfile
 import threading
 import time
@@ -17,17 +18,19 @@ from cxmanage import CxmanageError
 from cxmanage.image import Image
 from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
+from cxmanage.indicator import Indicator
 
 class Controller:
     """ The controller class serves as a manager for all the internals of
     cxmanage. Scripts or UIs can build on top of this to provide an user
     interface. """
 
-    def __init__(self, verbosity=0, image_class=Image, target_class=Target):
+    def __init__(self, verbosity=0, max_threads=1, image_class=Image, target_class=Target):
         self.tftp = None
         self.targets = []
         self.images = []
         self.verbosity = verbosity
+        self.max_threads = max_threads
         self.target_class = target_class
         self.image_class = image_class
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage-")
@@ -211,7 +214,7 @@ class Controller:
         results, errors = self._run_command("power", mode)
 
         # Print successful addresses
-        if len(results) > 0:
+        if self.verbosity >= 1 and len(results) > 0:
             print ("Power %s command executed successfully on the following hosts:"
                     % mode)
             for target in self.targets:
@@ -246,7 +249,7 @@ class Controller:
         results, errors = self._run_command("power_policy", mode)
 
         # Print successful addresses
-        if len(results) > 0:
+        if self.verbosity >= 1 and len(results) > 0:
             print ("Power policy set to \"%s\" for the following hosts:"
                     % mode)
             for target in self.targets:
@@ -281,7 +284,7 @@ class Controller:
         results, errors = self._run_command("mc_reset")
 
         # Print successful addresses
-        if len(results) > 0:
+        if self.verbosity >= 1 and len(results) > 0:
             print "MC reset successfully on the following hosts:"
             for target in self.targets:
                 if target.address in results:
@@ -294,6 +297,12 @@ class Controller:
 
     def update_firmware(self, slot_arg="INACTIVE", skip_reset=False):
         """ Send firmware update commands to all targets in group. """
+        # Start a progress indicator
+        indicator = Indicator("Updating")
+        if self.verbosity == 1:
+            indicator.start()
+
+        # Get results and errors
         results, errors = self._run_command("update_firmware",
                 self.work_dir, self.tftp, self.images, slot_arg)
 
@@ -304,8 +313,11 @@ class Controller:
                     self._run_command("mc_reset")
                     break
 
+        # Signal indicator to stop
+        indicator.stop()
+
         # Print successful addresses
-        if len(results) > 0:
+        if self.verbosity >= 1 and len(results) > 0:
             print "Firmware updated successfully on the following hosts:"
             for target in self.targets:
                 if target.address in results:
@@ -409,7 +421,7 @@ class Controller:
         results, errors = self._run_command("config_reset")
 
         # Print successful addresses
-        if len(results) > 0:
+        if self.verbosity >= 1 and len(results) > 0:
             print "Configuration reset successfully on the following hosts:"
             for target in self.targets:
                 if target.address in results:
@@ -434,8 +446,6 @@ class Controller:
 
         Returns a mapping of addresses to a (results, errors) tuple """
 
-        max_threads = 1
-
         class CommandThread(threading.Thread):
             def __init__(self, target):
                 threading.Thread.__init__(self)
@@ -454,8 +464,8 @@ class Controller:
         errors = {}
         for target in self.targets:
             # Wait if we have too many threads
-            while len(threads) >= max_threads:
-                time.sleep(0.1)
+            while len(threads) >= self.max_threads:
+                time.sleep(0.001)
                 threads = [x for x in threads if x.is_alive()]
 
             # Spawn a thread

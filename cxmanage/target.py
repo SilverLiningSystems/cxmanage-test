@@ -158,14 +158,9 @@ class Target:
     def update_firmware(self, work_dir, tftp, images, slot_arg):
         """ Update firmware on this target. """
         # Get all updates
-        self._vwrite(1, "Updating %s" % self.address)
-
-        try:
-            plan = self._get_update_plan(images, slot_arg)
-            for image, slot, new_version in plan:
-                self._update_image(work_dir, tftp, image, slot, new_version)
-        finally:
-            self._vwrite(1, "\n")
+        plan = self._get_update_plan(images, slot_arg)
+        for image, slot, new_version in plan:
+            self._update_image(work_dir, tftp, image, slot, new_version)
 
     def get_sensors(self):
         """ Get a list of sensor (name, reading) tuples from this target """
@@ -194,7 +189,8 @@ class Target:
                 self.address]
         command += ipmitool_args
 
-        self._vwrite(2, "Running %s\n" % " ".join(command))
+        if self.verbosity >= 2:
+            print "Running %s" % " ".join(command)
         subprocess.call(command)
 
     def _get_update_plan(self, images, slot_arg):
@@ -312,7 +308,6 @@ class Target:
         # Wait for update to finish
         while True:
             time.sleep(1)
-            self._vwrite(1, ".")
             result = self.bmc.get_firmware_status(handle)
             if not hasattr(result, "status"):
                 raise CxmanageError("Unable to retrieve transfer info")
@@ -330,9 +325,3 @@ class Target:
                 raise CxmanageError("Node reported crc32 check failure")
         else:
             raise CxmanageError("Node reported transfer failure")
-
-    def _vwrite(self, verbosity, text):
-        """ Write to stdout if we're at the right verbosity level """
-        if self.verbosity == verbosity:
-            sys.stdout.write(text)
-            sys.stdout.flush()

@@ -44,7 +44,7 @@ class ControllerTargetTest(unittest.TestCase):
 
             def update_firmware(self, work_dir, tftp, images, slot_arg):
                 self.executed.append(("update_firmware", images))
-                time.sleep(random.randint(0, 5))
+                time.sleep(random.randint(0, 2))
 
             def get_sensors(self):
                 self.executed.append("get_sensors")
@@ -67,7 +67,7 @@ class ControllerTargetTest(unittest.TestCase):
                 self.filename = filename
                 self.type = image_type
 
-        num_nodes = 4
+        num_nodes = 16
         addresses = []
         for a in range(num_nodes):
             addresses.append("192.168.100.%i" % (a+1))
