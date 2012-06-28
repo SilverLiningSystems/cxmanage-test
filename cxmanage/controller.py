@@ -8,6 +8,8 @@ import atexit
 import os
 import shutil
 import tempfile
+import threading
+import time
 import ConfigParser
 import tarfile
 
@@ -206,64 +208,17 @@ class Controller:
 
     def power(self, mode):
         """ Send the given power command to all targets """
-        successes = []
-        errors = []
-        for target in self.targets:
-            try:
-                target.power(mode)
-                successes.append(target.address)
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
+        results, errors = self._run_command("power", mode)
 
-        # Print successful hosts
-        if len(successes) > 0:
+        # Print successful addresses
+        if len(results) > 0:
             print ("Power %s command executed successfully on the following hosts:"
                     % mode)
-            for host in successes:
-                print host
-
-        self._print_errors(errors)
-
-        return len(errors) > 0
-
-    def power_policy(self, state):
-        """ Set the power policy for all targets """
-        successes = []
-        errors = []
-        for target in self.targets:
-            try:
-                target.power_policy(state)
-                successes.append(target.address)
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
-
-        # Print successful hosts
-        if len(successes) > 0:
-            print ("Power policy set to \"%s\" for the following hosts:"
-                    % state)
-            for host in successes:
-                print host
-
-        self._print_errors(errors)
-
-        return len(errors) > 0
-
-    def power_policy_status(self):
-        """ Get power policy status for all targets """
-        results = []
-        errors = []
-        for target in self.targets:
-            try:
-                status = target.power_policy_status()
-                results.append((target.address, status))
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
-
-        # Print results
-        if len(results) > 0:
-            print "Power policy status"
-            for result in results:
-                print "%s: %s" % (result[0].ljust(16), result[1])
+            for target in self.targets:
+                if target.address in results:
+                    print target.address
+            if len(errors) > 0:
+                print
 
         self._print_errors(errors)
 
@@ -271,41 +226,72 @@ class Controller:
 
     def power_status(self):
         """ Retrieve power status from all targets in group """
-        results = []
-        errors = []
-        for target in self.targets:
-            try:
-                status = target.power_status()
-                results.append((target.address, status))
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
+        results, errors = self._run_command("power_status")
 
         # Print results
         if len(results) > 0:
             print "Chassis power status"
-            for result in results:
-                print "%s: %s" % (result[0].ljust(16), result[1])
+            for target in self.targets:
+                if target.address in results:
+                    print "%s: %s" % (target.address.ljust(16),
+                            results[target.address])
+            if len(errors) > 0:
+                print
 
+        # Print errors
+        self._print_errors(errors)
+
+        return len(errors) > 0
+
+    def power_policy(self, mode):
+        """ Set the power policy for all targets """
+        results, errors = self._run_command("power_policy", mode)
+
+        # Print successful addresses
+        if len(results) > 0:
+            print ("Power policy set to \"%s\" for the following hosts:"
+                    % mode)
+            for target in self.targets:
+                if target.address in results:
+                    print target.address
+            if len(errors) > 0:
+                print
+
+        self._print_errors(errors)
+
+        return len(errors) > 0
+
+    def power_policy_status(self):
+        """ Get power policy status for all targets """
+        results, errors = self._run_command("power_policy_status")
+
+        # Print results
+        if len(results) > 0:
+            print "Power policy status"
+            for target in self.targets:
+                if target.address in results:
+                    print "%s: %s" % (target.address.ljust(16),
+                            results[target.address])
+            if len(errors) > 0:
+                print
+
+        # Print errors
         self._print_errors(errors)
 
         return len(errors) > 0
 
     def mc_reset(self):
         """ Send an MC reset command to all targets """
-        successes = []
-        errors = []
-        for target in self.targets:
-            try:
-                target.mc_reset()
-                successes.append(target.address)
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
+        results, errors = self._run_command("mc_reset")
 
-        # Print successful hosts
-        if len(successes) > 0:
+        # Print successful addresses
+        if len(results) > 0:
             print "MC reset successfully on the following hosts:"
-            for host in successes:
-                print host
+            for target in self.targets:
+                if target.address in results:
+                    print target.address
+            if len(errors) > 0:
+                print
 
         self._print_errors(errors)
 
@@ -313,32 +299,24 @@ class Controller:
 
     def update_firmware(self, slot_arg="INACTIVE", skip_reset=False):
         """ Send firmware update commands to all targets in group. """
-
-        # Update firmware on all targets
-        successful_targets = []
-        errors = []
-        for target in self.targets:
-            try:
-                target.update_firmware(self.work_dir,
-                        self.tftp, self.images, slot_arg)
-                successful_targets.append(target)
-
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
+        results, errors = self._run_command("update_firmware",
+                self.work_dir, self.tftp, self.images, slot_arg)
 
         # Reset MC upon completion
         if not skip_reset:
             for image in self.images:
                 if image.type == "SOC_ELF":
-                    for target in successful_targets:
-                        target.mc_reset()
+                    self._run_command("mc_reset")
                     break
 
-        # Print successful hosts
-        if len(successful_targets) > 0:
+        # Print successful addresses
+        if len(results) > 0:
             print "Firmware updated successfully on the following hosts:"
-            for target in successful_targets:
-                print target.address
+            for target in self.targets:
+                if target.address in results:
+                    print target.address
+            if len(errors) > 0:
+                print
 
         self._print_errors(errors)
 
@@ -346,54 +324,46 @@ class Controller:
 
     def get_sensors(self, name=None):
         """ Get sensor readings from all targets """
-        sensor_names = []
-        results = {}
-        errors = []
-        for target in self.targets:
-            try:
-                sensors = target.get_sensors()
-                if name:
-                    sensors = [x for x in sensors if x.sensor_name == name]
-                for sensor in sensors:
-                    if not sensor.sensor_name in sensor_names:
-                        sensor_names.append(sensor.sensor_name)
-
-                results[target.address] = sensors
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
+        results, errors = self._run_command("get_sensors")
 
         if len(results) > 0:
-            for sensor_name in sensor_names:
+            sensors = {}
+            for target in self.targets:
+                for sensor in results[target.address]:
+                    sensor_name = sensor.sensor_name
+                    reading = sensor.sensor_reading.replace("(+/- 0) ", "")
+                    if name in [None, sensor_name]:
+                        if not sensor_name in sensors:
+                            sensors[sensor_name] = {}
+                        sensors[sensor_name][target.address] = reading
+
+            for sensor_name in sensors:
                 print sensor_name
 
                 average = 0.0
                 for target in self.targets:
                     address = target.address
+                    if address in sensors[sensor_name]:
+                        reading = sensors[sensor_name][address]
 
-                    # Get sensor reading
-                    sensor = [x for x in results[address]
-                            if x.sensor_name == sensor_name][0]
-                    reading = sensor.sensor_reading.replace("(+/- 0) ", "")
-
-                    # Add to average and print
-                    try:
-                        value = float(reading.split()[0])
-                        if average != None:
-                            average += value
-                            suffix = reading.lstrip("%f " % value)
-                        print "%s: %.2f %s" % (address.ljust(16),
-                                value, suffix)
-                    except ValueError:
-                        average = None
-                        print "%s: %s" % (address.ljust(16), reading)
-                if average != None:
-                    average /= len(self.targets)
+                        # Add to average and print
+                        try:
+                            value = float(reading.split()[0])
+                            if average != None:
+                                average += value
+                                suffix = reading.lstrip("%f " % value)
+                            print "%s: %.2f %s" % (address.ljust(16),
+                                    value, suffix)
+                        except ValueError:
+                            average = None
+                            print "%s: %s" % (address.ljust(16), reading)
 
                 # Print average
                 if len(self.targets) > 1 and average != None:
+                    average /= len(self.targets)
                     print "%s: %.2f %s" % ("Average".ljust(16),
                             average, suffix)
-                if sensor_name != sensor_names[-1]:
+                if sensor_name != sensors.keys()[-1]:
                     print
 
         self._print_errors(errors)
@@ -402,21 +372,20 @@ class Controller:
 
     def get_ipinfo(self):
         """ Get IP info from all targets """
-        results = []
-        errors = []
-        for target in self.targets:
-            try:
-                ipinfo = target.get_ipinfo(self.work_dir, self.tftp)
-                results.append((target.address, ipinfo))
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
+        results, errors = self._run_command("get_ipinfo",
+                self.work_dir, self.tftp)
 
-        for result in results:
-            address, ipinfo = result
-            print "IP info from %s" % address
-            for i in range(len(ipinfo)):
-                print "Node %i: %s" % ipinfo[i]
-            if result != results[-1]:
+        # Print results
+        if len(results) > 0:
+            for target in self.targets:
+                if target.address in results:
+                    print "IP info from %s" % target.address
+                    ipinfo = results[target.address]
+                    for i in range(len(ipinfo)):
+                        print "Node %i: %s" % ipinfo[i]
+                        if target != self.targets[-1]:
+                            print
+            if len(errors) > 0:
                 print
 
         self._print_errors(errors)
@@ -425,21 +394,20 @@ class Controller:
 
     def get_macaddrs(self):
         """ Get mac addresses from all targets """
-        results = []
-        errors = []
-        for target in self.targets:
-            try:
-                macaddrs = target.get_macaddrs(self.work_dir, self.tftp)
-                results.append((target.address, macaddrs))
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
+        results, errors = self._run_command("get_macaddrs",
+                self.work_dir, self.tftp)
 
-        for result in results:
-            address, macaddrs = result
-            print "Mac addresses from %s" % address
-            for i in range(len(macaddrs)):
-                print "Node %i, Port %i: %s" % macaddrs[i]
-            if result != results[-1]:
+        # Print results
+        if len(results) > 0:
+            for target in self.targets:
+                if target.address in results:
+                    print "Mac addresses from %s" % target.address
+                    macaddrs = results[target.address]
+                    for i in range(len(macaddrs)):
+                        print "Node %i, Port %i: %s" % macaddrs[i]
+                        if target != self.targets[-1]:
+                            print
+            if len(errors) > 0:
                 print
 
         self._print_errors(errors)
@@ -448,20 +416,16 @@ class Controller:
 
     def config_reset(self):
         """ Send config reset command to all targets """
-        successes = []
-        errors = []
-        for target in self.targets:
-            try:
-                target.config_reset()
-                successes.append(target.address)
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
+        results, errors = self._run_command("config_reset")
 
-        # Print successful hosts
-        if len(successes) > 0:
+        # Print successful addresses
+        if len(results) > 0:
             print "Configuration reset successfully on the following hosts:"
-            for host in successes:
-                print host
+            for target in self.targets:
+                if target.address in results:
+                    print target.address
+            if len(errors) > 0:
+                print
 
         self._print_errors(errors)
 
@@ -469,21 +433,58 @@ class Controller:
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
-        errors = []
-        for target in self.targets:
-            try:
-                target.ipmitool_command(ipmitool_args)
-            except CxmanageError as e:
-                errors.append("%s: %s" % (target.address, e))
+        results, errors = self._run_command("ipmitool_command", ipmitool_args)
 
         # Print errors
         self._print_errors(errors)
 
         return len(errors) > 0
 
+    def _run_command(self, name, *args):
+        """ Run a target command with multiple threads
+
+        Returns a mapping of addresses to a (results, errors) tuple """
+
+        max_threads = 1
+
+        class CommandThread(threading.Thread):
+            def __init__(self, target):
+                threading.Thread.__init__(self)
+                self.target = target
+
+            def run(self):
+                target = self.target
+                address = target.address
+                try:
+                    results[address] = getattr(target, name)(*args)
+                except CxmanageError as e:
+                    errors[address] = e
+
+        threads = []
+        results = {}
+        errors = {}
+        for target in self.targets:
+            # Wait if we have too many threads
+            while len(threads) >= max_threads:
+                time.sleep(0.1)
+                threads = [x for x in threads if x.is_alive()]
+
+            # Spawn a thread
+            thread = CommandThread(target)
+            thread.start()
+            threads.append(thread)
+
+        # Join with any remaining threads
+        for thread in threads:
+            thread.join()
+
+        return results, errors
+
     def _print_errors(self, errors):
         """ Print errors if they occured """
         if len(errors) > 0:
             print "The following errors occured"
-            for error in errors:
-                print error
+            for target in self.targets:
+                if target.address in errors:
+                    print "%s: %s" % (target.address.ljust(16),
+                            errors[target.address])
