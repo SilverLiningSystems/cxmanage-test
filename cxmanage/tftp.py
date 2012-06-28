@@ -28,6 +28,7 @@ class InternalTftp:
             os._exit(0)
         atexit.register(self.kill)
 
+        self.address = address
         if port != 0:
             self.port = port
         else:
@@ -50,9 +51,8 @@ class InternalTftp:
         If this is an internal server, and we're given a relative host,
         then discover our address to them automatically. """
 
-        if relative_host == None:
-            # TODO: make a guess
-            return None
+        if self.address != None or relative_host == None:
+            return self.address
         else:
             # Get our address by opening a socket to the host
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
