@@ -11,7 +11,7 @@ from cxmanage.simg import create_simg, valid_simg, get_simg_header
 from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
 
-from cxmanage_test import TestSlot, random_file
+from cxmanage_test import TestSlot, TestSensor, random_file
 
 class TargetTest(unittest.TestCase):
     """ Tests involving cxmanage targets """
@@ -43,7 +43,8 @@ class TargetTest(unittest.TestCase):
 
         # Verify
         for i in range(len(self.targets)):
-            self.assertEqual(self.targets[i].address, ipinfo[i])
+            self.assertEqual(i, ipinfo[i][0])
+            self.assertEqual(self.targets[i].address, ipinfo[i][1])
 
     def test_power(self):
         """ Test power commands """
@@ -372,15 +373,10 @@ class TestBMC:
 
         Virtual node doesn't currently have any sensors, so just make some up.
         """
-        class Result:
-            def __init__(self, sensor_name, sensor_reading):
-                self.sensor_name = sensor_name
-                self.sensor_reading = sensor_reading
-
         power_value = "%f (+/- 0) Watts" % random.uniform(0.0, 10.0)
         temp_value = "%f (+/- 0) degrees C" % random.uniform(30.0, 50.0)
-        results = [
-                Result("Node Power", power_value),
-                Result("Board Temp", temp_value)
+        sensors = [
+                TestSensor("Node Power", power_value),
+                TestSensor("Board Temp", temp_value)
         ]
-        return results
+        return sensors

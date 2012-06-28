@@ -19,6 +19,12 @@ class TestSlot:
         self.daddr = "%8x" % daddr
         self.in_use = {None: "Unknown", True: "1", False: "0"}[in_use]
 
+class TestSensor:
+    """ Sensor result from bmc/target """
+    def __init__(self, sensor_name, sensor_reading):
+        self.sensor_name = sensor_name
+        self.sensor_reading = sensor_reading
+
 def random_file(work_dir, size):
     """ Create a random file """
     contents = "".join([chr(random.randint(0, 255))
