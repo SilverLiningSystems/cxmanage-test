@@ -134,7 +134,12 @@ class Controller:
         manifest.close()
 
         # Create the tar.gz package
-        tar = tarfile.open(filename, "w")
+        if filename.endswith("gz"):
+            tar = tarfile.open(filename, "w:gz")
+        elif filename.endswith("bz2"):
+            tar = tarfile.open(filename, "w:bz2")
+        else:
+            tar = tarfile.open(filename, "w")
         tar.add("%s/MANIFEST" % self.work_dir, "MANIFEST")
         for image in self.images:
             tar.add(image.filename, os.path.basename(image.filename))
