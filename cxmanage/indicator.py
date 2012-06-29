@@ -20,12 +20,17 @@ class Indicator(threading.Thread):
         sys.stdout.flush()
 
         self.running = True
+        counter = 0
         while self.running:
-            sys.stdout.write(".")
-            sys.stdout.flush()
+            if counter == 0:
+                sys.stdout.write(".")
+                sys.stdout.flush()
+
             self.lock.release()
-            time.sleep(1)
+            time.sleep(0.1)
             self.lock.acquire()
+
+            counter = (counter + 1) % 10
 
         self.lock.release()
 
