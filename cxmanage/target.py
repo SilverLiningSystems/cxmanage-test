@@ -154,19 +154,55 @@ class Target:
         except IpmiError:
             raise CxmanageError("Failed to send MC reset command")
 
-    def update_firmware(self, work_dir, tftp, images, slot_arg):
-        """ Update firmware on this target. """
-        # Get all updates
-        plan = self._get_update_plan(images, slot_arg)
-        for image, slot, new_version in plan:
-            self._update_image(work_dir, tftp, image, slot, new_version)
-
     def get_sensors(self):
         """ Get a list of sensor (name, reading) tuples from this target """
         try:
             return self.bmc.sdr_list()
         except IpmiError:
             raise CxmanageError("Failed to retrieve sensor value")
+
+    def get_firmware_info(self):
+        try:
+            fwinfo = [x for x in self.bmc.get_firmware_info()
+                    if hasattr(x, "slot")]
+
+            # Flag CDB as "in use" based on socman info
+            for a in range(1, len(fwinfo)):
+                previous = fwinfo[a-1]
+                slot = fwinfo[a]
+                if (slot.type.split()[1][1:-1] == "CDB" and
+                        slot.in_use == "Unknown"):
+                    if previous.type.split()[1][1:-1] != "SOC_ELF":
+                        slot.in_use = "1"
+                    else:
+                        slot.in_use = previous.in_use
+
+            return fwinfo
+
+        except IpmiError:
+            raise CxmanageError("Failed to retrieve firmware info")
+
+    def update_firmware(self, work_dir, tftp, images, slot_arg):
+        """ Update firmware on this target. """
+        fwinfo = self.get_firmware_info()
+
+        for image in images:
+            # Get the slot
+            slot = self._get_slot(fwinfo, image.type, slot_arg)
+
+            # Get the new version
+            slots = [x for x in fwinfo if
+                    x.type.split()[1][1:-1] == image.type]
+            versions = [int(x.version, 16) for x in slots]
+            # Assume 0xFFFF comes from an invalid partition
+            versions = [x for x in versions if x != 0xFFFF]
+            if len(versions) > 0:
+                new_version = min(0xFFFF, max(versions) + 1)
+            else:
+                new_version = 0
+
+            # Update the image
+            self._update_image(work_dir, tftp, image, slot, new_version)
 
     def config_reset(self):
         """ Reset configuration to factory default """
@@ -192,101 +228,58 @@ class Target:
             print "Running %s" % " ".join(command)
         subprocess.call(command)
 
-    def _get_update_plan(self, images, slot_arg):
-        """ Get an update plan.
+    def _get_slot(self, fwinfo, image_type, slot_arg):
+        # Filter slots for this type
+        slots = [x for x in fwinfo if x.type.split()[1][1:-1] == image_type]
+        if len(slots) < 1:
+            raise CxmanageError("No slots found on host")
 
-        A plan consists of a list of tuples:
-        (image, slot, version) """
-        plan = []
-
-        # Get all slots
-        try:
-            slots = [x for x in self.bmc.get_firmware_info()
-                    if hasattr(x, "slot")]
-        except IpmiError:
-            raise CxmanageError("Failed to retrieve firmware info")
-        if not slots:
-            raise CxmanageError("Failed to retrieve firmware info")
-
-        soc_plan_made = False
-        cdb_plan_made = False
-        for image in images:
-            if soc_plan_made and image.type == "CDB":
-                for update in plan:
-                    if update[0].type == "SOC_ELF":
-                        slot = slots[int(update[1].slot) + 1]
-                        plan.append((image, slot, update[2]))
-            elif cdb_plan_made and image.type == "SOC_ELF":
-                for update in plan:
-                    if update[0].type == "CDB":
-                        slot = slots[int(update[1].slot) - 1]
-                        plan.append((image, slot, update[2]))
+        if slot_arg == "FIRST":
+            return slots[0]
+        elif slot_arg == "SECOND":
+            if len(slots) < 2:
+                raise CxmanageError("No second slot found on host")
+            return slots[1]
+        elif slot_arg == "THIRD":
+            if len(slots) < 3:
+                raise CxmanageError("No third slot found on host")
+            return slots[2]
+        elif slot_arg == "OLDEST":
+            # Choose second slot if both are the same version
+            if len(slots) == 1 or slots[0].version < slots[1].version:
+                return slots[0]
             else:
-                # Filter slots for this type
-                type_slots = [x for x in slots if
-                        x.type.split()[1][1:-1] == image.type]
-                if len(type_slots) < 1:
-                    raise CxmanageError("No slots found on host")
+                return slots[1]
+        elif slot_arg == "NEWEST":
+            # Choose first slot if both are the same version
+            if len(slots) == 1 or slots[0].version >= slots[1].version:
+                return slots[0]
+            else:
+                return slots[1]
+        elif slot_arg == "INACTIVE":
+            # Get inactive slots
+            slots = [x for x in slots if x.in_use != "1"]
+            if len(slots) < 1:
+                raise CxmanageError("No inactive slots found on host")
 
-                versions = [int(x.version, 16) for x in type_slots]
-                versions = [x for x in versions if x != 0xFFFF]
-                new_version = 0
-                if len(versions) > 0:
-                    new_version = min(0xffff, max(versions) + 1)
+            # Choose second slot if both are the same version
+            if len(slots) == 1 or slots[0].version < slots[1].version:
+                return slots[0]
+            else:
+                return slots[1]
+        elif slot_arg == "ACTIVE":
+            # Get active slots
+            slots = [x for x in slots if x.in_use != "0"]
+            if len(slots) < 1:
+                raise CxmanageError("No active slots found on host")
 
-                if slot_arg == "FIRST":
-                    plan.append((image, type_slots[0], new_version))
-                elif slot_arg == "SECOND":
-                    if len(type_slots) < 2:
-                        raise CxmanageError("No second slot found on host")
-                    plan.append((image, type_slots[1], new_version))
-                elif slot_arg == "THIRD":
-                    if len(type_slots) < 3:
-                        raise CxmanageError("No third slot found on host")
-                    plan.append((image, type_slots[2], new_version))
-                elif slot_arg == "BOTH":
-                    if len(type_slots) < 2:
-                        raise CxmanageError("No second slot found on host")
-                    plan.append((image, type_slots[0], new_version))
-                    plan.append((image, type_slots[1], new_version))
-                elif slot_arg == "OLDEST":
-                    # Choose second slot if both are the same version
-                    if (len(type_slots) == 1 or
-                            type_slots[0].version < type_slots[1].version):
-                        slot = type_slots[0]
-                    else:
-                        slot = type_slots[1]
-                    plan.append((image, slot, new_version))
-                elif slot_arg == "NEWEST":
-                    # Choose first slot if both are the same version
-                    if (len(type_slots) == 1 or
-                            type_slots[0].version >= type_slots[1].version):
-                        slot = type_slots[0]
-                    else:
-                        slot = type_slots[1]
-                    plan.append((image, slot, new_version))
-                elif slot_arg == "INACTIVE":
-                    # Get inactive slots
-                    inactive_slots = [x for x in type_slots if x.in_use != "1"]
-                    if len(inactive_slots) < 1:
-                        raise CxmanageError("No inactive slots found on host")
-
-                    # Choose second slot if both are the same version
-                    if (len(inactive_slots) == 1 or inactive_slots[0].version
-                            < inactive_slots[1].version):
-                        slot = inactive_slots[0]
-                    else:
-                        slot = inactive_slots[1]
-                    plan.append((image, slot, new_version))
-                else:
-                    raise ValueError("Invalid slot argument: %s" % slot_arg)
-
-                if image.type == "SOC_ELF":
-                    soc_plan_made = True
-                elif image.type == "CDB_ELF":
-                    cdb_plan_made = True
-
-        return plan
+            # Choose first slot if both are the same version
+            if len(slots) == 1 or slots[0].version >= slots[1].version:
+                return slots[0]
+            else:
+                return slots[1]
+        else:
+            raise ValueError("Invalid slot argument: %s" % slot_arg)
 
     def _update_image(self, work_dir, tftp, image, slot, new_version):
         """ Update a single image. This includes uploading the image,
