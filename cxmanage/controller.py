@@ -7,14 +7,12 @@ and the objects it contains: tftp, images, and targets. """
 import atexit
 import os
 import shutil
-import sys
 import tempfile
 import threading
 import time
 import ConfigParser
 import tarfile
 
-from cxmanage import CxmanageError
 from cxmanage.image import Image
 from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
@@ -25,7 +23,8 @@ class Controller:
     cxmanage. Scripts or UIs can build on top of this to provide an user
     interface. """
 
-    def __init__(self, verbosity=0, max_threads=1, image_class=Image, target_class=Target):
+    def __init__(self, verbosity=0, max_threads=1,
+            image_class=Image, target_class=Target):
         self.tftp = None
         self.targets = []
         self.images = []
