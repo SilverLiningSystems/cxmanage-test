@@ -446,39 +446,35 @@ class Controller:
 
         Returns a mapping of addresses to a (results, errors) tuple """
 
-        class CommandThread(threading.Thread):
-            def __init__(self, target):
-                threading.Thread.__init__(self)
-                self.target = target
+        threads = [ControllerCommandThread(target, name, args)
+                for target in self.targets]
+        running_threads = set()
 
-            def run(self):
-                target = self.target
-                address = target.address
-
-                # We need to be careful with thread safety here. In this case,
-                # since no thread shares a key, we should be ok without a lock.
-                try:
-                    results[address] = getattr(target, name)(*args)
-                except CxmanageError as e:
-                    errors[address] = e
-
-        threads = []
-        results = {}
-        errors = {}
-        for target in self.targets:
-            # Wait if we have too many threads
-            while len(threads) >= self.max_threads:
+        for thread in threads:
+            # Wait while we have too many running threads
+            while len(running_threads) >= self.max_threads:
                 time.sleep(0.001)
-                threads = [x for x in threads if x.is_alive()]
+                for running_thread in running_threads:
+                    if not running_thread.is_alive():
+                        running_threads.remove(running_thread)
+                        break
 
-            # Spawn a thread
-            thread = CommandThread(target)
+            # Start the thread
             thread.start()
-            threads.append(thread)
+            running_threads.add(thread)
 
         # Join with any remaining threads
-        for thread in threads:
+        for thread in running_threads:
             thread.join()
+
+        # Get results and errors
+        results = {}
+        errors = {}
+        for thread in threads:
+            if thread.error != None:
+                errors[thread.target.address] = thread.error
+            else:
+                results[thread.target.address] = thread.result
 
         return results, errors
 
@@ -491,3 +487,18 @@ class Controller:
                     print "%s: %s" % (target.address.ljust(16),
                             errors[target.address])
             print
+
+class ControllerCommandThread(threading.Thread):
+    def __init__(self, target, name, args):
+        threading.Thread.__init__(self)
+        self.target = target
+        self.function = getattr(target, name)
+        self.args = args
+        self.result = None
+        self.error = None
+
+    def run(self):
+        try:
+            self.result = self.function(*self.args)
+        except Exception as e:
+            self.error = e
