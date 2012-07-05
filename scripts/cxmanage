@@ -153,6 +153,13 @@ def build_parser():
             help='reset to factory default')
     p['reset'].set_defaults(func=config_reset_command)
 
+    p['boot'] = p['config_subs'].add_parser('boot',
+            help='set A9 boot order')
+    p['boot'].add_argument('boot_order', help='boot order to use')
+    p['boot'].add_argument('-r', '--retry', action="store_true",
+            help='set A9 to retry last boot device on failure')
+    p['boot'].set_defaults(func=config_boot_command)
+
     #ipmitool command
     p['ipmitool'] = p['subparsers'].add_parser('ipmitool',
             help='run an arbitrary ipmitool command')
@@ -314,6 +321,13 @@ def macaddrs_command(controller, args):
 def config_reset_command(controller, args):
     """reset to factory default settings"""
     if controller.config_reset():
+        return 1
+    return 0
+
+
+def config_boot_command(controller, args):
+    """set A9 boot order"""
+    if controller.config_boot(args.boot_order.split(","), args.retry):
         return 1
     return 0
 

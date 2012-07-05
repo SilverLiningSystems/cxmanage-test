@@ -431,6 +431,23 @@ class Controller:
 
         return len(errors) > 0
 
+    def config_boot(self, boot_args, retry=False):
+        """ Send config boot command to all targets """
+        results, errors = self._run_command("config_boot",
+                self.work_dir, self.tftp, boot_args, retry)
+
+        # Print successful addresses
+        if self.verbosity >= 1 and len(results) > 0:
+            print "Boot order changed successfully on the following hosts:"
+            for target in self.targets:
+                if target.address in results:
+                    print target.address
+            print
+
+        self._print_errors(errors)
+
+        return len(errors) > 0
+
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
         results, errors = self._run_command("ipmitool_command", ipmitool_args)

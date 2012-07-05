@@ -20,17 +20,17 @@ class Indicator(threading.Thread):
         sys.stdout.flush()
 
         self.running = True
-        counter = 0
+        deadline = time.time()
         while self.running:
-            if counter == 0:
+            current_time = time.time()
+            if current_time >= deadline:
+                deadline = current_time + 1
                 sys.stdout.write(".")
                 sys.stdout.flush()
 
             self.lock.release()
             time.sleep(0.1)
             self.lock.acquire()
-
-            counter = (counter + 1) % 10
 
         self.lock.release()
 

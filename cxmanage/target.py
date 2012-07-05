@@ -4,9 +4,13 @@
 
 import os
 import subprocess
+import tempfile
 import time
 
 from cxmanage import CxmanageError
+from cxmanage.image import Image
+from cxmanage.simg import get_simg_header
+from cxmanage.ubootenv import UbootEnv
 
 from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC
@@ -16,7 +20,7 @@ class Target:
     an username, and a password. """
 
     def __init__(self, address, username="admin",
-            password="admin", verbosity=1):
+            password="admin", verbosity=0):
         self.address = address
         self.username = username
         self.password = password
@@ -31,7 +35,7 @@ class Target:
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
-        filename = "%s/ip_%s" % (work_dir, self.address)
+        filename = tempfile.mkstemp(prefix="%s/ip_" % work_dir)[1]
         basename = os.path.basename(filename)
 
         # Send ipinfo command
@@ -75,7 +79,7 @@ class Target:
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
-        filename = "%s/mac_%s" % (work_dir, self.address)
+        filename = tempfile.mkstemp(prefix="%s/mac_" % work_dir)[1]
         basename = os.path.basename(filename)
 
         # Send ipinfo command
@@ -162,6 +166,7 @@ class Target:
             raise CxmanageError("Failed to retrieve sensor value")
 
     def get_firmware_info(self):
+        """ Get firmware info from the target """
         try:
             fwinfo = [x for x in self.bmc.get_firmware_info()
                     if hasattr(x, "slot")]
@@ -187,13 +192,16 @@ class Target:
         fwinfo = self.get_firmware_info()
 
         for image in images:
-            # Get the slot
-            slot = self._get_slot(fwinfo, image.type, slot_arg)
+            # Get the slots
+            if slot_arg == "BOTH":
+                slots = [self._get_slot(fwinfo, image.type, "FIRST"),
+                        self._get_slot(fwinfo, image.type, "SECOND")]
+            else:
+                slots = [self._get_slot(fwinfo, image.type, slot_arg)]
 
             # Get the new version
-            slots = [x for x in fwinfo if
+            versions = [int(x.version, 16) for x in fwinfo if
                     x.type.split()[1][1:-1] == image.type]
-            versions = [int(x.version, 16) for x in slots]
             # Assume 0xFFFF comes from an invalid partition
             versions = [x for x in versions if x != 0xFFFF]
             if len(versions) > 0:
@@ -202,7 +210,8 @@ class Target:
                 new_version = 0
 
             # Update the image
-            self._update_image(work_dir, tftp, image, slot, new_version)
+            for slot in slots:
+                self._update_image(work_dir, tftp, image, slot, new_version)
 
     def config_reset(self):
         """ Reset configuration to factory default """
@@ -218,6 +227,35 @@ class Target:
         except IpmiError:
             raise CxmanageError("Failed to reset configuration")
 
+    def config_boot(self, work_dir, tftp, boot_args, retry=False):
+        """ Configure boot order """
+        # Get tftp address
+        tftp_address = "%s:%s" % (tftp.get_address(self.address),
+                tftp.get_port())
+
+        # Download uboot environment
+        filename = tempfile.mkstemp(prefix="%s/env_" % work_dir)[1]
+        basename = os.path.basename(filename)
+        fwinfo = self.get_firmware_info()
+        slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+        handle = self.bmc.retrieve_firmware(basename,
+                int(slot.slot), "UBOOTENV", tftp_address).tftp_handle_id
+        self._wait_for_transfer(handle)
+        tftp.get_file(basename, filename)
+
+        simg = open(filename).read()
+        header = get_simg_header(simg)
+        ubootenv = UbootEnv(simg[28:])
+
+        # Modify uboot environment
+        ubootenv.set_boot_order(boot_args, retry)
+
+        # Upload the new uboot environment
+        open(filename, "w").write(str(ubootenv))
+        image = Image(filename, "UBOOTENV", version=header.version,
+                daddr=header.daddr, skip_crc32=header.crc32==0)
+        self._update_image(work_dir, tftp, image, slot)
+
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """
         command = ["ipmitool", "-U", self.username, "-P", self.password, "-H",
@@ -229,6 +267,7 @@ class Target:
         subprocess.call(command)
 
     def _get_slot(self, fwinfo, image_type, slot_arg):
+        """ Get a slot for this image type based on the slot argument """
         # Filter slots for this type
         slots = [x for x in fwinfo if x.type.split()[1][1:-1] == image_type]
         if len(slots) < 1:
@@ -281,7 +320,7 @@ class Target:
         else:
             raise ValueError("Invalid slot argument: %s" % slot_arg)
 
-    def _update_image(self, work_dir, tftp, image, slot, new_version):
+    def _update_image(self, work_dir, tftp, image, slot, new_version=0):
         """ Update a single image. This includes uploading the image,
         performing the firmware update, crc32 check, and activation."""
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
@@ -298,6 +337,19 @@ class Target:
         handle = result.tftp_handle_id
 
         # Wait for update to finish
+        self._wait_for_transfer(handle)
+
+        # Verify crc
+        result = self.bmc.check_firmware(slot_id)
+        if hasattr(result, "crc32") and result.error == None:
+            # Activate
+            self.bmc.activate_firmware(slot_id)
+        else:
+            raise CxmanageError("Node reported crc32 check failure")
+
+    def _wait_for_transfer(self, handle):
+        """ Wait for a firmware transfer to finish"""
+
         while True:
             time.sleep(1)
             result = self.bmc.get_firmware_status(handle)
@@ -305,15 +357,5 @@ class Target:
                 raise CxmanageError("Unable to retrieve transfer info")
             if result.status != "In progress":
                 break
-
-        # Activate firmware on completion
-        if result.status == "Complete":
-            # Verify crc
-            result = self.bmc.check_firmware(slot_id)
-            if hasattr(result, "crc32") and result.error == None:
-                # Activate
-                self.bmc.activate_firmware(slot_id)
-            else:
-                raise CxmanageError("Node reported crc32 check failure")
-        else:
+        if result.status != "Complete":
             raise CxmanageError("Node reported transfer failure")
