@@ -29,7 +29,7 @@ def build_parser():
             help='Password for login')
     p['parser'].add_argument('-a', '--all-nodes', action='store_true',
             help='Send command to all nodes reported by fabric')
-    p['parser'].add_argument('--threads', type=int, default=1,
+    p['parser'].add_argument('--threads', type=int, default=4,
             metavar='THREAD_COUNT', help='Number of threads to use')
     p['verbosity'] = p['parser'].add_mutually_exclusive_group()
     p['verbosity'].add_argument('-v', '--verbose', action='store_true',
