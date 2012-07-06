@@ -191,34 +191,62 @@ class Target:
         fwinfo = self.get_firmware_info()
 
         for image in images:
-            # Get the slots
-            if slot_arg == "BOTH":
-                slots = [self._get_slot(fwinfo, image.type, "FIRST"),
-                        self._get_slot(fwinfo, image.type, "SECOND")]
+            if image.type == "UBOOTENV":
+                # Get slots
+                inactive_slot = self._get_slot(fwinfo, image.type, "INACTIVE")
+                active_slot = self._get_slot(fwinfo, image.type, "ACTIVE")
+
+                # Update inactive ubootenv
+                self._upload_image(work_dir, tftp, image, inactive_slot,
+                        int(inactive_slot.version, 16))
+
+                # Update active ubootenv
+                old_ubootenv = self._download_ubootenv(work_dir,
+                        tftp, active_slot)
+                bootcmd = old_ubootenv.get_variable("bootcmd0")
+                if image.simg:
+                    ubootenv = UbootEnv(open(image.filename).read()[28:])
+                else:
+                    ubootenv = UbootEnv(open(image.filename).read())
+                ubootenv.set_variable("bootcmd0", bootcmd)
+                self._upload_ubootenv(work_dir, tftp, active_slot, ubootenv)
+
             else:
-                slots = [self._get_slot(fwinfo, image.type, slot_arg)]
+                # Get the slots
+                if slot_arg == "BOTH":
+                    slots = [self._get_slot(fwinfo, image.type, "FIRST"),
+                            self._get_slot(fwinfo, image.type, "SECOND")]
+                else:
+                    slots = [self._get_slot(fwinfo, image.type, slot_arg)]
 
-            # Get the new version
-            versions = [int(x.version, 16) for x in fwinfo if
-                    x.type.split()[1][1:-1] == image.type]
-            # Assume 0xFFFF comes from an invalid partition
-            versions = [x for x in versions if x != 0xFFFF]
-            if len(versions) > 0:
-                new_version = min(0xFFFF, max(versions) + 1)
-            else:
-                new_version = 0
+                # Get the new version
+                versions = [int(x.version, 16) for x in fwinfo if
+                        x.type.split()[1][1:-1] == image.type]
+                # Assume 0xFFFF comes from an invalid partition
+                versions = [x for x in versions if x != 0xFFFF]
+                if len(versions) > 0:
+                    new_version = min(0xFFFF, max(versions) + 1)
+                else:
+                    new_version = 0
 
-            # Update the image
-            for slot in slots:
-                self._update_image(work_dir, tftp, image, slot, new_version)
+                # Update the image
+                for slot in slots:
+                    self._upload_image(work_dir, tftp, image, slot, new_version)
 
-    def config_reset(self):
+    def config_reset(self, work_dir, tftp):
         """ Reset configuration to factory default """
         try:
             # Reset CDB
             result = self.bmc.reset_firmware()
             if hasattr(result, "error"):
                 raise CxmanageError("Failed to reset configuration")
+
+            # Reset ubootenv
+            fwinfo = self.get_firmware_info()
+            inactive_slot = self._get_slot(fwinfo, "UBOOTENV", "INACTIVE")
+            active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+            image = self._download_image(work_dir, tftp, inactive_slot)
+            self._upload_image(work_dir, tftp, image, active_slot)
 
             # Clear SEL
             self.bmc.sel_clear()
@@ -232,9 +260,9 @@ class Target:
         slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
 
         # Download, modify, and reupload ubootenv
-        ubootenv = self._get_ubootenv(work_dir, tftp, slot)
+        ubootenv = self._download_ubootenv(work_dir, tftp, slot)
         ubootenv.set_boot_order(boot_args)
-        self._update_ubootenv(work_dir, tftp, slot, ubootenv)
+        self._upload_ubootenv(work_dir, tftp, slot, ubootenv)
 
     def config_boot_status(self, work_dir, tftp):
         """ Get boot order """
@@ -242,7 +270,7 @@ class Target:
         slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
 
         # Download and read boot order
-        ubootenv = self._get_ubootenv(work_dir, tftp, slot)
+        ubootenv = self._download_ubootenv(work_dir, tftp, slot)
         return ubootenv.get_boot_order()
 
     def ipmitool_command(self, ipmitool_args):
@@ -309,8 +337,8 @@ class Target:
         else:
             raise ValueError("Invalid slot argument: %s" % slot_arg)
 
-    def _update_image(self, work_dir, tftp, image, slot, new_version=0):
-        """ Update a single image. This includes uploading the image,
+    def _upload_image(self, work_dir, tftp, image, slot, new_version=0):
+        """ Upload a single image. This includes uploading the image,
         performing the firmware update, crc32 check, and activation."""
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
@@ -336,6 +364,40 @@ class Target:
         else:
             raise CxmanageError("Node reported crc32 check failure")
 
+    def _download_image(self, work_dir, tftp, slot):
+        """ Download an image from the target.
+
+        Returns the filename. """
+        tftp_address = "%s:%s" % (tftp.get_address(self.address),
+                tftp.get_port())
+
+        # Download the image
+        filename = tempfile.mkstemp(prefix="%s/img_" % work_dir)[1]
+        basename = os.path.basename(filename)
+        image_type = slot.type.split()[1][1:-1]
+        handle = self.bmc.retrieve_firmware(basename,
+                int(slot.slot), image_type, tftp_address).tftp_handle_id
+        self._wait_for_transfer(handle)
+        tftp.get_file(basename, filename)
+
+        return Image(filename, image_type)
+
+    def _upload_ubootenv(self, work_dir, tftp, slot, ubootenv):
+        """ Upload a uboot environment to the target """
+        filename = tempfile.mkstemp(prefix="%s/env_" % work_dir)[1]
+        open(filename, "w").write(ubootenv.get_contents())
+        image = Image(filename, "UBOOTENV", version=int(slot.version, 16),
+                daddr=int(slot.daddr, 16))
+        self._upload_image(work_dir, tftp, image, slot)
+
+    def _download_ubootenv(self, work_dir, tftp, slot):
+        """ Download a uboot environment from the target """
+        image = self._download_image(work_dir, tftp, slot)
+
+        # Open the file
+        simg = open(image.filename).read()
+        return UbootEnv(simg[28:])
+
     def _wait_for_transfer(self, handle):
         """ Wait for a firmware transfer to finish"""
 
@@ -348,28 +410,3 @@ class Target:
                 break
         if result.status != "Complete":
             raise CxmanageError("Node reported transfer failure")
-
-    def _get_ubootenv(self, work_dir, tftp, slot):
-        """ Download a uboot environment from the target """
-        tftp_address = "%s:%s" % (tftp.get_address(self.address),
-                tftp.get_port())
-
-        # Download the image
-        filename = tempfile.mkstemp(prefix="%s/env_" % work_dir)[1]
-        basename = os.path.basename(filename)
-        handle = self.bmc.retrieve_firmware(basename,
-                int(slot.slot), "UBOOTENV", tftp_address).tftp_handle_id
-        self._wait_for_transfer(handle)
-        tftp.get_file(basename, filename)
-
-        # Open the file
-        simg = open(filename).read()
-        return UbootEnv(simg[28:])
-
-    def _update_ubootenv(self, work_dir, tftp, slot, ubootenv):
-        """ Upload a uboot environment to the target """
-        filename = tempfile.mkstemp(prefix="%s/env_" % work_dir)[1]
-        open(filename, "w").write(ubootenv.get_contents())
-        image = Image(filename, "UBOOTENV", version=int(slot.version, 16),
-                daddr=int(slot.daddr, 16))
-        self._update_image(work_dir, tftp, image, slot)

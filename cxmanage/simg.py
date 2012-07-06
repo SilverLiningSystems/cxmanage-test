@@ -92,6 +92,7 @@ def valid_simg(simg):
     # Check length
     if len(contents) < header.imglen:
         return False
+    contents = contents[:header.imglen]
 
     # Check crc32
     crc32 = header.crc32

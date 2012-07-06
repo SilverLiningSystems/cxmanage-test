@@ -417,7 +417,8 @@ class Controller:
 
     def config_reset(self):
         """ Send config reset command to all targets """
-        results, errors = self._run_command("config_reset")
+        results, errors = self._run_command("config_reset",
+            self.work_dir, self.tftp)
 
         # Print successful addresses
         if self.verbosity >= 1 and len(results) > 0:
