@@ -79,9 +79,8 @@ class ControllerTargetTest(unittest.TestCase):
         for target in self.controller.targets:
             # Verify commands
             self.assertTrue(len(target.executed), 3)
-            self.assertTrue(all([x[0] == "power" for x in target.executed]))
             for a in range(len(modes)):
-                self.assertEqual(target.executed[a][1], modes[a])
+                self.assertEqual(target.executed[a], ("power", modes[a]))
 
     def test_power_status(self):
         """ Test controller power status command """
@@ -109,10 +108,9 @@ class ControllerTargetTest(unittest.TestCase):
         for target in self.controller.targets:
             # Verify commands
             self.assertTrue(len(target.executed), 3)
-            self.assertTrue(all([x[0] == "power_policy"
-                    for x in target.executed]))
             for a in range(len(modes)):
-                self.assertEqual(target.executed[a][1], modes[a])
+                self.assertEqual(target.executed[a],
+                        ("power_policy", modes[a]))
 
     def test_power_policy_status(self):
         """ Test controller power policy status command """
@@ -192,6 +190,33 @@ class ControllerTargetTest(unittest.TestCase):
             # Verify command
             self.assertTrue(len(target.executed), 1)
             self.assertEqual(target.executed[0], "config_reset")
+
+    def test_config_boot(self):
+        """ Test controller config boot command """
+        # Add targets
+        self.controller.add_target(addresses[0], "admin", "admin", True)
+
+        # Send config boot command
+        boot_args = ["disk", "pxe", "retry"]
+        self.assertFalse(self.controller.config_boot(boot_args))
+
+        for target in self.controller.targets:
+            # Verify command
+            self.assertTrue(len(target.executed), 1)
+            self.assertEqual(target.executed[0], ("config_boot", boot_args))
+
+    def test_config_boot_status(self):
+        """ Test controller config boot status command """
+        # Add targets
+        self.controller.add_target(addresses[0], "admin", "admin", True)
+
+        # Send config boot status command
+        self.assertFalse(self.controller.config_boot_status())
+
+        for target in self.controller.targets:
+            # Verify command
+            self.assertTrue(len(target.executed), 1)
+            self.assertEqual(target.executed[0], "config_boot_status")
 
     def test_ipmitool_command(self):
         """ Test controller ipmitool command """
@@ -274,8 +299,15 @@ class DummyTarget:
         ]
         return sensors
 
-    def config_reset(self):
+    def config_reset(self, work_dir, tftp):
         self.executed.append("config_reset")
+
+    def config_boot(self, work_dir, tftp, boot_args):
+        self.executed.append(("config_boot", boot_args))
+
+    def config_boot_status(self, work_dir, tftp):
+        self.executed.append("config_boot_status")
+        return ["disk", "pxe"]
 
     def ipmitool_command(self, ipmitool_args):
         self.executed.append(("ipmitool_command", ipmitool_args))
