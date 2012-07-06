@@ -1,3 +1,5 @@
+#Copyright 2012 Calxeda, Inc.  All Rights Reserved.
+
 import random
 import shutil
 import tempfile

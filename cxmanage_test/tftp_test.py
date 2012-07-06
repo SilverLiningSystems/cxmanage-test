@@ -1,3 +1,5 @@
+#Copyright 2012 Calxeda, Inc.  All Rights Reserved.
+
 import os
 import shutil
 import tempfile
