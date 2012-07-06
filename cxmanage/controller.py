@@ -431,10 +431,10 @@ class Controller:
 
         return len(errors) > 0
 
-    def config_boot(self, boot_args, retry=False):
+    def config_boot(self, boot_args):
         """ Send config boot command to all targets """
         results, errors = self._run_command("config_boot",
-                self.work_dir, self.tftp, boot_args, retry)
+                self.work_dir, self.tftp, boot_args)
 
         # Print successful addresses
         if self.verbosity >= 1 and len(results) > 0:
@@ -444,6 +444,25 @@ class Controller:
                     print target.address
             print
 
+        self._print_errors(errors)
+
+        return len(errors) > 0
+
+    def config_boot_status(self):
+        """ Get boot order from all targets """
+        results, errors = self._run_command("config_boot_status",
+                self.work_dir, self.tftp)
+
+        # Print results
+        if len(results) > 0:
+            print "Boot order"
+            for target in self.targets:
+                if target.address in results:
+                    print "%s: %s" % (target.address.ljust(16),
+                            ",".join(results[target.address]))
+            print
+
+        # Print errors
         self._print_errors(errors)
 
         return len(errors) > 0

@@ -1,21 +1,25 @@
+#Copyright 2012 Calxeda, Inc.  All Rights Reserved.
+
 import struct
 
-from crc32 import get_crc32
+from cxmanage import CxmanageError
+from cxmanage.crc32 import get_crc32
 
 ENVIRONMENT_SIZE = 8192
 
 class UbootEnv:
     """ A uboot environment consisting of variables and their assignments. """
 
-    def __init__(self, contents):
+    def __init__(self, contents=None):
         """ Load a uboot environment from a binary string """
         self.variables = {}
 
-        contents = contents.rstrip("%c%c" % (chr(0), chr(255)))[4:]
-        lines = contents.split(chr(0))
-        for line in lines:
-            part = line.partition("=")
-            self.variables[part[0]] = part[2]
+        if contents != None:
+            contents = contents.rstrip("%c%c" % (chr(0), chr(255)))[4:]
+            lines = contents.split(chr(0))
+            for line in lines:
+                part = line.partition("=")
+                self.variables[part[0]] = part[2]
 
     def get_variable(self, variable):
         """ Get a variable from the uboot environment """
@@ -28,7 +32,7 @@ class UbootEnv:
         """ Set a variable in the uboot environment """
         self.variables[variable] = value
 
-    def set_boot_order(self, boot_args, retry=False):
+    def set_boot_order(self, boot_args):
         """ Set the boot order specified in the uboot environment.
 
         Here are the valid boot arguments:
@@ -37,28 +41,55 @@ class UbootEnv:
         disk: boot from default sata drive
         disk#: boot from numbered sata drive
         """
-        command = ["run bootcmd_setup"]
+        commands = ["run bootcmd_setup"]
+        retry = False
         for arg in boot_args:
             if arg == "pxe":
-                command.append("run bootcmd_pxe")
+                commands.append("run bootcmd_pxe")
             elif arg == "disk":
-                command.append("run bootcmd_sata")
+                commands.append("run bootcmd_sata")
             elif arg.startswith("disk"):
-                command.append("setenv bootdevice %i" % int(args[4:]))
-                command.append("run bootcmd_sata")
+                commands.append("setenv bootdevice %i && run bootcmd_sata"
+                        % int(arg[4:]))
+            elif arg == "retry":
+                retry = True
             else:
                 raise ValueError("Invalid boot argument %s" % arg)
 
         if retry:
-            # Set the "retry" variable
-            retry_command = ["sleep 1", command[-1], "run bootcmd_retry"]
-            self.set_variable("bootcmd_retry", "; ".join(retry_command))
+            commands[-1] = "while true\ndo\n%s\nsleep 1\ndone" % commands[-1]
 
-            command.append("run bootcmd_retry")
+        self.set_variable("bootcmd0", "; ".join(commands))
 
-        self.set_variable("bootcmd0", "; ".join(command))
+    def get_boot_order(self):
+        """ Get the boot order specified in the uboot environment. """
 
-    def __str__(self):
+        commands = self.get_variable("bootcmd0").split("; ")
+        boot_args = []
+
+        retry = False
+        for command in commands:
+            if command.startswith("while true"):
+                retry = True
+                command = command.split("\n")[2]
+
+            if command == "run bootcmd_setup":
+                pass
+            elif command == "run bootcmd_pxe":
+                boot_args.append("pxe")
+            elif command == "run bootcmd_sata":
+                boot_args.append("disk")
+            elif command.startswith("setenv bootdevice"):
+                boot_args.append("disk%i" % int(command.split()[2]))
+            else:
+                raise CxmanageError("Unrecognized boot command: %s" % command)
+
+        if retry:
+            boot_args.append("retry")
+
+        return boot_args
+
+    def get_contents(self):
         """ Return a raw string representation of the uboot environment """
 
         contents = ""

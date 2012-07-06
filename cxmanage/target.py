@@ -9,7 +9,6 @@ import time
 
 from cxmanage import CxmanageError
 from cxmanage.image import Image
-from cxmanage.simg import get_simg_header
 from cxmanage.ubootenv import UbootEnv
 
 from pyipmi import make_bmc, IpmiError
@@ -227,34 +226,24 @@ class Target:
         except IpmiError:
             raise CxmanageError("Failed to reset configuration")
 
-    def config_boot(self, work_dir, tftp, boot_args, retry=False):
+    def config_boot(self, work_dir, tftp, boot_args):
         """ Configure boot order """
-        # Get tftp address
-        tftp_address = "%s:%s" % (tftp.get_address(self.address),
-                tftp.get_port())
-
-        # Download uboot environment
-        filename = tempfile.mkstemp(prefix="%s/env_" % work_dir)[1]
-        basename = os.path.basename(filename)
         fwinfo = self.get_firmware_info()
         slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
-        handle = self.bmc.retrieve_firmware(basename,
-                int(slot.slot), "UBOOTENV", tftp_address).tftp_handle_id
-        self._wait_for_transfer(handle)
-        tftp.get_file(basename, filename)
 
-        simg = open(filename).read()
-        header = get_simg_header(simg)
-        ubootenv = UbootEnv(simg[28:])
+        # Download, modify, and reupload ubootenv
+        ubootenv = self._get_ubootenv(work_dir, tftp, slot)
+        ubootenv.set_boot_order(boot_args)
+        self._update_ubootenv(work_dir, tftp, slot, ubootenv)
 
-        # Modify uboot environment
-        ubootenv.set_boot_order(boot_args, retry)
+    def config_boot_status(self, work_dir, tftp):
+        """ Get boot order """
+        fwinfo = self.get_firmware_info()
+        slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
 
-        # Upload the new uboot environment
-        open(filename, "w").write(str(ubootenv))
-        image = Image(filename, "UBOOTENV", version=header.version,
-                daddr=header.daddr, skip_crc32=header.crc32==0)
-        self._update_image(work_dir, tftp, image, slot)
+        # Download and read boot order
+        ubootenv = self._get_ubootenv(work_dir, tftp, slot)
+        return ubootenv.get_boot_order()
 
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """
@@ -359,3 +348,28 @@ class Target:
                 break
         if result.status != "Complete":
             raise CxmanageError("Node reported transfer failure")
+
+    def _get_ubootenv(self, work_dir, tftp, slot):
+        """ Download a uboot environment from the target """
+        tftp_address = "%s:%s" % (tftp.get_address(self.address),
+                tftp.get_port())
+
+        # Download the image
+        filename = tempfile.mkstemp(prefix="%s/env_" % work_dir)[1]
+        basename = os.path.basename(filename)
+        handle = self.bmc.retrieve_firmware(basename,
+                int(slot.slot), "UBOOTENV", tftp_address).tftp_handle_id
+        self._wait_for_transfer(handle)
+        tftp.get_file(basename, filename)
+
+        # Open the file
+        simg = open(filename).read()
+        return UbootEnv(simg[28:])
+
+    def _update_ubootenv(self, work_dir, tftp, slot, ubootenv):
+        """ Upload a uboot environment to the target """
+        filename = tempfile.mkstemp(prefix="%s/env_" % work_dir)[1]
+        open(filename, "w").write(ubootenv.get_contents())
+        image = Image(filename, "UBOOTENV", version=int(slot.version, 16),
+                daddr=int(slot.daddr, 16))
+        self._update_image(work_dir, tftp, image, slot)
