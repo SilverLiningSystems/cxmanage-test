@@ -31,6 +31,8 @@ def build_parser():
             help='Send command to all nodes reported by fabric')
     p['parser'].add_argument('--threads', type=int, default=4,
             metavar='THREAD_COUNT', help='Number of threads to use')
+    p['parser'].add_argument('--force-yes', action="store_true",
+            help="Don't stop at confirmation dialogue")
     p['verbosity'] = p['parser'].add_mutually_exclusive_group()
     p['verbosity'].add_argument('-v', '--verbose', action='store_true',
             help='Verbose output')
@@ -269,14 +271,18 @@ def fwupdate_command(controller, args):
     """update firmware on a cluster or host"""
     if not args.all_nodes:
         sys.stdout.write("WARNING: Updating firmware without --all-nodes is dangerous.")
-        sys.stdout.write(" Continue? (y/n) ")
-        sys.stdout.flush()
-        while True:
-            command = raw_input().rstrip().lstrip().lower()
-            if command in ["y", "yes"]:
-                break
-            elif command in ["n", "no"]:
-                return 1
+        if args.force_yes:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+        else:
+            sys.stdout.write(" Continue? (y/n) ")
+            sys.stdout.flush()
+            while True:
+                command = raw_input().rstrip().lstrip().lower()
+                if command in ["y", "yes"]:
+                    break
+                elif command in ["n", "no"]:
+                    return 1
 
     simg = None
     if args.force_simg:
