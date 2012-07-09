@@ -43,6 +43,7 @@ class UbootEnv:
         """
         commands = ["run bootcmd_setup"]
         retry = False
+        reset = False
         for arg in boot_args:
             if arg == "pxe":
                 commands.append("run bootcmd_pxe")
@@ -53,11 +54,17 @@ class UbootEnv:
                         % int(arg[4:]))
             elif arg == "retry":
                 retry = True
+            elif arg == "reset":
+                reset = True
             else:
                 raise ValueError("Invalid boot argument %s" % arg)
 
-        if retry:
+        if retry and reset:
+            raise ValueError("retry and reset are mutually exclusive")
+        elif retry:
             commands[-1] = "while true\ndo\n%s\nsleep 1\ndone" % commands[-1]
+        elif reset:
+            commands.append("reset")
 
         self.set_variable("bootcmd0", "; ".join(commands))
 
@@ -81,11 +88,18 @@ class UbootEnv:
                 boot_args.append("disk")
             elif command.startswith("setenv bootdevice"):
                 boot_args.append("disk%i" % int(command.split()[2]))
+            elif command == "reset":
+                boot_args.append("reset")
+                break
             else:
                 raise CxmanageError("Unrecognized boot command: %s" % command)
 
-        if retry:
-            boot_args.append("retry")
+            if retry:
+                boot_args.append("retry")
+                break
+
+        if len(boot_args) == 0:
+            boot_args.append("none")
 
         return boot_args
 

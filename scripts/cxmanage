@@ -334,6 +334,9 @@ def config_boot_command(controller, args):
     if args.boot_args == "status":
         if controller.config_boot_status():
             return 1
+    elif args.boot_args == "none":
+        if controller.config_boot([]):
+            return 1
     elif controller.config_boot(args.boot_args.split(",")):
         return 1
 
