@@ -5,7 +5,7 @@
 import unittest
 
 from cxmanage_test import tftp_test, image_test, target_test, controller_test
-test_modules = [tftp_test, image_test, controller_test]
+test_modules = [tftp_test, image_test, target_test, controller_test]
 
 def main():
     """ Load and run tests """

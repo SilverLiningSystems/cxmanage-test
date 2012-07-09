@@ -6,10 +6,9 @@ import tempfile
 import unittest
 
 from cxmanage.simg import get_simg_header
-from cxmanage.image import Image
 from cxmanage.tftp import InternalTftp
 
-from cxmanage_test import TestSlot, random_file
+from cxmanage_test import random_file, TestImage, TestSlot
 
 class ImageTest(unittest.TestCase):
     """ Tests involving cxmanage images
@@ -29,10 +28,6 @@ class ImageTest(unittest.TestCase):
     def test_upload(self):
         """ Test image creation and upload """
 
-        class TestImage(Image):
-            def valid_type(self):
-                return True
-
         imglen = 1024
         daddr = 12345
         new_version = 1
@@ -43,7 +38,7 @@ class ImageTest(unittest.TestCase):
         image = TestImage(filename, "RAW")
 
         # Create slot
-        slot = TestSlot(size=imglen + 28, daddr=daddr)
+        slot = TestSlot(0, 2, size=imglen + 28, daddr=daddr)
 
         # Upload image and delete file
         image_filename = image.upload(self.work_dir,

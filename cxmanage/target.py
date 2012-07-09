@@ -18,15 +18,16 @@ class Target:
     """ Contains info for a single target. A target consists of a hostname,
     an username, and a password. """
 
-    def __init__(self, address, username="admin",
-            password="admin", verbosity=0):
+    def __init__(self, address, username="admin", password="admin",
+            verbosity=0, bmc_class=LanBMC, ubootenv_class=UbootEnv):
         self.address = address
         self.username = username
         self.password = password
         self.verbosity = verbosity
+        self.ubootenv_class = ubootenv_class
 
         verbose = verbosity >= 2
-        self.bmc = make_bmc(LanBMC, hostname=address,
+        self.bmc = make_bmc(bmc_class, hostname=address,
                 username=username, password=password, verbose=verbose)
 
     def get_ipinfo(self, work_dir, tftp):
@@ -186,7 +187,7 @@ class Target:
         except IpmiError:
             raise CxmanageError("Failed to retrieve firmware info")
 
-    def update_firmware(self, work_dir, tftp, images, slot_arg):
+    def update_firmware(self, work_dir, tftp, images, slot_arg="INACTIVE"):
         """ Update firmware on this target. """
         fwinfo = self.get_firmware_info()
 
@@ -204,10 +205,11 @@ class Target:
                 old_ubootenv = self._download_ubootenv(work_dir,
                         tftp, active_slot)
                 bootcmd = old_ubootenv.get_variable("bootcmd0")
+                contents = open(image.filename).read()
                 if image.simg:
-                    ubootenv = UbootEnv(open(image.filename).read()[28:])
-                else:
-                    ubootenv = UbootEnv(open(image.filename).read())
+                    contents = contents[28:]
+                ubootenv = self.ubootenv_class(contents)
+
                 ubootenv.set_variable("bootcmd0", bootcmd)
                 self._upload_ubootenv(work_dir, tftp, active_slot, ubootenv)
 
@@ -396,7 +398,7 @@ class Target:
 
         # Open the file
         simg = open(image.filename).read()
-        return UbootEnv(simg[28:])
+        return self.ubootenv_class(simg[28:])
 
     def _wait_for_transfer(self, handle):
         """ Wait for a firmware transfer to finish"""
