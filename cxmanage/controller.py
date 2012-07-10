@@ -335,7 +335,7 @@ class Controller:
             sensors = {}
             sensor_names = []
             for target in self.targets:
-                for sensor in results[target.address]:
+                for sensor in results.get(target.address, []):
                     sensor_name = sensor.sensor_name
                     reading = sensor.sensor_reading.replace("(+/- 0) ", "")
                     if name in [None, sensor_name]:
