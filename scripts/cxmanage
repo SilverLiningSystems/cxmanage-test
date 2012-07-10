@@ -186,7 +186,7 @@ def build_parser():
 
     p['boot'] = p['config_subs'].add_parser('boot',
             help='set A9 boot order')
-    p['boot'].add_argument('boot_args', help='boot order to use')
+    p['boot'].add_argument('boot_order', help='boot order to use')
     p['boot'].set_defaults(func=config_boot_command)
 
     #ipmitool command
@@ -377,13 +377,13 @@ def config_reset_command(controller, args):
 
 def config_boot_command(controller, args):
     """set A9 boot order"""
-    if args.boot_args == "status":
+    if args.boot_order == "status":
         if controller.config_boot_status():
             return 1
-    elif args.boot_args == "none":
+    elif args.boot_order == "none":
         if controller.config_boot([]):
             return 1
-    elif controller.config_boot(args.boot_args.split(",")):
+    elif controller.config_boot(args.boot_order.split(",")):
         return 1
 
     return 0
