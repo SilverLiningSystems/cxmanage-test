@@ -315,7 +315,7 @@ def fwupdate_command(controller, args):
     if not args.all_nodes:
         sys.stdout.write("WARNING: Updating firmware without --all-nodes is dangerous.")
         if args.force_yes:
-            sys.stdout.write("\n")
+            sys.stdout.write("\n\n")
             sys.stdout.flush()
         else:
             sys.stdout.write(" Continue? (y/n) ")
@@ -323,6 +323,7 @@ def fwupdate_command(controller, args):
             while True:
                 command = raw_input().rstrip().lstrip().lower()
                 if command in ["y", "yes"]:
+                    print
                     break
                 elif command in ["n", "no"]:
                     return 1
@@ -338,7 +339,7 @@ def fwupdate_command(controller, args):
             simg, args.version, args.daddr, args.skip_crc32)
 
     # Do firmware update
-    if controller.update_firmware(args.slot, True):
+    if controller.update_firmware(args.slot):
         return 1
     return 0
 

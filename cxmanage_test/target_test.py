@@ -95,7 +95,7 @@ class TargetTest(unittest.TestCase):
             executed = target.bmc.executed
             self.assertEqual(len(executed), 1)
             self.assertEqual(executed[0], "get_chassis_status")
-            self.assertEqual(result, "off")
+            self.assertEqual(result, False)
 
     def test_power_policy(self):
         """ Test power_policy command """

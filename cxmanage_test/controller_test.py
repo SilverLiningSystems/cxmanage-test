@@ -271,7 +271,7 @@ class ControllerTargetTest(unittest.TestCase):
         self.controller.add_image("factory.cdb", "CDB")
 
         # Perform firmware update
-        self.assertFalse(self.controller.update_firmware(skip_reset=True))
+        self.assertFalse(self.controller.update_firmware())
 
         for target in self.controller.targets:
             # Check updated types
@@ -302,7 +302,7 @@ class DummyTarget:
 
     def power_status(self):
         self.executed.append("power_status")
-        return "off"
+        return False
 
     def power_policy(self, mode):
         self.executed.append(("power_policy", mode))

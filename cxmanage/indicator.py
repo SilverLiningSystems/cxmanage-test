@@ -37,39 +37,61 @@ class Indicator(threading.Thread):
 
     Updating... """
 
-    def __init__(self, message):
+    def __init__(self, total):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
-        self.message = message
+        self.daemon = True
         self.running = False
+
+        self.total = total
+        self.successes = 0
+        self.errors = 0
 
     def run(self):
         self.lock.acquire()
 
-        sys.stdout.write(self.message)
+        message = "\r%i successes  |  %i errors  |  %i nodes left  |  %s"
+
+        # Print initial message
+        nodes_left = self.total - self.successes - self.errors
+        dots = ""
+        sys.stdout.write(message % (self.successes,
+                self.errors, nodes_left, dots.ljust(3)))
         sys.stdout.flush()
 
         self.running = True
-        deadline = time.time()
         while self.running:
-            current_time = time.time()
-            if current_time >= deadline:
-                deadline = current_time + 1
-                sys.stdout.write(".")
-                sys.stdout.flush()
-
             self.lock.release()
-            time.sleep(0.1)
+            time.sleep(0.25)
             self.lock.acquire()
+
+            nodes_left = self.total - self.successes - self.errors
+            if len(dots) >= 3:
+                dots = ""
+            else:
+                dots += "."
+
+            sys.stdout.write(message % (self.successes,
+                self.errors, nodes_left, dots.ljust(3)))
+            sys.stdout.flush()
 
         self.lock.release()
 
     def stop(self):
         self.lock.acquire()
+        was_running = self.running
+        self.running = False
+        self.lock.release()
 
-        if self.running:
-            sys.stdout.write("\n")
-            sys.stdout.flush()
-            self.running = False
+        if was_running:
+            self.join()
 
+    def add_success(self):
+        self.lock.acquire()
+        self.successes += 1
+        self.lock.release()
+
+    def add_error(self):
+        self.lock.acquire()
+        self.errors += 1
         self.lock.release()

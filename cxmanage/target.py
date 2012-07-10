@@ -171,10 +171,7 @@ class Target:
     def power_status(self):
         """ Return power status reported by IPMI """
         try:
-            if self.bmc.get_chassis_status().power_on:
-                return "on"
-            else:
-                return "off"
+            return self.bmc.get_chassis_status().power_on
         except IpmiError:
             raise CxmanageError("Failed to retrieve power status")
 
@@ -192,13 +189,15 @@ class Target:
         try:
             return self.bmc.sdr_list()
         except IpmiError:
-            raise CxmanageError("Failed to retrieve sensor value")
+            raise CxmanageError("Failed to retrieve sensor list")
 
     def get_firmware_info(self):
         """ Get firmware info from the target """
         try:
             fwinfo = [x for x in self.bmc.get_firmware_info()
                     if hasattr(x, "slot")]
+            if len(fwinfo) == 0:
+                raise CxmanageError("Failed to retrieve firmware info")
 
             # Flag CDB as "in use" based on socman info
             for a in range(1, len(fwinfo)):

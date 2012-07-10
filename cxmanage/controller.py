@@ -239,32 +239,36 @@ class Controller:
 
     def power(self, mode):
         """ Send the given power command to all targets """
-        results, errors = self._run_command("power", mode)
 
-        # Print successful addresses
-        if self.verbosity >= 1 and len(results) > 0:
-            print ("Power %s command executed successfully on the following hosts:"
-                    % mode)
+        if self.verbosity >= 1:
+            print "Sending power %s command to these hosts:" % mode
             for target in self.targets:
-                if target.address in results:
-                    print target.address
+                print target.address
             print
 
+        results, errors = self._run_command("power", mode)
+
+        if self.verbosity >= 1 and len(errors) == 0:
+            print "Command completed successfully.\n"
         self._print_errors(errors)
 
         return len(errors) > 0
 
     def power_status(self):
         """ Retrieve power status from all targets in group """
+
         results, errors = self._run_command("power_status")
 
         # Print results
         if len(results) > 0:
-            print "Chassis power status"
+            print "Power status"
             for target in self.targets:
                 if target.address in results:
-                    print "%s: %s" % (target.address.ljust(16),
-                            results[target.address])
+                    if results[target.address]:
+                        result = "on"
+                    else:
+                        result = "off"
+                    print "%s: %s" % (target.address.ljust(16), result)
             print
 
         # Print errors
@@ -274,17 +278,17 @@ class Controller:
 
     def power_policy(self, mode):
         """ Set the power policy for all targets """
-        results, errors = self._run_command("power_policy", mode)
 
-        # Print successful addresses
-        if self.verbosity >= 1 and len(results) > 0:
-            print ("Power policy set to \"%s\" for the following hosts:"
-                    % mode)
+        if self.verbosity >= 1:
+            print "Setting power policy on these hosts:"
             for target in self.targets:
-                if target.address in results:
-                    print target.address
+                print target.address
             print
 
+        results, errors = self._run_command("power_policy", mode)
+
+        if self.verbosity >= 1 and len(errors) == 0:
+            print "Command completed successfully.\n"
         self._print_errors(errors)
 
         return len(errors) > 0
@@ -309,49 +313,36 @@ class Controller:
 
     def mc_reset(self):
         """ Send an MC reset command to all targets """
-        results, errors = self._run_command("mc_reset")
 
-        # Print successful addresses
-        if self.verbosity >= 1 and len(results) > 0:
-            print "MC reset successfully on the following hosts:"
+        if self.verbosity >= 1:
+            print "Sending MC reset to these hosts:"
             for target in self.targets:
-                if target.address in results:
-                    print target.address
+                print target.address
             print
 
+        results, errors = self._run_command("mc_reset")
+
+        if self.verbosity >= 1 and len(errors) == 0:
+            print "Command completed successfully.\n"
         self._print_errors(errors)
 
         return len(errors) > 0
 
-    def update_firmware(self, slot_arg="INACTIVE", skip_reset=False):
+    def update_firmware(self, slot_arg="INACTIVE"):
         """ Send firmware update commands to all targets in group. """
-        # Start a progress indicator
-        indicator = Indicator("Updating")
-        if self.verbosity == 1:
-            indicator.start()
+
+        if self.verbosity >= 1:
+            print "Updating firmware on these hosts:"
+            for target in self.targets:
+                print target.address
+            print
 
         # Get results and errors
         results, errors = self._run_command("update_firmware",
                 self.work_dir, self.tftp, self.images, slot_arg)
 
-        # Reset MC upon completion
-        if not skip_reset:
-            for image in self.images:
-                if image.type == "SOC_ELF":
-                    self._run_command("mc_reset")
-                    break
-
-        # Signal indicator to stop
-        indicator.stop()
-
-        # Print successful addresses
-        if self.verbosity >= 1 and len(results) > 0:
-            print "Firmware updated successfully on the following hosts:"
-            for target in self.targets:
-                if target.address in results:
-                    print target.address
-            print
-
+        if self.verbosity >= 1 and len(errors) == 0:
+            print "Command completed successfully.\n"
         self._print_errors(errors)
 
         return len(errors) > 0
@@ -395,7 +386,7 @@ class Controller:
                             print "%s: %s" % (address.ljust(16), reading)
 
                 # Print average
-                if len(self.targets) > 1 and average != None:
+                if len(sensors[sensor_name]) > 1 and average != None:
                     average /= len(self.targets)
                     print "%s: %.2f %s" % ("Average".ljust(16),
                             average, suffix)
@@ -438,7 +429,8 @@ class Controller:
                     macaddrs = results[target.address]
                     for i in range(len(macaddrs)):
                         print "Node %i, Port %i: %s" % macaddrs[i]
-                    print
+                    if target != self.targets[-1] or len(errors) > 0:
+                        print
 
         self._print_errors(errors)
 
@@ -446,34 +438,36 @@ class Controller:
 
     def config_reset(self):
         """ Send config reset command to all targets """
+
+        if self.verbosity >= 1:
+            print "Resetting configuration on these hosts:"
+            for target in self.targets:
+                print target.address
+            print
+
         results, errors = self._run_command("config_reset",
             self.work_dir, self.tftp)
 
-        # Print successful addresses
-        if self.verbosity >= 1 and len(results) > 0:
-            print "Configuration reset successfully on the following hosts:"
-            for target in self.targets:
-                if target.address in results:
-                    print target.address
-            print
-
+        if self.verbosity >= 1 and len(errors) == 0:
+            print "Command completed successfully.\n"
         self._print_errors(errors)
 
         return len(errors) > 0
 
     def config_boot(self, boot_args):
         """ Send config boot command to all targets """
+
+        if self.verbosity >= 1:
+            print "Setting boot order on these hosts:"
+            for target in self.targets:
+                print target.address
+            print
+
         results, errors = self._run_command("config_boot",
                 self.work_dir, self.tftp, boot_args)
 
-        # Print successful addresses
-        if self.verbosity >= 1 and len(results) > 0:
-            print "Boot order changed successfully on the following hosts:"
-            for target in self.targets:
-                if target.address in results:
-                    print target.address
-            print
-
+        if self.verbosity >= 1 and len(errors) == 0:
+            print "Command completed successfully.\n"
         self._print_errors(errors)
 
         return len(errors) > 0
@@ -509,11 +503,16 @@ class Controller:
     def _run_command(self, name, *args):
         """ Run a target command with multiple threads
 
-        Returns a mapping of addresses to a (results, errors) tuple """
+        Returns (results, errors) which map addresses to their results """
 
         threads = [ControllerCommandThread(target, name, args)
                 for target in self.targets]
         running_threads = set()
+
+        # Start indicator
+        indicator = Indicator(len(self.targets))
+        if self.verbosity == 1:
+            indicator.start()
 
         for thread in threads:
             # Wait while we have too many running threads
@@ -522,31 +521,48 @@ class Controller:
                 for running_thread in running_threads:
                     if not running_thread.is_alive():
                         running_threads.remove(running_thread)
+                        if running_thread.error == None:
+                            indicator.add_success()
+                        else:
+                            indicator.add_error()
                         break
 
-            # Start the thread
+            # Start the new thread
             thread.start()
             running_threads.add(thread)
 
         # Join with any remaining threads
-        for thread in running_threads:
-            thread.join()
+        while len(running_threads) > 0:
+            time.sleep(0.001)
+            for running_thread in running_threads:
+                if not running_thread.is_alive():
+                    running_threads.remove(running_thread)
+                    if running_thread.error == None:
+                        indicator.add_success()
+                    else:
+                        indicator.add_error()
+                    break
 
         # Get results and errors
         results = {}
         errors = {}
         for thread in threads:
-            if thread.error != None:
-                errors[thread.target.address] = thread.error
-            else:
+            if thread.error == None:
                 results[thread.target.address] = thread.result
+            else:
+                errors[thread.target.address] = thread.error
+
+        # Stop indicator
+        if self.verbosity == 1:
+            indicator.stop()
+            print "\n"
 
         return results, errors
 
     def _print_errors(self, errors):
         """ Print errors if they occured """
         if len(errors) > 0:
-            print "The following errors occured"
+            print "Command failed on these hosts"
             for target in self.targets:
                 if target.address in errors:
                     print "%s: %s" % (target.address.ljust(16),
@@ -554,8 +570,12 @@ class Controller:
             print
 
 class ControllerCommandThread(threading.Thread):
+    """ Thread for executing a command on a target """
+
     def __init__(self, target, name, args):
         threading.Thread.__init__(self)
+        self.daemon = True
+
         self.target = target
         self.function = getattr(target, name)
         self.args = args
