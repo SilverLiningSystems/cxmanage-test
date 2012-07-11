@@ -33,31 +33,27 @@ import threading
 import time
 
 class Indicator(threading.Thread):
-    """ An indicator that prints a message with trailing dots, I.E.
+    """ An indicator that prints a message indicating the current command
+    status. """
 
-    Updating... """
-
-    def __init__(self, total):
+    def __init__(self, targets, results, errors):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
         self.daemon = True
         self.running = False
 
-        self.total = total
-        self.successes = 0
-        self.errors = 0
+        self.total = len(targets)
+        self.results = results
+        self.errors = errors
+
+        self.counter = 0
 
     def run(self):
+        """ Continously print message until a stop signal is received """
         self.lock.acquire()
 
-        message = "\r%i successes  |  %i errors  |  %i nodes left  |  %s"
-
         # Print initial message
-        nodes_left = self.total - self.successes - self.errors
-        dots = ""
-        sys.stdout.write(message % (self.successes,
-                self.errors, nodes_left, dots.ljust(3)))
-        sys.stdout.flush()
+        self._print_message()
 
         self.running = True
         while self.running:
@@ -65,19 +61,12 @@ class Indicator(threading.Thread):
             time.sleep(0.25)
             self.lock.acquire()
 
-            nodes_left = self.total - self.successes - self.errors
-            if len(dots) >= 3:
-                dots = ""
-            else:
-                dots += "."
-
-            sys.stdout.write(message % (self.successes,
-                self.errors, nodes_left, dots.ljust(3)))
-            sys.stdout.flush()
+            self._print_message()
 
         self.lock.release()
 
     def stop(self):
+        """ Stop the indicator """
         self.lock.acquire()
         was_running = self.running
         self.running = False
@@ -86,12 +75,14 @@ class Indicator(threading.Thread):
         if was_running:
             self.join()
 
-    def add_success(self):
-        self.lock.acquire()
-        self.successes += 1
-        self.lock.release()
+    def _print_message(self):
+        """ Print a single message """
+        message = "\r%i successes  |  %i errors  |  %i nodes left  |  %s"
+        successes = len(self.results)
+        errors = len(self.errors)
+        nodes_left = self.total - successes - errors
+        dots = "".join(["." for x in range(self.counter % 4)]).ljust(3)
+        self.counter += 1
 
-    def add_error(self):
-        self.lock.acquire()
-        self.errors += 1
-        self.lock.release()
+        sys.stdout.write(message % (successes, errors, nodes_left, dots))
+        sys.stdout.flush()

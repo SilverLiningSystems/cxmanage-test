@@ -505,52 +505,45 @@ class Controller:
 
         Returns (results, errors) which map addresses to their results """
 
-        threads = [ControllerCommandThread(target, name, args)
-                for target in self.targets]
-        running_threads = set()
+        threads = set()
+
+        results = {}
+        errors = {}
 
         # Start indicator
-        indicator = Indicator(len(self.targets))
+        indicator = Indicator(self.targets, results, errors)
         if self.verbosity == 1:
             indicator.start()
 
-        for thread in threads:
+        for target in self.targets:
             # Wait while we have too many running threads
-            while len(running_threads) >= self.max_threads:
+            while len(threads) >= self.max_threads:
                 time.sleep(0.001)
-                for running_thread in running_threads:
-                    if not running_thread.is_alive():
-                        running_threads.remove(running_thread)
-                        if running_thread.error == None:
-                            indicator.add_success()
+                for thread in threads:
+                    if not thread.is_alive():
+                        threads.remove(thread)
+                        if thread.error == None:
+                            results[thread.target.address] = thread.result
                         else:
-                            indicator.add_error()
+                            errors[thread.target.address] = thread.error
                         break
 
             # Start the new thread
+            thread = ControllerCommandThread(target, name, args)
             thread.start()
-            running_threads.add(thread)
+            threads.add(thread)
 
         # Join with any remaining threads
-        while len(running_threads) > 0:
+        while len(threads) > 0:
             time.sleep(0.001)
-            for running_thread in running_threads:
-                if not running_thread.is_alive():
-                    running_threads.remove(running_thread)
-                    if running_thread.error == None:
-                        indicator.add_success()
+            for thread in threads:
+                if not thread.is_alive():
+                    threads.remove(thread)
+                    if thread.error == None:
+                        results[thread.target.address] = thread.result
                     else:
-                        indicator.add_error()
+                        errors[thread.target.address] = thread.error
                     break
-
-        # Get results and errors
-        results = {}
-        errors = {}
-        for thread in threads:
-            if thread.error == None:
-                results[thread.target.address] = thread.result
-            else:
-                errors[thread.target.address] = thread.error
 
         # Stop indicator
         if self.verbosity == 1:
