@@ -70,7 +70,7 @@ class UbootEnv:
         disk: boot from default sata drive
         disk#: boot from numbered sata drive
         """
-        commands = ["run bootcmd_setup"]
+        commands = []
         retry = False
         reset = False
         for arg in boot_args:
@@ -79,14 +79,24 @@ class UbootEnv:
             elif arg == "disk":
                 commands.append("run bootcmd_sata")
             elif arg.startswith("disk"):
-                commands.append("setenv bootdevice %i && run bootcmd_sata"
-                        % int(arg[4:]))
+                try:
+                    dev, part = map(int, arg[4:].split(":"))
+                    bootdevice = "%i:%i" % (dev, part)
+                except ValueError:
+                    try:
+                        bootdevice = str(int(arg[4:]))
+                    except ValueError:
+                        raise ValueError("Invalid boot device: %s" % arg)
+                commands.append("setenv bootdevice %s && run bootcmd_sata"
+                        % bootdevice)
+            elif arg == "sd":
+                commands.append("run bootcmd_mmc")
             elif arg == "retry":
                 retry = True
             elif arg == "reset":
                 reset = True
             else:
-                raise ValueError("Invalid boot argument %s" % arg)
+                raise ValueError("Invalid boot device: %s" % arg)
 
         if retry and reset:
             raise ValueError("retry and reset are mutually exclusive")
@@ -95,12 +105,19 @@ class UbootEnv:
         elif reset:
             commands.append("reset")
 
-        self.set_variable("bootcmd0", "; ".join(commands))
+        if "bootcmd_default" in self.variables:
+            self.set_variable("bootcmd_default", "; ".join(commands))
+        else:
+            self.set_variable("bootcmd0",
+                    "; ".join(["run bootcmd_setup"] + commands))
 
     def get_boot_order(self):
         """ Get the boot order specified in the uboot environment. """
 
-        commands = self.get_variable("bootcmd0").split("; ")
+        if "bootcmd_default" in self.variables:
+            commands = self.get_variable("bootcmd_default").split("; ")
+        else:
+            commands = self.get_variable("bootcmd0").split("; ")
         boot_args = []
 
         retry = False
@@ -115,8 +132,10 @@ class UbootEnv:
                 boot_args.append("pxe")
             elif command == "run bootcmd_sata":
                 boot_args.append("disk")
+            elif command == "run bootcmd_mmc":
+                boot_args.append("sd")
             elif command.startswith("setenv bootdevice"):
-                boot_args.append("disk%i" % int(command.split()[2]))
+                boot_args.append("disk%s" % command.split()[2])
             elif command == "reset":
                 boot_args.append("reset")
                 break

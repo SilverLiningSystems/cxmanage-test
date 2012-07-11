@@ -46,6 +46,7 @@ from cxmanage.image import Image
 from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
 from cxmanage.indicator import Indicator
+from cxmanage.ubootenv import UbootEnv
 
 class Controller:
     """ The controller class serves as a manager for all the internals of
@@ -456,6 +457,13 @@ class Controller:
 
     def config_boot(self, boot_args):
         """ Send config boot command to all targets """
+
+        # Make sure boot_args are valid
+        try:
+            UbootEnv().set_boot_order(boot_args)
+        except ValueError as e:
+            print e
+            return True
 
         if self.verbosity >= 1:
             print "Setting boot order on these hosts:"

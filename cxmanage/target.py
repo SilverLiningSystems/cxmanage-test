@@ -230,15 +230,13 @@ class Target:
                         int(inactive_slot.version, 16))
 
                 # Update active ubootenv
-                old_ubootenv = self._download_ubootenv(work_dir,
-                        tftp, active_slot)
-                bootcmd = old_ubootenv.get_variable("bootcmd0")
+                boot_order = self._download_ubootenv(work_dir,
+                        tftp, active_slot).get_boot_order()
                 contents = open(image.filename).read()
                 if image.simg:
                     contents = contents[28:]
                 ubootenv = self.ubootenv_class(contents)
-
-                ubootenv.set_variable("bootcmd0", bootcmd)
+                ubootenv.set_boot_order(boot_order)
                 self._upload_ubootenv(work_dir, tftp, active_slot, ubootenv)
 
             else:

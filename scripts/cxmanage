@@ -214,23 +214,6 @@ def validate_args(args):
         if args.skip_simg and args.skip_crc32:
             sys.exit('Invalid argument --skip-crc32 when supplied with --skip-simg')
 
-    if args.func == config_boot_command:
-        if not args.boot_args in ['none', 'status']:
-            boot_args = args.boot_args.split(",")
-            for arg in boot_args:
-                if arg.startswith('disk') and len(arg) > 4:
-                    try:
-                        int(arg[4:])
-                    except ValueError:
-                        sys.exit('Invalid boot arg: %s' % arg)
-                elif not arg in ['disk', 'pxe', 'retry', 'reset']:
-                    sys.exit('Invalid boot args: %s' % args.boot_args)
-            if 'retry' in boot_args:
-                if len(boot_args) == 1:
-                    sys.exit('Invalid boot args: can\'t retry nothing')
-                elif 'reset' in boot_args:
-                    sys.exit('Invalid boot args: retry and reset are mutually exclusive')
-
 def main():
     """Get args and go"""
 
