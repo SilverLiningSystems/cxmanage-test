@@ -90,7 +90,9 @@ class UbootEnv:
                 commands.append("setenv bootdevice %s && run bootcmd_sata"
                         % bootdevice)
             elif arg == "sd":
-                commands.append("run bootcmd_mmc")
+                # TODO: enable this once it's working in u-boot
+                #commands.append("run bootcmd_mmc")
+                raise ValueError("Invalid boot device: %s" % arg)
             elif arg == "retry":
                 retry = True
             elif arg == "reset":
