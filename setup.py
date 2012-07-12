@@ -37,7 +37,7 @@ setup(
     packages=['cxmanage'],
     scripts=['scripts/cxmanage', 'scripts/cxpackage'],
     description='Calxeda Management Utility',
-    install_requires=['pexpect', 'tftpy', 'pyipmi'],
+    install_requires=['tftpy', 'pyipmi', 'argparse'],
     classifiers=[
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 2.7']
