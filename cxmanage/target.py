@@ -96,6 +96,7 @@ class Target:
                 address = elements[2]
                 if address != "0.0.0.0":
                     results.append((node, address))
+        results.sort()
 
         # Make sure we found something
         if len(results) == 0:
@@ -131,7 +132,7 @@ class Target:
         if not os.path.exists(filename):
             raise CxmanageError("Failed to retrieve mac addresses")
 
-        # Parse addresses from ipinfo file
+        # Parse addresses from macaddrs file
         results = []
         for line in open(filename):
             if line.startswith("Node"):
@@ -140,6 +141,7 @@ class Target:
                 port = int(elements[3].rstrip(":"))
                 address = elements[4]
                 results.append((node, port, address))
+        results.sort()
 
         # Make sure we found something
         if len(results) == 0:
@@ -185,7 +187,7 @@ class Target:
             raise CxmanageError("Failed to send MC reset command")
 
     def get_sensors(self):
-        """ Get a list of sensor (name, reading) tuples from this target """
+        """ Get a list of sensors from this target """
         try:
             return self.bmc.sdr_list()
         except IpmiError:
