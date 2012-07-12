@@ -125,17 +125,6 @@ class InternalTftp(threading.Thread):
         except IOError:
             raise CxmanageError("Failed to upload file to TFTP server")
 
-    def kill(self):
-        """ Kill the server if it's still up """
-        # this is really hacky -- kill the server by removing its socket
-        if self.server != None:
-            while self.server.sock == None:
-                pass
-            self.server.sock.close()
-            self.server = None
-
-        self._cleanup()
-
 class ExternalTftp:
     """ External TFTP server """
 
@@ -168,7 +157,3 @@ class ExternalTftp:
             self.client.upload(tftppath, localpath)
         except TftpException:
             raise CxmanageError("Failed to upload file to TFTP server")
-
-    def kill(self):
-        """ Do nothing """
-        pass

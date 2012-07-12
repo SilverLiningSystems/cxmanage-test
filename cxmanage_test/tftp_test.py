@@ -47,7 +47,6 @@ class InternalTftpTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.work_dir)
-        self.tftp.kill()
 
     def test_put_and_get(self):
         """ Test file transfers on an internal host """
@@ -87,7 +86,6 @@ class ExternalTftpTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.work_dir)
-        self.internal_tftp.kill()
 
     def test_put_and_get(self):
         """ Test file transfers on an external host """

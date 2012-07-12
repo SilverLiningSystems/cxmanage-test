@@ -47,9 +47,6 @@ class ControllerTargetTest(unittest.TestCase):
         self.controller = Controller(max_threads=32,
                 image_class=DummyImage, target_class=DummyTarget)
 
-    def tearDown(self):
-        self.controller.kill()
-
     def test_add_targets(self):
         """ Test adding targets"""
         # Add targets

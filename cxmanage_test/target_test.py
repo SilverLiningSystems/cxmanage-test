@@ -60,7 +60,6 @@ class TargetTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.work_dir)
-        self.tftp.kill()
 
     def test_get_ipinfo(self):
         """ Test get_ipinfo command """

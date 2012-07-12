@@ -52,7 +52,6 @@ class ImageTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.work_dir)
-        self.tftp.kill()
 
     def test_upload(self):
         """ Test image creation and upload """

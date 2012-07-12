@@ -63,31 +63,21 @@ class Controller:
         self.target_class = target_class
         self.image_class = image_class
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage-")
-        atexit.register(self.kill)
+        atexit.register(self._cleanup)
 
-    def kill(self):
+    def _cleanup(self):
         """ Clean up working directory and tftp server """
         if os.path.exists(self.work_dir):
             shutil.rmtree(self.work_dir)
-        if self.tftp != None:
-            self.tftp.kill()
 
 ###########################  TFTP-specific methods ###########################
 
     def set_internal_tftp_server(self, address=None, port=0):
         """ Set up a TFTP server to be hosted locally """
-        # Kill the server if we can
-        if self.tftp != None:
-            self.tftp.kill()
-
         self.tftp = InternalTftp(address, port, self.verbosity)
 
     def set_external_tftp_server(self, address, port=69):
         """ Set up a remote TFTP server """
-        # Kill the server if we can
-        if self.tftp != None:
-            self.tftp.kill()
-
         self.tftp = ExternalTftp(address, port, self.verbosity)
 
 ###########################  Images-specific methods ##########################
