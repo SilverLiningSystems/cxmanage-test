@@ -35,42 +35,46 @@ application. """
 import atexit
 import logging
 import os
-import signal
 import shutil
 import socket
-import subprocess
 import tempfile
+import threading
 
 from cxmanage import CxmanageError
 
 from tftpy import TftpClient, TftpServer, setLogLevel
 from tftpy.TftpShared import TftpException
 
-class InternalTftp:
+class InternalTftp(threading.Thread):
     """ Internal TFTP server """
 
     def __init__(self, address=None, port=0, verbosity=1):
-        self.tftp_dir = tempfile.mkdtemp(prefix="cxmanage-tftp-")
-        self.server = os.fork()
-        if self.server == 0:
-            TftpServer(self.tftp_dir).listen(address, port)
-            os._exit(0)
-        atexit.register(self.kill)
+        threading.Thread.__init__(self)
+        self.daemon = True
 
         self.address = address
-        if port != 0:
-            self.port = port
-        else:
-            self.port = self._discover_port()
+        self.port = port
+
+        self.tftp_dir = tempfile.mkdtemp(prefix="cxmanage-tftp-")
+        atexit.register(self._cleanup)
+
+        self.server = TftpServer(self.tftp_dir)
+
+        self.start()
+        atexit.register(self._cleanup)
 
         if verbosity <= 1:
             setLogLevel(logging.CRITICAL)
 
-    def kill(self):
-        """ Kill the server if it's still up """
-        if self.server != None:
-            os.kill(self.server, signal.SIGTERM)
-            self.server = None
+    def run(self):
+        """ Run the server, ignoring any exceptions """
+        try:
+            self.server.listen(self.address, self.port)
+        except:
+            pass
+
+    def _cleanup(self):
+        """ Clean up our resources on exit """
         if os.path.exists(self.tftp_dir):
             shutil.rmtree(self.tftp_dir)
 
@@ -92,7 +96,14 @@ class InternalTftp:
 
     def get_port(self):
         """ Return the listening port of this server """
-        return self.port
+        if self.port == 0:
+            while self.server.sock == None:
+                pass
+            port = self.server.sock.getsockname()[1]
+        else:
+            port = self.port
+
+        return port
 
     def get_file(self, tftppath, localpath):
         """ Download a file from the tftp server """
@@ -114,17 +125,16 @@ class InternalTftp:
         except IOError:
             raise CxmanageError("Failed to upload file to TFTP server")
 
-    def _discover_port(self):
-        """ Discover what port an internal server is bound to.
-        This uses the 'lsof' command line utility """
-        try:
-            command = "lsof -p%i -a -i4" % self.server
-            output = subprocess.check_output(command.split()).rstrip()
-            line = output.split("\n")[-1]
-            port = int(line.split()[8].split(":")[1])
-            return port
-        except (OSError, ValueError):
-            raise CxmanageError("Failed to discover internal TFTP port")
+    def kill(self):
+        """ Kill the server if it's still up """
+        # this is really hacky -- kill the server by removing its socket
+        if self.server != None:
+            while self.server.sock == None:
+                pass
+            self.server.sock.close()
+            self.server = None
+
+        self._cleanup()
 
 class ExternalTftp:
     """ External TFTP server """
@@ -136,10 +146,6 @@ class ExternalTftp:
 
         if verbosity <= 1:
             setLogLevel(logging.CRITICAL)
-
-    def kill(self):
-        """ Do nothing """
-        pass
 
     def get_address(self, relative_host=None):
         """ Return the address of this server. """
@@ -162,3 +168,7 @@ class ExternalTftp:
             self.client.upload(tftppath, localpath)
         except TftpException:
             raise CxmanageError("Failed to upload file to TFTP server")
+
+    def kill(self):
+        """ Do nothing """
+        pass
