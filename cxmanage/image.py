@@ -32,7 +32,6 @@
 """ Image objects used by the cxmanage controller """
 
 import os
-import subprocess
 import tempfile
 
 from cxmanage import CxmanageError
@@ -96,26 +95,14 @@ class Image:
         return basename
 
     def valid_type(self):
-        """ Make sure the file type (reported by the "file" tool) is valid
-        for this image type.
+        """ Return true if the image is valid, false otherwise """
 
-        Returns true/false """
-
-        file_type = subprocess.check_output(["file", self.filename]).split()[1]
-
-        if self.type == "SOC_ELF":
-            return file_type == "ELF"
-        elif self.type == "CDB":
-            if file_type != "data":
-                return False
-
+        if self.type == "CDB":
             # Look for "CDBH"
             contents = open(self.filename).read()
             if self.simg:
                 return contents[28:32] == "CDBH"
             else:
                 return contents[:4] == "CDBH"
-        else:
-            return file_type == "data"
 
-        return False
+        return True
