@@ -491,7 +491,12 @@ class Controller:
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
-        results, errors = self._run_command("ipmitool_command", ipmitool_args)
+        errors = {}
+        for target in self.targets:
+            try:
+                target.ipmitool_command(ipmitool_args)
+            except Exception as e:
+                errors.append(e)
 
         # Print errors
         self._print_errors(errors)
