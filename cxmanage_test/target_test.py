@@ -406,6 +406,7 @@ class FWInfoEntry:
         self.version = "%8x" % version
         self.daddr = "%8x" % daddr
         self.in_use = {None: "Unknown", True: "1", False: "0"}[in_use]
+        self.flags = "fffffffd"
 
 class DummyUbootEnv(UbootEnv):
     def get_boot_order(self):

@@ -221,25 +221,38 @@ class Target:
         """ Update firmware on this target. """
         fwinfo = self.get_firmware_info()
 
+        # Get the new version
+        version = 0
+        image_types = [x.type for x in images]
+        for slot in fwinfo:
+            # Make sure this slot one of the types we're updating
+            # and that the slot is flagged as "active"
+            if (slot.type.split()[1][1:-1] in image_types and
+                    int(slot.flags, 16) & 2 == 0):
+                version = max(version, int(slot.version, 16) + 1)
+        if version > 0xFFFF:
+            raise CxmanageError("Unable to increment SIMG version, too high")
+
         for image in images:
             if image.type == "UBOOTENV":
                 # Get slots
-                inactive_slot = self._get_slot(fwinfo, image.type, "INACTIVE")
-                active_slot = self._get_slot(fwinfo, image.type, "ACTIVE")
+                running_slot = self._get_slot(fwinfo, image.type, "FIRST")
+                factory_slot = self._get_slot(fwinfo, image.type, "SECOND")
 
-                # Update inactive ubootenv
-                self._upload_image(work_dir, tftp, image, inactive_slot,
-                        int(inactive_slot.version, 16))
-
-                # Update active ubootenv
+                # Update running ubootenv
                 boot_order = self._download_ubootenv(work_dir,
-                        tftp, active_slot).get_boot_order()
+                        tftp, running_slot).get_boot_order()
                 contents = open(image.filename).read()
                 if image.simg:
                     contents = contents[28:]
                 ubootenv = self.ubootenv_class(contents)
                 ubootenv.set_boot_order(boot_order)
-                self._upload_ubootenv(work_dir, tftp, active_slot, ubootenv)
+                self._upload_ubootenv(work_dir, tftp,
+                        ubootenv, running_slot, version)
+
+                # Update factory ubootenv
+                self._upload_image(work_dir, tftp, image,
+                        factory_slot, version)
 
             else:
                 # Get the slots
@@ -249,19 +262,9 @@ class Target:
                 else:
                     slots = [self._get_slot(fwinfo, image.type, slot_arg)]
 
-                # Get the new version
-                versions = [int(x.version, 16) for x in fwinfo if
-                        x.type.split()[1][1:-1] == image.type]
-                # Assume 0xFFFF comes from an invalid partition
-                versions = [x for x in versions if x != 0xFFFF]
-                if len(versions) > 0:
-                    new_version = min(0xFFFF, max(versions) + 1)
-                else:
-                    new_version = 0
-
                 # Update the image
                 for slot in slots:
-                    self._upload_image(work_dir, tftp, image, slot, new_version)
+                    self._upload_image(work_dir, tftp, image, slot, version)
 
     def config_reset(self, work_dir, tftp):
         """ Reset configuration to factory default """
@@ -273,10 +276,10 @@ class Target:
 
             # Reset ubootenv
             fwinfo = self.get_firmware_info()
-            inactive_slot = self._get_slot(fwinfo, "UBOOTENV", "INACTIVE")
-            active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
-            image = self._download_image(work_dir, tftp, inactive_slot)
-            self._upload_image(work_dir, tftp, image, active_slot)
+            running_slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
+            factory_slot = self._get_slot(fwinfo, "UBOOTENV", "SECOND")
+            image = self._download_image(work_dir, tftp, factory_slot)
+            self._upload_image(work_dir, tftp, image, running_slot)
 
             # Clear SEL
             self.bmc.sel_clear()
@@ -287,17 +290,17 @@ class Target:
     def config_boot(self, work_dir, tftp, boot_args):
         """ Configure boot order """
         fwinfo = self.get_firmware_info()
-        slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+        slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
 
         # Download, modify, and reupload ubootenv
         ubootenv = self._download_ubootenv(work_dir, tftp, slot)
         ubootenv.set_boot_order(boot_args)
-        self._upload_ubootenv(work_dir, tftp, slot, ubootenv)
+        self._upload_ubootenv(work_dir, tftp, ubootenv, slot)
 
     def config_boot_status(self, work_dir, tftp):
         """ Get boot order """
         fwinfo = self.get_firmware_info()
-        slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+        slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
 
         # Download and read boot order
         ubootenv = self._download_ubootenv(work_dir, tftp, slot)
@@ -421,13 +424,12 @@ class Target:
 
         return Image(filename, image_type)
 
-    def _upload_ubootenv(self, work_dir, tftp, slot, ubootenv):
+    def _upload_ubootenv(self, work_dir, tftp, ubootenv, slot, version=None):
         """ Upload a uboot environment to the target """
         filename = tempfile.mkstemp(prefix="%s/env_" % work_dir)[1]
         open(filename, "w").write(ubootenv.get_contents())
-        image = Image(filename, "UBOOTENV", version=int(slot.version, 16),
-                daddr=int(slot.daddr, 16))
-        self._upload_image(work_dir, tftp, image, slot)
+        image = Image(filename, "UBOOTENV")
+        self._upload_image(work_dir, tftp, image, slot, version)
 
     def _download_ubootenv(self, work_dir, tftp, slot):
         """ Download a uboot environment from the target """
