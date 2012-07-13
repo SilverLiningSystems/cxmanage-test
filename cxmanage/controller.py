@@ -496,7 +496,7 @@ class Controller:
             try:
                 target.ipmitool_command(ipmitool_args)
             except Exception as e:
-                errors.append(e)
+                errors[target.address] = e
 
         # Print errors
         self._print_errors(errors)
