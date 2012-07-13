@@ -37,7 +37,7 @@ import unittest
 from cxmanage.simg import get_simg_header
 from cxmanage.tftp import InternalTftp
 
-from cxmanage_test import random_file, TestImage, TestSlot
+from cxmanage_test import random_file, TestImage
 
 class ImageTest(unittest.TestCase):
     """ Tests involving cxmanage images
@@ -57,20 +57,17 @@ class ImageTest(unittest.TestCase):
         """ Test image creation and upload """
 
         imglen = 1024
+        version = 1
         daddr = 12345
-        new_version = 1
 
         # Create image
         filename = random_file(self.work_dir, imglen)
         contents = open(filename).read()
         image = TestImage(filename, "RAW")
 
-        # Create slot
-        slot = TestSlot(0, 2, size=imglen + 28, daddr=daddr)
-
         # Upload image and delete file
         image_filename = image.upload(self.work_dir,
-                self.tftp, slot, new_version)
+                self.tftp, version, daddr)
         os.remove(filename)
 
         # Download image
@@ -80,7 +77,7 @@ class ImageTest(unittest.TestCase):
         # Examine image
         simg = open(filename).read()
         header = get_simg_header(simg)
-        self.assertEqual(header.version, new_version)
+        self.assertEqual(header.version, version)
         self.assertEqual(header.imglen, imglen)
         self.assertEqual(header.daddr, daddr)
         self.assertEqual(simg[header.imgoff:], contents)

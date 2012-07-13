@@ -41,7 +41,7 @@ from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
 from cxmanage.ubootenv import UbootEnv
 
-from cxmanage_test import TestImage, TestSensor, TestSlot
+from cxmanage_test import TestImage, TestSensor
 
 num_nodes = 4
 addresses = ["192.168.100.%i" % a for a in range(1, num_nodes+1)]
@@ -247,16 +247,6 @@ class DummyBMC(LanBMC):
 
         self.executed = []
 
-        class Partition:
-            def __init__(self, slot, slot_type, offset=0,
-                    size=0, version=0, daddr=0, in_use=None):
-                self.updates = 0
-                self.retrieves = 0
-                self.checks = 0
-                self.activates = 0
-                self.slot = TestSlot(slot, slot_type, offset,
-                        size, version, daddr, in_use)
-
         self.partitions = [
                 Partition(0, 3, 0, 393216, in_use=True),        # socman
                 Partition(1, 10, 393216, 196608),               # factory cdb
@@ -321,7 +311,7 @@ class DummyBMC(LanBMC):
         """ Get partition and simg info """
         self.executed.append("get_firmware_info")
 
-        return [x.slot for x in self.partitions]
+        return [x.fwinfo for x in self.partitions]
 
     def update_firmware(self, filename, slot_id, image_type, tftp_address):
         """ Download a file from a TFTP server to a given slot.
@@ -389,6 +379,33 @@ class DummyBMC(LanBMC):
         ]
 
         return sensors
+
+class Partition:
+    def __init__(self, slot, slot_type, offset=0,
+            size=0, version=0, daddr=0, in_use=None):
+        self.updates = 0
+        self.retrieves = 0
+        self.checks = 0
+        self.activates = 0
+        self.fwinfo = FWInfoEntry(slot, slot_type, offset,
+                size, version, daddr, in_use)
+
+class FWInfoEntry:
+    """ Firmware info for a single partition """
+    def __init__(self, slot, slot_type, offset=0,
+            size=0, version=0, daddr=0, in_use=None):
+        self.slot = "%2i" % slot
+        self.type = {
+                2: "02 (S2_ELF)",
+                3: "03 (SOC_ELF)",
+                10: "0a (CDB)",
+                11: "0b (UBOOTENV)"
+            }[slot_type]
+        self.offset = "%8x" % offset
+        self.size = "%8x" % size
+        self.version = "%8x" % version
+        self.daddr = "%8x" % daddr
+        self.in_use = {None: "Unknown", True: "1", False: "0"}[in_use]
 
 class DummyUbootEnv(UbootEnv):
     def get_boot_order(self):

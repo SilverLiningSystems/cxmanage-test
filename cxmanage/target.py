@@ -367,14 +367,23 @@ class Target:
         else:
             raise ValueError("Invalid slot argument: %s" % slot_arg)
 
-    def _upload_image(self, work_dir, tftp, image, slot, new_version=0):
+    def _upload_image(self, work_dir, tftp, image, slot, version=None):
         """ Upload a single image. This includes uploading the image,
         performing the firmware update, crc32 check, and activation."""
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
+        if version == None:
+            version = int(slot.version, 16)
+        daddr = int(slot.daddr, 16)
+
+        # Check image size
+        if image.size() > int(slot.size, 16):
+            raise CxmanageError("%s image is too large for slot %i" %
+                    image.type, int(slot.slot))
+
         # Upload image to tftp server
-        filename = image.upload(work_dir, tftp, slot, new_version)
+        filename = image.upload(work_dir, tftp, version, daddr)
 
         # Send firmware update command
         slot_id = int(slot.slot)

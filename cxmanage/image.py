@@ -55,11 +55,11 @@ class Image:
         else:
             self.simg = simg
 
-        if not self.valid_type():
+        if not self.verify():
             raise CxmanageError("%s is not a valid %s image" %
                     (os.path.basename(filename), image_type))
 
-    def upload(self, work_dir, tftp, slot, new_version):
+    def upload(self, work_dir, tftp, version, daddr):
         """ Create and upload an SIMG file """
         filename = self.filename
 
@@ -68,12 +68,10 @@ class Image:
             contents = open(filename).read()
 
             # Figure out version and daddr
-            version = self.version
-            daddr = self.daddr
-            if version == None:
-                version = new_version
-            if daddr == None:
-                daddr = int(slot.daddr, 16)
+            if self.version != None:
+                version = self.version
+            if self.daddr != None:
+                daddr = self.daddr
 
             # Create simg
             simg = create_simg(contents, version=version,
@@ -81,10 +79,7 @@ class Image:
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(simg)
 
-        # Verify image
-        if os.path.getsize(filename) > int(slot.size, 16):
-            raise CxmanageError("%s is too large for slot %i" %
-                    (os.path.basename(self.filename), int(slot.slot)))
+        # Make sure the simg was built correctly
         if not valid_simg(open(filename).read()):
             raise CxmanageError("%s is not a valid SIMG" %
                     os.path.basename(self.filename))
@@ -94,7 +89,14 @@ class Image:
         tftp.put_file(filename, basename)
         return basename
 
-    def valid_type(self):
+    def size(self):
+        """ Return the full size of this image (as an SIMG) """
+        if self.simg:
+            return os.path.getsize(self.filename)
+        else:
+            return os.path.getsize(self.filename) + 28
+
+    def verify(self):
         """ Return true if the image is valid, false otherwise """
 
         if self.type == "CDB":
