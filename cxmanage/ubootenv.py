@@ -50,25 +50,18 @@ class UbootEnv:
                 part = line.partition("=")
                 self.variables[part[0]] = part[2]
 
-    def get_variable(self, variable):
-        """ Get a variable from the uboot environment """
-        if variable in self.variables:
-            return self.variables[variable]
-        else:
-            return None
-
-    def set_variable(self, variable, value):
-        """ Set a variable in the uboot environment """
-        self.variables[variable] = value
-
     def set_boot_order(self, boot_args):
         """ Set the boot order specified in the uboot environment.
 
         Here are the valid boot arguments:
 
-        pxe: boot from pxe server
-        disk: boot from default sata drive
-        disk#: boot from numbered sata drive
+        pxe         boot from pxe server
+        disk        boot from default sata device
+        diskX       boot from sata device X
+        diskX:Y     boot from sata device X, partition Y
+        sd          boot from SD
+        retry       retry last boot device indefinitely
+        reset       reset A9
         """
         commands = []
         retry = False
@@ -107,19 +100,20 @@ class UbootEnv:
         elif reset:
             commands.append("reset")
 
-        if "bootcmd_default" in self.variables:
-            self.set_variable("bootcmd_default", "; ".join(commands))
-        else:
-            self.set_variable("bootcmd0",
-                    "; ".join(["run bootcmd_setup"] + commands))
+        # Set bootcmd_default
+        self.variables["bootcmd_default"] = "; ".join(commands)
+
+        # TODO: Don't set bootcmd0. But for now, we have to since we released
+        # an earlier version of cxmanage that may have modified it.
+        self.variables["bootcmd0"] = "run bootcmd_setup; run bootcmd_default"
 
     def get_boot_order(self):
         """ Get the boot order specified in the uboot environment. """
 
         if "bootcmd_default" in self.variables:
-            commands = self.get_variable("bootcmd_default").split("; ")
+            commands = self.variables["bootcmd_default"].split("; ")
         else:
-            commands = self.get_variable("bootcmd0").split("; ")
+            commands = self.variables["bootcmd0"].split("; ")
         boot_args = []
 
         retry = False
@@ -128,9 +122,7 @@ class UbootEnv:
                 retry = True
                 command = command.split("\n")[2]
 
-            if command == "run bootcmd_setup":
-                pass
-            elif command == "run bootcmd_pxe":
+            if command == "run bootcmd_pxe":
                 boot_args.append("pxe")
             elif command == "run bootcmd_sata":
                 boot_args.append("disk")
@@ -141,7 +133,7 @@ class UbootEnv:
             elif command == "reset":
                 boot_args.append("reset")
                 break
-            else:
+            elif command != "run bootcmd_setup":
                 raise CxmanageError("Unrecognized boot command: %s" % command)
 
             if retry:
