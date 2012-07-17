@@ -51,6 +51,8 @@ def print_info_dump(work_dir, tftp, target):
     firmware(work_dir, tftp, target)
     fabric(work_dir, tftp, target)
 
+    print_ubootenv(work_dir, tftp, target)
+
     print_cdb(target)
     print_registers(target)
 
@@ -187,8 +189,18 @@ def fabric(work_dir, tftp, target):
             value = ipmitool(target, 'cxoem fabric get %s node %i'
                     % (item, node_id))
             print 'Node %i, %s: %s' % (node_id, item, value)
-        print
+    print
 
+
+def print_ubootenv(work_dir, tftp, target):
+    print '[ U-Boot Environment ]'
+    try:
+        ubootenv = target.get_ubootenv(work_dir, tftp)
+        for variable in sorted(ubootenv.variables):
+            print '%s=%s' % (variable, ubootenv.variables[variable])
+    except Exception as e:
+        print '%s: %s' % (e.__class__.__name__, e)
+    print
 
 def print_cdb(target, cids=None):
     """ Print info for each CDB entry. """

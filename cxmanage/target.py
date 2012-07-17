@@ -323,6 +323,13 @@ class Target:
         output = subprocess.check_output(command, stderr=subprocess.STDOUT)
         return output.rstrip().lstrip()
 
+    def get_ubootenv(self, work_dir, tftp):
+        """ Get the active uboot environment """
+        fwinfo = self.get_firmware_info()
+        slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+
+        return self._download_ubootenv(work_dir, tftp, slot)
+
     def _get_slot(self, fwinfo, image_type, slot_arg):
         """ Get a slot for this image type based on the slot argument """
         # Filter slots for this type
