@@ -319,7 +319,9 @@ class Target:
 
         if self.verbosity >= 2:
             print "Running %s" % " ".join(command)
-        return subprocess.check_output(command, stderr=subprocess.STDOUT)
+
+        output = subprocess.check_output(command, stderr=subprocess.STDOUT)
+        return output.rstrip().lstrip()
 
     def _get_slot(self, fwinfo, image_type, slot_arg):
         """ Get a slot for this image type based on the slot argument """

@@ -30,6 +30,8 @@
 
 import sys
 
+from pkg_resources import resource_string
+
 def print_info_dump(work_dir, tftp, target):
     """ Print the IPMI data available from the SoC. """
     # See if we need a tftp server
@@ -49,45 +51,48 @@ def print_info_dump(work_dir, tftp, target):
     firmware(work_dir, tftp, target)
     fabric(work_dir, tftp, target)
 
+    print_cdb(target)
+    print_registers(target)
+
 def ipmitool(target, cmd):
     """ Run an ipmitool command on the target """
     ipmitool_args = cmd.split()
     try:
-        target.ipmitool_command(ipmitool_args)
+        return target.ipmitool_command(ipmitool_args)
     except Exception as e:
-        print "%s: %s" % e.__class__.__name__, e
+        return "%s: %s" % (e.__class__.__name__, e)
 
 def chassis(work_dir, tftp, target):
     """ Print Chassis information. """
     print '[ IPMI Chassis status ]'
-    ipmitool(target, 'chassis status')
+    print ipmitool(target, 'chassis status') + '\n'
     print '[ IPMI Chassis Power status ]'
-    ipmitool(target, 'chassis power status')
+    print ipmitool(target, 'chassis power status') + '\n'
     #print '[ IPMI Chassis Restart Cause ]'
-    #print ipmitool(args, 'chassis restart-cause')
+    #print ipmitool(target, 'chassis restart-cause')
     print '[ CXOEM Info ]'
-    ipmitool(target, 'cxoem info basic')
-    ipmitool(target, 'cxoem info partnum')
-    ipmitool(target, 'cxoem info chassis')
-    ipmitool(target, 'cxoem info node')
+    print ipmitool(target, 'cxoem info basic') + '\n'
+    print ipmitool(target, 'cxoem info partnum') + '\n'
+    print ipmitool(target, 'cxoem info chassis') + '\n'
+    print ipmitool(target, 'cxoem info node') + '\n'
     print '[ IPMI Chassis Boot parameters ]'
-    ipmitool(target, 'chassis bootparam get 0')
-    ipmitool(target, 'chassis bootparam get 1')
-    ipmitool(target, 'chassis bootparam get 2')
-    ipmitool(target, 'chassis bootparam get 3')
-    ipmitool(target, 'chassis bootparam get 4')
-    ipmitool(target, 'chassis bootparam get 5')
-    ipmitool(target, 'chassis bootparam get 6')
-    ipmitool(target, 'chassis bootparam get 7')
+    print ipmitool(target, 'chassis bootparam get 0') + '\n'
+    print ipmitool(target, 'chassis bootparam get 1') + '\n'
+    print ipmitool(target, 'chassis bootparam get 2') + '\n'
+    print ipmitool(target, 'chassis bootparam get 3') + '\n'
+    print ipmitool(target, 'chassis bootparam get 4') + '\n'
+    print ipmitool(target, 'chassis bootparam get 5') + '\n'
+    print ipmitool(target, 'chassis bootparam get 6') + '\n'
+    print ipmitool(target, 'chassis bootparam get 7') + '\n'
 
 def lan(work_dir, tftp, target):
     """ Print LAN information. """
     print '[ IPMI LAN Configuration ]'
-    ipmitool(target, 'lan print')
+    print ipmitool(target, 'lan print') + '\n'
     print '[ IPMI LAN Alerts ]'
-    ipmitool(target, 'lan alert print')
+    print ipmitool(target, 'lan alert print') + '\n'
     print '[ IPMI LAN Stats ]'
-    ipmitool(target, 'lan stats get')
+    print ipmitool(target, 'lan stats get') + '\n'
 
 def power(work_dir, tftp, target):
     """ If there were power commands that it makes sense to issue, they would
@@ -102,60 +107,60 @@ def event(work_dir, tftp, target):
 def controller(work_dir, tftp, target):
     """ Print management controller information. """
     print '[ IPMI BMC GUID ]'
-    ipmitool(target, 'mc guid')
+    print ipmitool(target, 'mc guid') + '\n'
     #print '[ IPMI BMC Watchdog Timer ]'
-    #ipmitool(target, 'mc watchdog get')
+    #print ipmitool(target, 'mc watchdog get') + '\n'
     print '[ IPMI BMC Global Enables ]'
-    ipmitool(target, 'mc getenables')
+    print ipmitool(target, 'mc getenables') + '\n'
 
 def sdr(work_dir, tftp, target):
     """ Print sensor data record information. """
     print '[ IPMI Sensor Description Records ]'
-    ipmitool(target, 'sdr')
+    print ipmitool(target, 'sdr') + '\n'
 
 def sensor(work_dir, tftp, target):
     """ Print sensor information """
     print '[ IPMI Sensors ]'
-    ipmitool(target, 'sensor')
+    print ipmitool(target, 'sensor') + '\n'
 
 def fru(work_dir, tftp, target):
     """ Print FRU information. """
     print '[ IPMI FRU data records ]'
-    ipmitool(target, 'fru')
+    print ipmitool(target, 'fru') + '\n'
 
 def sel(work_dir, tftp, target):
     """ Print event log. """
     print '[ IPMI System Event Log ]'
-    ipmitool(target, 'sel')
+    print ipmitool(target, 'sel') + '\n'
 
 def pef(work_dir, tftp, target):
     """ Print PEF information. """
     print '[ IPMI Platform Event Filters ]'
-    ipmitool(target, 'pef')
+    print ipmitool(target, 'pef') + '\n'
 
 def user(work_dir, tftp, target):
     """ Print user information. """
     print '[ IPMI Users ]'
-    ipmitool(target, 'user list')
+    print ipmitool(target, 'user list') + '\n'
 
 def session(work_dir, tftp, target):
     """ Print session information. """
     print '[ IPMI Sessions Info ]'
-    ipmitool(target, 'session info all')
+    print ipmitool(target, 'session info all') + '\n'
 
 def channel(work_dir, tftp, target):
     """ Print channel information. """
     #print '[ IPMI Channel Access ]'
-    #ipmitool(target, 'channel getaccess')
+    #print ipmitool(target, 'channel getaccess')
     print '[ IPMI Channel Info ]'
-    ipmitool(target, 'channel info')
+    print ipmitool(target, 'channel info') + '\n'
     #print '[ IPMI Channel Ciphers ]'
-    #ipmitool(target, 'channel getciphers')
+    #print ipmitool(target, 'channel getciphers')
 
 def firmware(work_dir, tftp, target):
     """ Print firmware information. """
     print '[ IPMI Firmware Info ]'
-    ipmitool(target, 'cxoem fw info')
+    print ipmitool(target, 'cxoem fw info') + '\n'
 
 def fabric(work_dir, tftp, target):
     """ Print the fabric-related data. """
@@ -178,13 +183,34 @@ def fabric(work_dir, tftp, target):
 
     for entry in ipinfo:
         node_id = entry[0]
-        sys.stdout.write('Node %i, netmask: ' % node_id)
-        sys.stdout.flush()
-        ipmitool(target, 'cxoem fabric get netmask node %i' % node_id)
-        sys.stdout.write('Node %i, defgw: ' % node_id)
-        sys.stdout.flush()
-        ipmitool(target, 'cxoem fabric get defgw node %i' % node_id)
-        sys.stdout.write('Node %i, ipsrc: ' % node_id)
-        sys.stdout.flush()
-        ipmitool(target, 'cxoem fabric get ipsrc node %i' % node_id)
+        for item in ['netmask', 'defgw', 'ipsrc']:
+            value = ipmitool(target, 'cxoem fabric get %s node %i'
+                    % (item, node_id))
+            print 'Node %i, %s: %s' % (node_id, item, value)
+        print
 
+
+def print_cdb(target, cids=None):
+    """ Print info for each CDB entry. """
+    if cids == None:
+        cids = resource_string('cxmanage', 'data/cids').split()
+
+    for cid in cids:
+        print '[ CDB %s ]' % cid
+        print ipmitool(target, 'cxoem data cdb read 64 %s' % cid) + '\n'
+
+
+def print_registers(target, registers=None):
+    """ Print info for each register. """
+    if registers == None:
+        registers = resource_string('cxmanage', 'data/registers').split()
+
+    print '[ Memory dump ]'
+    for register in registers:
+        output = ipmitool(target, 'cxoem data mem read 4 %s' % register)
+        lines = [x for x in output.split('\n') if x.startswith('Value')]
+        if len(lines) == 1:
+            print 'Memory address %s: %s' % (register,
+                    lines[0].partition(':')[2].rstrip().lstrip())
+        else:
+            print 'Memory address %s: failed to read' % register

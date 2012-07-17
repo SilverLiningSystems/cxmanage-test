@@ -36,6 +36,7 @@ setup(
     version='0.3.0',
     packages=['cxmanage'],
     scripts=['scripts/cxmanage', 'scripts/cxpackage'],
+    package_data={'cxmanage': ['data/cids', 'data/registers']},
     description='Calxeda Management Utility',
     install_requires=['tftpy', 'pyipmi', 'argparse'],
     classifiers=[

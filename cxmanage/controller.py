@@ -510,7 +510,7 @@ class Controller:
                         threads.remove(thread)
                         print "[ %s ]" % thread.target.address
                         if thread.error == None:
-                            print thread.result.rstrip().lstrip()
+                            print thread.result
                         else:
                             print thread.error
                             error_encountered = True
@@ -531,7 +531,7 @@ class Controller:
                     threads.remove(thread)
                     print "[ %s ]" % thread.target.address
                     if thread.error == None:
-                        print thread.result.rstrip().lstrip()
+                        print thread.result
                     else:
                         print thread.error
                         error_encountered = True
