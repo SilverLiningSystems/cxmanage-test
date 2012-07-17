@@ -491,17 +491,47 @@ class Controller:
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
-        errors = {}
+        threads = set()
+        error_encountered = False
+
         for target in self.targets:
-            try:
-                target.ipmitool_command(ipmitool_args)
-            except Exception as e:
-                errors[target.address] = e
+            # Wait while we have too many running threads
+            while len(threads) >= self.max_threads:
+                time.sleep(0.001)
+                for thread in threads:
+                    if not thread.is_alive():
+                        threads.remove(thread)
+                        print "[ %s ]" % thread.target.address
+                        if thread.error == None:
+                            print thread.result.rstrip().lstrip()
+                        else:
+                            print thread.error
+                            error_encountered = True
+                        print
+                        break
 
-        # Print errors
-        self._print_errors(errors)
+            # Start the new thread
+            thread = ControllerCommandThread(target,
+                    "ipmitool_command", (ipmitool_args,))
+            thread.start()
+            threads.add(thread)
 
-        return len(errors) > 0
+        # Join with any remaining threads
+        while len(threads) > 0:
+            time.sleep(0.001)
+            for thread in threads:
+                if not thread.is_alive():
+                    threads.remove(thread)
+                    print "[ %s ]" % thread.target.address
+                    if thread.error == None:
+                        print thread.result.rstrip().lstrip()
+                    else:
+                        print thread.error
+                        error_encountered = True
+                    print
+                    break
+
+        return error_encountered
 
     def _run_command(self, name, *args):
         """ Run a target command with multiple threads

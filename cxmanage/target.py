@@ -314,7 +314,7 @@ class Target:
 
         if self.verbosity >= 2:
             print "Running %s" % " ".join(command)
-        subprocess.call(command)
+        return subprocess.check_output(command, stderr=subprocess.STDOUT)
 
     def _get_slot(self, fwinfo, image_type, slot_arg):
         """ Get a slot for this image type based on the slot argument """

@@ -337,6 +337,7 @@ class DummyTarget:
 
     def ipmitool_command(self, ipmitool_args):
         self.executed.append(("ipmitool_command", ipmitool_args))
+        return "Dummy output"
 
 
 class DummyImage:
