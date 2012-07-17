@@ -290,21 +290,13 @@ class Target:
 
     def config_boot(self, work_dir, tftp, boot_args):
         """ Configure boot order """
-        fwinfo = self.get_firmware_info()
-        slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
-
-        # Download, modify, and reupload ubootenv
-        ubootenv = self._download_ubootenv(work_dir, tftp, slot)
+        ubootenv = self.get_ubootenv(work_dir, tftp)
         ubootenv.set_boot_order(boot_args)
-        self._upload_ubootenv(work_dir, tftp, ubootenv, slot)
+        self.set_ubootenv(work_dir, tftp, ubootenv)
 
     def config_boot_status(self, work_dir, tftp):
         """ Get boot order """
-        fwinfo = self.get_firmware_info()
-        slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
-
-        # Download and read boot order
-        ubootenv = self._download_ubootenv(work_dir, tftp, slot)
+        ubootenv = self.get_ubootenv(work_dir, tftp)
         return ubootenv.get_boot_order()
 
     def info_dump(self, work_dir, tftp):
@@ -324,11 +316,22 @@ class Target:
         return output.rstrip().lstrip()
 
     def get_ubootenv(self, work_dir, tftp):
-        """ Get the active uboot environment """
+        """ Get the active u-boot environment """
         fwinfo = self.get_firmware_info()
         slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
 
         return self._download_ubootenv(work_dir, tftp, slot)
+
+    def set_ubootenv(self, work_dir, tftp, ubootenv):
+        """ Set a new u-boot environment """
+        fwinfo = self.get_firmware_info()
+        first_slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
+        active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+
+        # Always upload to the first slot. Make sure version is high enough
+        # so it gets loaded.
+        version = max([int(x.version, 16) for x in [first_slot, active_slot]])
+        self._upload_ubootenv(work_dir, tftp, ubootenv, first_slot, version)
 
     def _get_slot(self, fwinfo, image_type, slot_arg):
         """ Get a slot for this image type based on the slot argument """
