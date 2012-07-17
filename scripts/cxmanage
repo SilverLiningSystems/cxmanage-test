@@ -189,6 +189,15 @@ def build_parser():
     p['boot'].add_argument('boot_order', help='boot order to use')
     p['boot'].set_defaults(func=config_boot_command)
 
+    #info command
+    p['info'] = p['subparsers'].add_parser('info', help='get host info')
+    p['info'].add_argument('info_type', metavar="INFO_TYPE",
+            help='info type to get', type=lambda string: string.lower(),
+            choices=list(sorted([
+                'dump'
+            ])))
+    p['info'].set_defaults(func=info_command)
+
     #ipmitool command
     p['ipmitool'] = p['subparsers'].add_parser('ipmitool',
             help='run an arbitrary ipmitool command')
@@ -369,6 +378,14 @@ def config_boot_command(controller, args):
     elif controller.config_boot(args.boot_order.split(",")):
         return 1
 
+    return 0
+
+
+def info_command(controller, args):
+    """print info from a cluster or host"""
+    if args.info_type == 'dump':
+        if controller.info_dump():
+            return 1
     return 0
 
 

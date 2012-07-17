@@ -39,6 +39,7 @@ import time
 from cxmanage import CxmanageError
 from cxmanage.image import Image
 from cxmanage.ubootenv import UbootEnv
+from cxmanage.infodump import print_info_dump
 
 from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC
@@ -305,6 +306,10 @@ class Target:
         # Download and read boot order
         ubootenv = self._download_ubootenv(work_dir, tftp, slot)
         return ubootenv.get_boot_order()
+
+    def info_dump(self, work_dir, tftp):
+        """ Dump info from this target """
+        print_info_dump(work_dir, tftp, self)
 
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """

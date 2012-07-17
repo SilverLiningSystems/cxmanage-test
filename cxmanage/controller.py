@@ -399,8 +399,8 @@ class Controller:
                 if target.address in results:
                     print "IP info from %s" % target.address
                     ipinfo = results[target.address]
-                    for i in range(len(ipinfo)):
-                        print "Node %i: %s" % ipinfo[i]
+                    for entry in ipinfo:
+                        print "Node %i: %s" % entry
                     print
 
         self._print_errors(errors)
@@ -418,8 +418,8 @@ class Controller:
                 if target.address in results:
                     print "Mac addresses from %s" % target.address
                     macaddrs = results[target.address]
-                    for i in range(len(macaddrs)):
-                        print "Node %i, Port %i: %s" % macaddrs[i]
+                    for entry in macaddrs:
+                        print "Node %i, Port %i: %s" % entry
                     if target != self.targets[-1] or len(errors) > 0:
                         print
 
@@ -488,6 +488,13 @@ class Controller:
         self._print_errors(errors)
 
         return len(errors) > 0
+
+    def info_dump(self):
+        """ Dump info from all targets """
+        for target in self.targets:
+            target.info_dump(self.work_dir, self.tftp)
+
+        return False
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
