@@ -28,8 +28,6 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-import sys
-
 from pkg_resources import resource_string
 
 def print_info_dump(work_dir, tftp, target):
@@ -193,6 +191,7 @@ def fabric(work_dir, tftp, target):
 
 
 def print_ubootenv(work_dir, tftp, target):
+    """ Print u-boot environment variables """
     print '[ U-Boot Environment ]'
     try:
         ubootenv = target.get_ubootenv(work_dir, tftp)

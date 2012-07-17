@@ -36,8 +36,8 @@ import unittest
 from cxmanage.controller import Controller
 from cxmanage_test import TestSensor
 
-num_nodes = 128
-addresses = ["192.168.100.%i" % a for a in range(1, num_nodes+1)]
+NUM_NODES = 128
+ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]
 
 class ControllerTargetTest(unittest.TestCase):
     """ Tests involving the cxmanage controller """
@@ -51,12 +51,12 @@ class ControllerTargetTest(unittest.TestCase):
         """ Test adding targets"""
         # Add targets
         self.assertEqual(len(self.controller.targets), 0)
-        for address in addresses:
+        for address in ADDRESSES:
             self.controller.add_target(address, "admin", "admin")
 
         # Examine targets
-        self.assertEqual(len(addresses), len(self.controller.targets))
-        for address in addresses:
+        self.assertEqual(len(ADDRESSES), len(self.controller.targets))
+        for address in ADDRESSES:
             self.assertTrue(any([address == x.address
                     for x in self.controller.targets]))
 
@@ -64,11 +64,11 @@ class ControllerTargetTest(unittest.TestCase):
         """ Test adding targets with ipinfo """
         # Add targets
         self.assertEqual(len(self.controller.targets), 0)
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Examine targets
-        self.assertEqual(len(addresses), len(self.controller.targets))
-        for address in addresses:
+        self.assertEqual(len(ADDRESSES), len(self.controller.targets))
+        for address in ADDRESSES:
             self.assertTrue(any([address == x.address
                     for x in self.controller.targets]))
 
@@ -95,7 +95,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_power(self):
         """ Test controller power command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send power commands
         modes = ["on", "reset", "off"]
@@ -111,7 +111,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_power_status(self):
         """ Test controller power status command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send power status command
         self.assertFalse(self.controller.power_status())
@@ -124,7 +124,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_power_policy(self):
         """ Test controller power policy command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send power policy commands
         modes = ["always-on", "previous", "always-off"]
@@ -141,7 +141,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_power_policy_status(self):
         """ Test controller power policy status command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send power policy status command
         self.assertFalse(self.controller.power_policy_status())
@@ -154,7 +154,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_mc_reset(self):
         """ Test controller mc reset command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send mc reset command
         self.assertFalse(self.controller.mc_reset())
@@ -167,7 +167,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_get_sensors(self):
         """ Test controller get sensors command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send get sensors commands
         self.assertFalse(self.controller.get_sensors())
@@ -181,7 +181,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_get_ipinfo(self):
         """ Test controller get ipinfo command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin")
+        self.controller.add_target(ADDRESSES[0], "admin", "admin")
 
         # Send get ipinfo command
         self.assertFalse(self.controller.get_ipinfo())
@@ -194,7 +194,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_get_macaddrs(self):
         """ Test controller get macaddrs command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin")
+        self.controller.add_target(ADDRESSES[0], "admin", "admin")
 
         # Send get macaddrs command
         self.assertFalse(self.controller.get_macaddrs())
@@ -207,7 +207,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_config_reset(self):
         """ Test controller config reset command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send config reset command
         self.assertFalse(self.controller.config_reset())
@@ -220,7 +220,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_config_boot(self):
         """ Test controller config boot command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send config boot command
         boot_args = ["disk", "pxe", "retry"]
@@ -234,7 +234,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_config_boot_status(self):
         """ Test controller config boot status command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send config boot status command
         self.assertFalse(self.controller.config_boot_status())
@@ -247,7 +247,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_ipmitool_command(self):
         """ Test controller ipmitool command """
         # Add targets
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
         # Send ipmitool command
         ipmitool_args = ["chassis", "status"]
@@ -262,7 +262,7 @@ class ControllerTargetTest(unittest.TestCase):
     def test_firmware_update(self):
         """ Test controller firmware update command """
         # Add targets and images
-        self.controller.add_target(addresses[0], "admin", "admin", True)
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
         self.controller.add_image("stage2boot.bin", "S2_ELF")
         self.controller.add_image("socmanager.elf", "SOC_ELF")
         self.controller.add_image("factory.cdb", "CDB")
@@ -287,12 +287,12 @@ class DummyTarget:
 
     def get_ipinfo(self, work_dir, tftp):
         self.executed.append("get_ipinfo")
-        return list(enumerate(addresses))
+        return list(enumerate(ADDRESSES))
 
     def get_macaddrs(self, work_dir, tftp):
         self.executed.append("get_macaddrs")
         # TODO: return real mac addresses
-        return [(a, 0, addresses[a]) for a in range(num_nodes)]
+        return [(a, 0, ADDRESSES[a]) for a in range(NUM_NODES)]
 
     def power(self, mode):
         self.executed.append(("power", mode))

@@ -30,4 +30,5 @@
 
 
 class CxmanageError(Exception):
+    """ Generic cxmanage error"""
     pass

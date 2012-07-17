@@ -43,8 +43,8 @@ from cxmanage.ubootenv import UbootEnv
 
 from cxmanage_test import TestImage, TestSensor
 
-num_nodes = 4
-addresses = ["192.168.100.%i" % a for a in range(1, num_nodes+1)]
+NUM_NODES = 4
+ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]
 
 class TargetTest(unittest.TestCase):
     """ Tests involving cxmanage targets """
@@ -53,7 +53,7 @@ class TargetTest(unittest.TestCase):
         self.work_dir = tempfile.mkdtemp()
 
         self.targets = [Target(x, verbosity=0, bmc_class=DummyBMC,
-                ubootenv_class=DummyUbootEnv) for x in addresses]
+                ubootenv_class=DummyUbootEnv) for x in ADDRESSES]
 
         # Set up an internal server
         self.tftp = InternalTftp()
@@ -70,9 +70,9 @@ class TargetTest(unittest.TestCase):
             self.assertEqual(len(executed), 1)
             self.assertEqual(executed[0], "get_fabric_ipinfo")
 
-            self.assertEqual(len(result), num_nodes)
-            for i in range(num_nodes):
-                self.assertEqual(result[i], (i, addresses[i]))
+            self.assertEqual(len(result), NUM_NODES)
+            for i in range(NUM_NODES):
+                self.assertEqual(result[i], (i, ADDRESSES[i]))
 
     def test_power(self):
         """ Test power command """
@@ -265,8 +265,8 @@ class DummyBMC(LanBMC):
 
         # Create IP info file
         ipinfo = open("%s/%s" % (work_dir, filename), "w")
-        for i in range(len(addresses)):
-            ipinfo.write("Node %i: %s\n" % (i, addresses[i]))
+        for i in range(len(ADDRESSES)):
+            ipinfo.write("Node %i: %s\n" % (i, ADDRESSES[i]))
         ipinfo.close()
 
         # Upload to tftp
