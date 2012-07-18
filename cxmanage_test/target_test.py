@@ -64,7 +64,7 @@ class TargetTest(unittest.TestCase):
     def test_get_ipinfo(self):
         """ Test get_ipinfo command """
         for target in self.targets:
-            result = target.get_ipinfo(self.work_dir, self.tftp)
+            result = target.get_ipinfo(self.tftp)
 
             executed = target.bmc.executed
             self.assertEqual(len(executed), 1)
@@ -145,7 +145,7 @@ class TargetTest(unittest.TestCase):
         ]
 
         for target in self.targets:
-            target.update_firmware(self.work_dir, self.tftp, images)
+            target.update_firmware(self.tftp, images)
 
             partitions = target.bmc.partitions
             unchanged_partitions = [partitions[x] for x in [0, 1, 4]]
@@ -172,7 +172,7 @@ class TargetTest(unittest.TestCase):
     def test_config_reset(self):
         """ Test config_reset command """
         for target in self.targets:
-            target.config_reset(self.work_dir, self.tftp)
+            target.config_reset(self.tftp)
 
             # Assert config reset
             executed = target.bmc.executed
@@ -199,7 +199,7 @@ class TargetTest(unittest.TestCase):
         """ Test config_boot command """
         boot_args = ["disk", "pxe", "retry"]
         for target in self.targets:
-            target.config_boot(self.work_dir, self.tftp, boot_args)
+            target.config_boot(self.tftp, boot_args)
 
             partitions = target.bmc.partitions
             ubootenv_partition = partitions[5]
@@ -220,7 +220,7 @@ class TargetTest(unittest.TestCase):
     def test_config_boot_status(self):
         """ Test config_boot_status command """
         for target in self.targets:
-            result = target.config_boot_status(self.work_dir, self.tftp)
+            result = target.config_boot_status(self.tftp)
 
             partitions = target.bmc.partitions
             ubootenv_partition = partitions[5]

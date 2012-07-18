@@ -193,7 +193,7 @@ class Controller:
 
         target = self.target_class(address, username, password, self.verbosity)
         if all_nodes:
-            for entry in target.get_ipinfo(self.work_dir, self.tftp):
+            for entry in target.get_ipinfo(self.tftp):
                 self.add_target(entry[1], username, password)
         else:
             self.targets.append(target)
@@ -330,7 +330,7 @@ class Controller:
 
         # Get results and errors
         results, errors = self._run_command("update_firmware",
-                self.work_dir, self.tftp, self.images, slot_arg)
+                self.tftp, self.images, slot_arg)
 
         if self.verbosity >= 1 and len(errors) == 0:
             print "Command completed successfully.\n"
@@ -390,8 +390,7 @@ class Controller:
 
     def get_ipinfo(self):
         """ Get IP info from all targets """
-        results, errors = self._run_command("get_ipinfo",
-                self.work_dir, self.tftp)
+        results, errors = self._run_command("get_ipinfo", self.tftp)
 
         # Print results
         if len(results) > 0:
@@ -409,8 +408,7 @@ class Controller:
 
     def get_macaddrs(self):
         """ Get mac addresses from all targets """
-        results, errors = self._run_command("get_macaddrs",
-                self.work_dir, self.tftp)
+        results, errors = self._run_command("get_macaddrs", self.tftp)
 
         # Print results
         if len(results) > 0:
@@ -436,8 +434,7 @@ class Controller:
                 print target.address
             print
 
-        results, errors = self._run_command("config_reset",
-            self.work_dir, self.tftp)
+        results, errors = self._run_command("config_reset", self.tftp)
 
         if self.verbosity >= 1 and len(errors) == 0:
             print "Command completed successfully.\n"
@@ -461,8 +458,7 @@ class Controller:
                 print target.address
             print
 
-        results, errors = self._run_command("config_boot",
-                self.work_dir, self.tftp, boot_args)
+        results, errors = self._run_command("config_boot", self.tftp, boot_args)
 
         if self.verbosity >= 1 and len(errors) == 0:
             print "Command completed successfully.\n"
@@ -472,8 +468,7 @@ class Controller:
 
     def config_boot_status(self):
         """ Get boot order from all targets """
-        results, errors = self._run_command("config_boot_status",
-                self.work_dir, self.tftp)
+        results, errors = self._run_command("config_boot_status", self.tftp)
 
         # Print results
         if len(results) > 0:
@@ -492,7 +487,7 @@ class Controller:
     def info_dump(self):
         """ Dump info from all targets """
         for target in self.targets:
-            target.info_dump(self.work_dir, self.tftp)
+            target.info_dump(self.tftp)
 
         return False
 

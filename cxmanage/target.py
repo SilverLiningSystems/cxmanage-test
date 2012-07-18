@@ -31,7 +31,9 @@
 
 """ Target objects used by the cxmanage controller """
 
+import atexit
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -56,16 +58,24 @@ class Target:
         self.verbosity = verbosity
         self.ubootenv_class = ubootenv_class
 
+        self.work_dir = tempfile.mkdtemp(prefix="cxmanage-target-")
+        atexit.register(self._cleanup)
+
         verbose = verbosity >= 2
         self.bmc = make_bmc(bmc_class, hostname=address,
                 username=username, password=password, verbose=verbose)
 
-    def get_ipinfo(self, work_dir, tftp):
+    def _cleanup(self):
+        """ Clean up temporary files """
+        if os.path.exists(self.work_dir):
+            shutil.rmtree(self.work_dir)
+
+    def get_ipinfo(self, tftp):
         """ Download IP info from this target """
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
-        filename = tempfile.mkstemp(prefix="%s/ip_" % work_dir)[1]
+        filename = tempfile.mkstemp(prefix="%s/ip_" % self.work_dir)[1]
         basename = os.path.basename(filename)
 
         # Send ipinfo command
@@ -105,12 +115,12 @@ class Target:
 
         return results
 
-    def get_macaddrs(self, work_dir, tftp):
+    def get_macaddrs(self, tftp):
         """ Download mac addresses from this target """
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
-        filename = tempfile.mkstemp(prefix="%s/mac_" % work_dir)[1]
+        filename = tempfile.mkstemp(prefix="%s/mac_" % self.work_dir)[1]
         basename = os.path.basename(filename)
 
         # Send ipinfo command
@@ -218,7 +228,7 @@ class Target:
         except IpmiError:
             raise CxmanageError("Failed to retrieve firmware info")
 
-    def update_firmware(self, work_dir, tftp, images, slot_arg="INACTIVE"):
+    def update_firmware(self, tftp, images, slot_arg="INACTIVE"):
         """ Update firmware on this target. """
         fwinfo = self.get_firmware_info()
 
@@ -241,19 +251,17 @@ class Target:
                 factory_slot = self._get_slot(fwinfo, image.type, "SECOND")
 
                 # Update running ubootenv
-                boot_order = self._download_ubootenv(work_dir,
-                        tftp, running_slot).get_boot_order()
+                boot_order = self._download_ubootenv(tftp,
+                        running_slot).get_boot_order()
                 contents = open(image.filename).read()
                 if image.simg:
                     contents = contents[28:]
                 ubootenv = self.ubootenv_class(contents)
                 ubootenv.set_boot_order(boot_order)
-                self._upload_ubootenv(work_dir, tftp,
-                        ubootenv, running_slot, version)
+                self._upload_ubootenv(tftp, ubootenv, running_slot, version)
 
                 # Update factory ubootenv
-                self._upload_image(work_dir, tftp, image,
-                        factory_slot, version)
+                self._upload_image(tftp, image, factory_slot, version)
 
             else:
                 # Get the slots
@@ -265,9 +273,9 @@ class Target:
 
                 # Update the image
                 for slot in slots:
-                    self._upload_image(work_dir, tftp, image, slot, version)
+                    self._upload_image(tftp, image, slot, version)
 
-    def config_reset(self, work_dir, tftp):
+    def config_reset(self, tftp):
         """ Reset configuration to factory default """
         try:
             # Reset CDB
@@ -279,8 +287,8 @@ class Target:
             fwinfo = self.get_firmware_info()
             running_slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
             factory_slot = self._get_slot(fwinfo, "UBOOTENV", "SECOND")
-            image = self._download_image(work_dir, tftp, factory_slot)
-            self._upload_image(work_dir, tftp, image, running_slot)
+            image = self._download_image(tftp, factory_slot)
+            self._upload_image(tftp, image, running_slot)
 
             # Clear SEL
             self.bmc.sel_clear()
@@ -288,28 +296,28 @@ class Target:
         except IpmiError:
             raise CxmanageError("Failed to reset configuration")
 
-    def config_boot(self, work_dir, tftp, boot_args):
+    def config_boot(self, tftp, boot_args):
         """ Configure boot order """
         fwinfo = self.get_firmware_info()
         first_slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
         active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
 
         # Download active ubootenv, modify, then upload to first slot
-        ubootenv = self._download_ubootenv(work_dir, tftp, active_slot)
+        ubootenv = self._download_ubootenv(tftp, active_slot)
         ubootenv.set_boot_order(boot_args)
         version = max(int(x.version, 16) for x in [first_slot, active_slot])
-        self._upload_ubootenv(work_dir, tftp, ubootenv, first_slot, version)
+        self._upload_ubootenv(tftp, ubootenv, first_slot, version)
 
-    def config_boot_status(self, work_dir, tftp):
+    def config_boot_status(self, tftp):
         """ Get boot order """
         fwinfo = self.get_firmware_info()
         active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
-        ubootenv = self._download_ubootenv(work_dir, tftp, active_slot)
+        ubootenv = self._download_ubootenv(tftp, active_slot)
         return ubootenv.get_boot_order()
 
-    def info_dump(self, work_dir, tftp):
+    def info_dump(self, tftp):
         """ Dump info from this target """
-        print_info_dump(work_dir, tftp, self)
+        print_info_dump(tftp, self)
 
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """
@@ -323,12 +331,12 @@ class Target:
         output = subprocess.check_output(command, stderr=subprocess.STDOUT)
         return output.rstrip().lstrip()
 
-    def get_ubootenv(self, work_dir, tftp):
+    def get_ubootenv(self, tftp):
         """ Get the active u-boot environment """
         fwinfo = self.get_firmware_info()
         slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
 
-        return self._download_ubootenv(work_dir, tftp, slot)
+        return self._download_ubootenv(tftp, slot)
 
     def _get_slot(self, fwinfo, image_type, slot_arg):
         """ Get a slot for this image type based on the slot argument """
@@ -384,7 +392,7 @@ class Target:
         else:
             raise ValueError("Invalid slot argument: %s" % slot_arg)
 
-    def _upload_image(self, work_dir, tftp, image, slot, version=None):
+    def _upload_image(self, tftp, image, slot, version=None):
         """ Upload a single image. This includes uploading the image,
         performing the firmware update, crc32 check, and activation."""
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
@@ -400,7 +408,7 @@ class Target:
                     image.type, int(slot.slot))
 
         # Upload image to tftp server
-        filename = image.upload(work_dir, tftp, version, daddr)
+        filename = image.upload(self.work_dir, tftp, version, daddr)
 
         # Send firmware update command
         slot_id = int(slot.slot)
@@ -420,7 +428,7 @@ class Target:
         else:
             raise CxmanageError("Node reported crc32 check failure")
 
-    def _download_image(self, work_dir, tftp, slot):
+    def _download_image(self, tftp, slot):
         """ Download an image from the target.
 
         Returns the filename. """
@@ -428,7 +436,7 @@ class Target:
                 tftp.get_port())
 
         # Download the image
-        filename = tempfile.mkstemp(prefix="%s/img_" % work_dir)[1]
+        filename = tempfile.mkstemp(prefix="%s/img_" % self.work_dir)[1]
         basename = os.path.basename(filename)
         image_type = slot.type.split()[1][1:-1]
         handle = self.bmc.retrieve_firmware(basename,
@@ -438,16 +446,16 @@ class Target:
 
         return Image(filename, image_type)
 
-    def _upload_ubootenv(self, work_dir, tftp, ubootenv, slot, version=None):
+    def _upload_ubootenv(self, tftp, ubootenv, slot, version=None):
         """ Upload a uboot environment to the target """
-        filename = tempfile.mkstemp(prefix="%s/env_" % work_dir)[1]
+        filename = tempfile.mkstemp(prefix="%s/env_" % self.work_dir)[1]
         open(filename, "w").write(ubootenv.get_contents())
         image = Image(filename, "UBOOTENV")
-        self._upload_image(work_dir, tftp, image, slot, version)
+        self._upload_image(tftp, image, slot, version)
 
-    def _download_ubootenv(self, work_dir, tftp, slot):
+    def _download_ubootenv(self, tftp, slot):
         """ Download a uboot environment from the target """
-        image = self._download_image(work_dir, tftp, slot)
+        image = self._download_image(tftp, slot)
 
         # Open the file
         simg = open(image.filename).read()

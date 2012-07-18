@@ -285,11 +285,11 @@ class DummyTarget:
         self.address = address
         self.executed = []
 
-    def get_ipinfo(self, work_dir, tftp):
+    def get_ipinfo(self, tftp):
         self.executed.append("get_ipinfo")
         return list(enumerate(ADDRESSES))
 
-    def get_macaddrs(self, work_dir, tftp):
+    def get_macaddrs(self, tftp):
         self.executed.append("get_macaddrs")
         # TODO: return real mac addresses
         return [(a, 0, ADDRESSES[a]) for a in range(NUM_NODES)]
@@ -311,7 +311,7 @@ class DummyTarget:
     def mc_reset(self):
         self.executed.append("mc_reset")
 
-    def update_firmware(self, work_dir, tftp, images, slot_arg):
+    def update_firmware(self, tftp, images, slot_arg):
         self.executed.append(("update_firmware", images))
         time.sleep(random.randint(0, 2))
 
@@ -325,13 +325,13 @@ class DummyTarget:
         ]
         return sensors
 
-    def config_reset(self, work_dir, tftp):
+    def config_reset(self, tftp):
         self.executed.append("config_reset")
 
-    def config_boot(self, work_dir, tftp, boot_args):
+    def config_boot(self, tftp, boot_args):
         self.executed.append(("config_boot", boot_args))
 
-    def config_boot_status(self, work_dir, tftp):
+    def config_boot_status(self, tftp):
         self.executed.append("config_boot_status")
         return ["disk", "pxe"]
 
