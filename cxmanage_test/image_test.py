@@ -45,7 +45,7 @@ class ImageTest(unittest.TestCase):
     These will rely on an internally hosted TFTP server. """
 
     def setUp(self):
-        self.work_dir = tempfile.mkdtemp()
+        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 
         # Set up an internal server
         self.tftp = InternalTftp()

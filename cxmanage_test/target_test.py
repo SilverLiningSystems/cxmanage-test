@@ -50,7 +50,7 @@ class TargetTest(unittest.TestCase):
     """ Tests involving cxmanage targets """
 
     def setUp(self):
-        self.work_dir = tempfile.mkdtemp()
+        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 
         self.targets = [Target(x, verbosity=0, bmc_class=DummyBMC,
                 ubootenv_class=DummyUbootEnv) for x in ADDRESSES]
@@ -261,7 +261,7 @@ class DummyBMC(LanBMC):
         """ Upload an ipinfo file from the node to TFTP"""
         self.executed.append("get_fabric_ipinfo")
 
-        work_dir = tempfile.mkdtemp()
+        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 
         # Create IP info file
         ipinfo = open("%s/%s" % (work_dir, filename), "w")
@@ -332,7 +332,7 @@ class DummyBMC(LanBMC):
         self.partitions[slot_id].retrieves += 1
 
         # Upload blank image to tftp
-        work_dir = tempfile.mkdtemp()
+        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         open("%s/%s" % (work_dir, filename), "w").write(create_simg(""))
         address, port = tftp_address.split(":")
         port = int(port)

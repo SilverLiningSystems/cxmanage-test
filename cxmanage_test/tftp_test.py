@@ -42,7 +42,7 @@ class InternalTftpTest(unittest.TestCase):
     """ Tests involving an internal TFTP server """
 
     def setUp(self):
-        self.work_dir = tempfile.mkdtemp()
+        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         self.tftp = InternalTftp()
 
     def tearDown(self):
@@ -74,7 +74,7 @@ class ExternalTftpTest(unittest.TestCase):
     one, but it allows us to make sure the actual TFTP protocol is working. """
 
     def setUp(self):
-        self.work_dir = tempfile.mkdtemp()
+        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 
         # Set up an internal server
         self.internal_tftp = InternalTftp()
