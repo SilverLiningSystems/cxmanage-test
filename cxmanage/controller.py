@@ -498,47 +498,20 @@ class Controller:
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
-        threads = set()
-        error_encountered = False
+        results, errors = self._run_command("ipmitool_command", ipmitool_args)
 
-        for target in self.targets:
-            # Wait while we have too many running threads
-            while len(threads) >= self.max_threads:
-                time.sleep(0.001)
-                for thread in threads:
-                    if not thread.is_alive():
-                        threads.remove(thread)
-                        print "[ %s ]" % thread.target.address
-                        if thread.error == None:
-                            print thread.result
-                        else:
-                            print thread.error
-                            error_encountered = True
-                        print
-                        break
-
-            # Start the new thread
-            thread = ControllerCommandThread(target,
-                    "ipmitool_command", (ipmitool_args,))
-            thread.start()
-            threads.add(thread)
-
-        # Join with any remaining threads
-        while len(threads) > 0:
-            time.sleep(0.001)
-            for thread in threads:
-                if not thread.is_alive():
-                    threads.remove(thread)
-                    print "[ %s ]" % thread.target.address
-                    if thread.error == None:
-                        print thread.result
-                    else:
-                        print thread.error
-                        error_encountered = True
+        # Print results
+        if len(results) > 0:
+            for target in self.targets:
+                if target.address in results:
+                    print "[ IPMItool output from %s ]" % target.address
+                    print results[target.address]
                     print
-                    break
 
-        return error_encountered
+        # Print errors
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def _run_command(self, name, *args):
         """ Run a target command with multiple threads
