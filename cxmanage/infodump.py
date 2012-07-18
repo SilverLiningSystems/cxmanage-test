@@ -194,7 +194,9 @@ def print_ubootenv(work_dir, tftp, target):
     """ Print u-boot environment variables """
     print '[ U-Boot Environment ]'
     try:
-        ubootenv = target.get_ubootenv(work_dir, tftp)
+        fwinfo = target.get_firmware_info()
+        slot = target._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+        ubootenv = target._download_ubootenv(work_dir, tftp, slot)
         for variable in sorted(ubootenv.variables):
             print '%s=%s' % (variable, ubootenv.variables[variable])
     except Exception as e:

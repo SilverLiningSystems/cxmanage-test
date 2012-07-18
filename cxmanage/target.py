@@ -290,13 +290,21 @@ class Target:
 
     def config_boot(self, work_dir, tftp, boot_args):
         """ Configure boot order """
-        ubootenv = self.get_ubootenv(work_dir, tftp)
+        fwinfo = self.get_firmware_info()
+        first_slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
+        active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+
+        # Download active ubootenv, modify, then upload to first slot
+        ubootenv = self._download_ubootenv(work_dir, tftp, active_slot)
         ubootenv.set_boot_order(boot_args)
-        self.set_ubootenv(work_dir, tftp, ubootenv)
+        version = max(int(x.version, 16) for x in [first_slot, active_slot])
+        self._upload_ubootenv(work_dir, tftp, ubootenv, first_slot, version)
 
     def config_boot_status(self, work_dir, tftp):
         """ Get boot order """
-        ubootenv = self.get_ubootenv(work_dir, tftp)
+        fwinfo = self.get_firmware_info()
+        active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+        ubootenv = self._download_ubootenv(work_dir, tftp, active_slot)
         return ubootenv.get_boot_order()
 
     def info_dump(self, work_dir, tftp):
@@ -321,17 +329,6 @@ class Target:
         slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
 
         return self._download_ubootenv(work_dir, tftp, slot)
-
-    def set_ubootenv(self, work_dir, tftp, ubootenv):
-        """ Set a new u-boot environment """
-        fwinfo = self.get_firmware_info()
-        first_slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
-        active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
-
-        # Always upload to the first slot. Make sure version is high enough
-        # so it gets loaded.
-        version = max([int(x.version, 16) for x in [first_slot, active_slot]])
-        self._upload_ubootenv(work_dir, tftp, ubootenv, first_slot, version)
 
     def _get_slot(self, fwinfo, image_type, slot_arg):
         """ Get a slot for this image type based on the slot argument """
