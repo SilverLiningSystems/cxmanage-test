@@ -225,17 +225,59 @@ def print_cdb(target, cids=None):
         print
 
 
-def print_registers(target, registers=None):
+def print_registers(target, regfile=None):
     """ Print info for each register. """
-    if registers == None:
-        registers = resource_string('cxmanage', 'data/registers').split()
+    register_ranges = get_register_ranges(regfile)
 
     print '[ Memory dump ]'
-    for register in registers:
-        output = ipmitool(target, 'cxoem data mem read 4 %s' % register)
-        lines = [x for x in output.split('\n') if x.startswith('Value')]
-        if len(lines) == 1:
-            print 'Memory address %s: %s' % (register,
-                    lines[0].partition(':')[2].rstrip().lstrip())
-        else:
-            print 'Memory address %s: failed to read' % register
+    for register_range in register_ranges:
+        address = register_range[0]
+        while address <= register_range[1]:
+            # Calculate the number of words/bytes to read
+            words_remaining = (register_range[1] - address) / 4 + 1
+            words_to_read = min(8, words_remaining)
+            bytes_to_read = words_to_read * 4
+
+            # Get the output
+            output = ipmitool(target, 'cxoem data mem read %i %08x'
+                    % (bytes_to_read, address))
+
+            try:
+                # Parse values
+                values = [x for x in output.split('\n') if
+                        x.startswith('Value')][0]
+                values = values.partition(':')[2].rstrip().lstrip()
+                values = values.split('0x')[1:]
+                values = ['0x' + x for x in values]
+
+                # Print
+                for i in range(words_to_read):
+                    print 'Memory address %08x: %s' % (address + i * 4,
+                            values[i])
+            except:
+                print 'Failed to read memory address %08x' % address
+                return
+
+            address += bytes_to_read
+
+def get_register_ranges(regfile=None):
+    """ Get registers as a list of (start, end) ranges """
+    if regfile == None:
+        string = resource_string('cxmanage', 'data/registers')
+    else:
+        string = open(regfile).read()
+
+    registers = sorted(set(int(x, 16) for x in string.split()))
+
+    # Build register ranges
+    register_ranges = []
+    start = 0
+    while start < len(registers):
+        next = start + 1
+        while (next < len(registers) and
+                registers[next] == registers[next - 1] + 4):
+            next += 1
+        register_ranges.append((registers[start], registers[next - 1]))
+        start = next
+
+    return register_ranges

@@ -487,6 +487,7 @@ class Controller:
     def info_dump(self):
         """ Dump info from all targets """
         for target in self.targets:
+            print "[ Info dump from %s ]" % target.address
             target.info_dump(self.tftp)
 
         return False
