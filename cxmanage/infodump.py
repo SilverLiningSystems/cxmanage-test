@@ -273,11 +273,11 @@ def get_register_ranges(regfile=None):
     register_ranges = []
     start = 0
     while start < len(registers):
-        next = start + 1
-        while (next < len(registers) and
-                registers[next] == registers[next - 1] + 4):
-            next += 1
-        register_ranges.append((registers[start], registers[next - 1]))
-        start = next
+        end = start
+        while (end + 1 < len(registers) and
+                registers[end + 1] == registers[end] + 4):
+            end += 1
+        register_ranges.append((registers[start], registers[end]))
+        start = end + 1
 
     return register_ranges
