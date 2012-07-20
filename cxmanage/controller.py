@@ -499,7 +499,7 @@ class Controller:
         # Print results
         if len(results) > 0:
             for target in self.targets:
-                if target.address in results:
+                if target.address in results and results[target.address] != "":
                     print "[ IPMItool output from %s ]" % target.address
                     print results[target.address]
                     print
