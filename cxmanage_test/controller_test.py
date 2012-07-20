@@ -278,6 +278,19 @@ class ControllerTargetTest(unittest.TestCase):
             for image_type in ["S2_ELF", "SOC_ELF", "CDB"]:
                 self.assertTrue(image_type in updated_types)
 
+    def test_info_dump(self):
+        """ Test controller info dump command """
+        # Add targets
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
+
+        # Send mc reset command
+        self.assertFalse(self.controller.info_dump())
+
+        for target in self.controller.targets:
+            # Verify command
+            self.assertTrue(len(target.executed), 1)
+            self.assertEqual(target.executed[0], "info_dump")
+
 
 class DummyTarget:
     """ Dummy target for the controller tests """
@@ -334,6 +347,9 @@ class DummyTarget:
     def config_boot_status(self, tftp):
         self.executed.append("config_boot_status")
         return ["disk", "pxe"]
+
+    def info_dump(self, tftp):
+        self.executed.append("info_dump")
 
     def ipmitool_command(self, ipmitool_args):
         self.executed.append(("ipmitool_command", ipmitool_args))
