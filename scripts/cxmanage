@@ -201,6 +201,9 @@ def build_parser():
     #ipmitool command
     p['ipmitool'] = p['subparsers'].add_parser('ipmitool',
             help='run an arbitrary ipmitool command')
+    p['ipmitool'].add_argument('-l', '--lanplus',
+            action='store_true', default=False,
+            help='use lanplus')
     p['ipmitool'].add_argument('ipmitool_args', nargs="+",
             help="ipmitool arguments")
     p['ipmitool'].set_defaults(func=ipmitool_command)
@@ -391,7 +394,12 @@ def info_command(controller, args):
 
 def ipmitool_command(controller, args):
     """run arbitrary ipmitool command"""
-    if controller.ipmitool_command(args.ipmitool_args):
+    if args.lanplus:
+        ipmitool_args = ['-I', 'lanplus'] + args.ipmitool_args
+    else:
+        ipmitool_args = args.ipmitool_args
+        
+    if controller.ipmitool_command(ipmitool_args):
         return 1
     return 0
 

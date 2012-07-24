@@ -321,7 +321,7 @@ class Target:
 
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """
-        command = ["ipmitool", "-I", "lanplus", "-U", self.username, "-P", self.password, "-H",
+        command = ["ipmitool", "-U", self.username, "-P", self.password, "-H",
                 self.address]
         command += ipmitool_args
 
