@@ -103,18 +103,14 @@ class UbootEnv:
         # Set bootcmd_default
         self.variables["bootcmd_default"] = "; ".join(commands)
 
-        # TODO: Don't set bootcmd0. But for now, we have to since we released
-        # an earlier version of cxmanage that may have modified it.
-        self.variables["bootcmd0"] = "run bootcmd_setup; run bootcmd_default"
-
     def get_boot_order(self):
         """ Get the boot order specified in the uboot environment. """
 
-        if "bootcmd_default" in self.variables:
-            commands = self.variables["bootcmd_default"].split("; ")
-        else:
-            commands = self.variables["bootcmd0"].split("; ")
         boot_args = []
+
+        if not "bootcmd_default" in self.variables:
+            raise CxmanageError("Variable bootcmd_default not found")
+        commands = self.variables["bootcmd_default"].split("; ")
 
         retry = False
         for command in commands:
@@ -133,7 +129,7 @@ class UbootEnv:
             elif command == "reset":
                 boot_args.append("reset")
                 break
-            elif command != "run bootcmd_setup":
+            else:
                 raise CxmanageError("Unrecognized boot command: %s" % command)
 
             if retry:

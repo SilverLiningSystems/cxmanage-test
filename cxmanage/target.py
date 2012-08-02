@@ -251,14 +251,18 @@ class Target:
                 factory_slot = self._get_slot(fwinfo, image.type, "SECOND")
 
                 # Update running ubootenv
-                boot_order = self._download_ubootenv(tftp,
-                        running_slot).get_boot_order()
-                contents = open(image.filename).read()
-                if image.simg:
-                    contents = contents[28:]
-                ubootenv = self.ubootenv_class(contents)
-                ubootenv.set_boot_order(boot_order)
-                self._upload_ubootenv(tftp, ubootenv, running_slot, version)
+                old_ubootenv = self._download_ubootenv(tftp, running_slot)
+                if "bootcmd_default" in old_ubootenv.variables:
+                    bootcmd = old_ubootenv.variables["bootcmd_default"]
+                    contents = open(image.filename).read()
+                    if image.simg:
+                        contents = contents[28:]
+                    ubootenv = self.ubootenv_class(contents)
+                    ubootenv.variables["bootcmd_default"] = bootcmd
+                    self._upload_ubootenv(tftp, ubootenv,
+                            running_slot, version)
+                else:
+                    self._upload_image(tftp, image, running_slot, version)
 
                 # Update factory ubootenv
                 self._upload_image(tftp, image, factory_slot, version)
