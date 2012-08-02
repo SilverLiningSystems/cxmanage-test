@@ -333,7 +333,7 @@ class Target:
             print "Running %s" % " ".join(command)
 
         output = subprocess.check_output(command, stderr=subprocess.STDOUT)
-        return output.rstrip().lstrip()
+        return output.strip()
 
     def get_ubootenv(self, tftp):
         """ Get the active u-boot environment """

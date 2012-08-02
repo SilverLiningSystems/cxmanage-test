@@ -216,10 +216,8 @@ def print_cdb(target, cids=None):
         value_lines = [x for x in output.split('\n') if x.startswith('Value')]
 
         if len(size_lines) == 1 and len(value_lines) == 1:
-            print ('CID size : %s' %
-                    size_lines[0].partition(':')[2].rstrip().lstrip())
-            print ('Value    : %s' %
-                    value_lines[0].partition(':')[2].rstrip().lstrip())
+            print 'CID size : %s' % size_lines[0].partition(':')[2].strip()
+            print 'Value    : %s' % value_lines[0].partition(':')[2].strip()
         else:
             print output
         print
@@ -246,7 +244,7 @@ def print_registers(target, regfile=None):
                 # Parse values
                 values = [x for x in output.split('\n') if
                         x.startswith('Value')][0]
-                values = values.partition(':')[2].rstrip().lstrip()
+                values = values.partition(':')[2].strip()
                 values = values.split('0x')[1:]
                 values = ['0x' + x for x in values]
 
