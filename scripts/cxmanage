@@ -40,9 +40,9 @@ import sys
 from cxmanage.controller import Controller
 
 # Load plugins
-prefix = "cxmanage_plugin"
-plugins = [__import__(x[1]) for x in pkgutil.iter_modules()
-        if x[1].startswith(prefix)]
+PREFIX = "cxmanage_plugin"
+PLUGINS = [__import__(x[1]) for x in pkgutil.iter_modules()
+        if x[1].startswith(PREFIX)]
 
 def build_parser():
     """setup the argparse parser"""
@@ -173,7 +173,8 @@ def build_parser():
     p['ipinfo'].set_defaults(func=ipinfo_command)
 
     #macaddrs command
-    p['macaddrs'] = p['subparsers'].add_parser('macaddrs', help='get mac addresses')
+    p['macaddrs'] = p['subparsers'].add_parser('macaddrs',
+            help='get mac addresses')
     p['macaddrs'].set_defaults(func=macaddrs_command)
 
     #config command
@@ -210,7 +211,8 @@ def build_parser():
 
     p['parser'].add_argument('hostname', help='hostname to target')
 
-    for plugin in plugins:
+    #plugin commands
+    for plugin in PLUGINS:
         plugin.add_args(p)
 
     return p['parser']
@@ -280,29 +282,22 @@ def power_command(controller, args):
     # power policy
     if args.power_mode == 'policy':
         if args.policy == 'status':
-            if controller.power_policy_status():
-                return 1
-        elif controller.power_policy(args.policy):
-            return 1
+            return controller.power_policy_status()
+        else:
+            return controller.power_policy(args.policy)
 
     # power status
     elif args.power_mode == 'status':
-        if controller.power_status():
-            return 1
+        return controller.power_status()
 
     # power on/off/reset
     else:
-        if controller.power(args.power_mode):
-            return 1
-
-    return 0
+        return controller.power(args.power_mode)
 
 
 def mcreset_command(controller, args):
     """reset the management controllers of a cluster or host"""
-    if controller.mc_reset():
-        return 1
-    return 0
+    return controller.mc_reset()
 
 
 def fwupdate_command(controller, args):
@@ -334,62 +329,48 @@ def fwupdate_command(controller, args):
             simg, args.version, args.daddr, args.skip_crc32)
 
     # Do firmware update
-    if controller.update_firmware(args.slot):
-        return 1
-    return 0
+    return controller.update_firmware(args.slot)
 
 
 def sensor_command(controller, args):
     """read sensor values from a cluster or host"""
     if args.sensor_name.upper() == "LIST":
-        if controller.get_sensors():
-            return 1
-    elif controller.get_sensors(args.sensor_name):
-        return 1
-    return 0
+        return controller.get_sensors()
+    else:
+        return controller.get_sensors(args.sensor_name)
 
 
 def ipinfo_command(controller, args):
     """get ip info from a cluster or host"""
-    if controller.get_ipinfo():
-        return 1
-    return 0
+    return controller.get_ipinfo()
 
 
 def macaddrs_command(controller, args):
     """get mac addresses from a cluster or host"""
-    if controller.get_macaddrs():
-        return 1
-    return 0
+    return controller.get_macaddrs()
 
 
 def config_reset_command(controller, args):
     """reset to factory default settings"""
-    if controller.config_reset():
-        return 1
-    return 0
+    return controller.config_reset()
 
 
 def config_boot_command(controller, args):
     """set A9 boot order"""
     if args.boot_order == "status":
-        if controller.config_boot_status():
-            return 1
+        return controller.config_boot_status()
     elif args.boot_order == "none":
-        if controller.config_boot([]):
-            return 1
-    elif controller.config_boot(args.boot_order.split(",")):
-        return 1
-
-    return 0
+        return controller.config_boot([])
+    else:
+        return controller.config_boot(args.boot_order.split(","))
 
 
 def info_command(controller, args):
     """print info from a cluster or host"""
     if args.info_type == 'dump':
-        if controller.info_dump():
-            return 1
-    return 0
+        return controller.info_dump()
+    else:
+        return True
 
 
 def ipmitool_command(controller, args):
@@ -398,10 +379,8 @@ def ipmitool_command(controller, args):
         ipmitool_args = ['-I', 'lanplus'] + args.ipmitool_args
     else:
         ipmitool_args = args.ipmitool_args
-        
-    if controller.ipmitool_command(ipmitool_args):
-        return 1
-    return 0
+
+    return controller.ipmitool_command(ipmitool_args)
 
 
 def set_targets(controller, args):
