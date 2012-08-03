@@ -112,39 +112,37 @@ def build_parser():
 
     p['fwupdate'].add_argument('image_type', metavar='IMAGE_TYPE',
             help='type of image to update', type=lambda string: string.upper(),
-                        choices = list(sorted([
-                            'DEL',
-                            'DEL1',
-                            'S2_ELF',
-                            'SOC_ELF',
-                            'A9_UEFI',
-                            'A9_UBOOT',
-                            'A9_EXEC',
-                            'A9_ELF',
-                            'SOCDATA',
-                            'DTB',
-                            'CDB',
-                            'UBOOTENV',
-                            'SEL',
-                            'BOOT_LOG',
-                            'UEFI_ENV',
-                            'DIAG_ELF',
-                            'PACKAGE'
-                        ])))
+            choices = list(sorted([
+                'DEL',
+                'DEL1',
+                'S2_ELF',
+                'SOC_ELF',
+                'A9_UEFI',
+                'A9_UBOOT',
+                'A9_EXEC',
+                'A9_ELF',
+                'SOCDATA',
+                'DTB',
+                'CDB',
+                'UBOOTENV',
+                'SEL',
+                'BOOT_LOG',
+                'UEFI_ENV',
+                'DIAG_ELF',
+                'PACKAGE'
+            ])))
     p['fwupdate'].add_argument('filename', help='path to file to upload')
     p['fwupdate'].add_argument('--slot', help='Specify slot to update',
-                            default='INACTIVE',
-                            type=lambda string: string.upper(),
-                            choices = list(sorted([
-                                'FIRST',
-                                'SECOND',
-                                'THIRD',
-                                'BOTH',
-                                'OLDEST',
-                                'NEWEST',
-                                'INACTIVE'
-                            ]))
-            )
+            default='INACTIVE', type=lambda string: string.upper(),
+            choices = list(sorted([
+                'FIRST',
+                'SECOND',
+                'THIRD',
+                'BOTH',
+                'OLDEST',
+                'NEWEST',
+                'INACTIVE'
+            ])))
     p['simg_args'] = p['fwupdate'].add_mutually_exclusive_group()
     p['simg_args'].add_argument('--force-simg',
             help='Force addition of SIMG header',
@@ -302,22 +300,6 @@ def mcreset_command(controller, args):
 
 def fwupdate_command(controller, args):
     """update firmware on a cluster or host"""
-    if not args.all_nodes:
-        sys.stdout.write("WARNING: Updating firmware without --all-nodes is dangerous.")
-        if args.force_yes:
-            sys.stdout.write("\n\n")
-            sys.stdout.flush()
-        else:
-            sys.stdout.write(" Continue? (y/n) ")
-            sys.stdout.flush()
-            while True:
-                command = raw_input().rstrip().lstrip().lower()
-                if command in ["y", "yes"]:
-                    print
-                    break
-                elif command in ["n", "no"]:
-                    return 1
-
     simg = None
     if args.force_simg:
         simg = False
@@ -327,6 +309,23 @@ def fwupdate_command(controller, args):
     # Add image
     controller.add_image(args.filename, args.image_type,
             simg, args.version, args.daddr, args.skip_crc32)
+
+    # Print all_nodes warning/confirmation
+    if not args.all_nodes:
+        sys.stdout.write("WARNING: Updating firmware without --all-nodes is dangerous.")
+        if args.force_yes:
+            sys.stdout.write("\n\n")
+            sys.stdout.flush()
+        else:
+            sys.stdout.write(" Continue? (y/n) ")
+            sys.stdout.flush()
+            while True:
+                command = raw_input().strip().lower()
+                if command in ["y", "yes"]:
+                    print
+                    break
+                elif command in ["n", "no"]:
+                    return 1
 
     # Do firmware update
     return controller.update_firmware(args.slot)

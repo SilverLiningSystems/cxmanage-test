@@ -34,7 +34,6 @@
 """Command line tool for creating a Calxeda firmware package"""
 
 import argparse
-import os
 import sys
 
 from cxmanage.controller import Controller
@@ -53,38 +52,36 @@ def build_parser():
     add = subparsers.add_parser('add',
             help='Create or add to a firmware package')
     add.add_argument('image_type', metavar='IMAGE_TYPE',
-                        help='type of image to update',
-                        type=lambda string: string.upper(),
-                        choices = list(sorted([
-                            'DEL',
-                            'DEL1',
-                            'S2_ELF',
-                            'SOC_ELF',
-                            'A9_UEFI',
-                            'A9_UBOOT',
-                            'A9_EXEC',
-                            'A9_ELF',
-                            'SOCDATA',
-                            'DTB',
-                            'CDB',
-                            'UBOOTENV',
-                            'SEL',
-                            'BOOT_LOG',
-                            'UEFI_ENV',
-                            'DIAG_ELF',
-                        ]))
-            )
+            help='type of image to update', type=lambda string: string.upper(),
+            choices = list(sorted([
+                'DEL',
+                'DEL1',
+                'S2_ELF',
+                'SOC_ELF',
+                'A9_UEFI',
+                'A9_UBOOT',
+                'A9_EXEC',
+                'A9_ELF',
+                'SOCDATA',
+                'DTB',
+                'CDB',
+                'UBOOTENV',
+                'SEL',
+                'BOOT_LOG',
+                'UEFI_ENV',
+                'DIAG_ELF'
+            ])))
     simg_args = add.add_mutually_exclusive_group()
     simg_args.add_argument('--force-simg', help='Force addition of SIMG header',
-                            default=False, action='store_true')
+            default=False, action='store_true')
     simg_args.add_argument('--skip-simg', help='Skip addition of SIMG header',
-                            default=False, action='store_true')
+            default=False, action='store_true')
     add.add_argument('-v', '--version', help='Version for SIMG header',
-                            default=None, type=int)
+            default=None, type=int)
     add.add_argument('-d', '--daddr', help='Destination address for SIMG',
-                            default=None, type=lambda x : int(x, 16))
+            default=None, type=lambda x : int(x, 16))
     add.add_argument('--skip-crc32', help='Skip crc32 calculation for SIMG',
-                            default=False, action='store_true')
+            default=False, action='store_true')
     add.add_argument('filename', help='image path')
     add.set_defaults(func=add_command)
 
@@ -108,23 +105,21 @@ def main():
     args = parser.parse_args()
     validate_args(args)
 
-    controller = Controller(1)
+    controller = Controller()
 
     sys.exit(args.func(controller, args))
 
 def info_command(controller, args):
     """ Get package info """
     controller.add_image(args.package, 'PACKAGE')
-
-    print
     controller.print_images()
-
-    return 0
 
 def add_command(controller, args):
     """ Create or add to a firmware package """
-    if os.path.exists(args.package):
+    try:
         controller.add_image(args.package, 'PACKAGE')
+    except ValueError as e:
+        pass
 
     simg = None
     if args.force_simg:
@@ -134,9 +129,8 @@ def add_command(controller, args):
 
     controller.add_image(args.filename, args.image_type,
             simg, args.version, args.daddr, args.skip_crc32)
-    controller.save_package(args.package)
 
-    return 0
+    controller.save_package(args.package)
 
 if __name__ == "__main__":
     main()

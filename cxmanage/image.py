@@ -49,6 +49,9 @@ class Image:
         self.daddr = daddr
         self.skip_crc32 = skip_crc32
 
+        if not os.path.exists(filename):
+            raise ValueError("File %s does not exist" % filename)
+
         if simg == None:
             contents = open(filename).read()
             self.simg = has_simg(contents)

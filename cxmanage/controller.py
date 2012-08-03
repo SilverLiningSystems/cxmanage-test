@@ -82,60 +82,48 @@ class Controller:
 
 ###########################  Images-specific methods ##########################
 
-    def add_image(self,
-                  filename,
-                  image_type,
-                  simg=None,
-                  version=None,
-                  daddr=None,
-                  skip_crc32=False):
+    def add_image(self, filename, image_type, simg=None,
+            version=None, daddr=None, skip_crc32=False):
         """ Add an image to our collection """
         if image_type == "PACKAGE":
             # Extract files and read config
             try:
                 tarfile.open(filename, "r").extractall(self.work_dir)
             except (IOError, tarfile.ReadError):
-                raise ValueError("%s is not a valid tar.gz package"
-                        % os.path.basename(filename))
-            if not os.path.exists(self.work_dir + "/MANIFEST"):
-                raise ValueError("%s is not a valid firmware package"
+                raise ValueError("%s is not a valid tar.gz file"
                         % os.path.basename(filename))
             config = ConfigParser.SafeConfigParser()
-            config.read(self.work_dir + "/MANIFEST")
+            if len(config.read(self.work_dir + "/MANIFEST")) == 0:
+                raise ValueError("%s is not a valid firmware package"
+                        % os.path.basename(filename))
 
             # Add all images from package
             for section in config.sections():
-                filename = self.work_dir + "/" + section
+                filename = "%s/%s" % (self.work_dir, section)
                 image_type = config.get(section, "type").upper()
-                # SIMG
+                image_simg = simg
+                image_version = version
+                image_daddr = daddr
+                image_skip_crc32 = skip_crc32
+
+                # Read image options from config
                 if simg == None and config.has_option(section, "simg"):
                     image_simg = config.getboolean(section, "simg")
-                else:
-                    image_simg = simg
-                # Version
                 if version == None and config.has_option(section, "version"):
                     image_version = config.getint(section, "version")
-                else:
-                    image_version = version
-                # Daddr
                 if daddr == None and config.has_option(section, "daddr"):
                     image_daddr = int(config.get(section, "daddr"), 16)
-                else:
-                    image_daddr = daddr
-                # Skip crc32
                 if (skip_crc32 == False and
                         config.has_option(section, "skip_crc32")):
                     image_skip_crc32 = config.getboolean(section, "skip_crc32")
-                else:
-                    image_skip_crc32 = skip_crc32
 
                 image = self.image_class(filename, image_type, image_simg,
                         image_version, image_daddr, image_skip_crc32)
                 self.images.append(image)
 
         else:
-            image = self.image_class(filename, image_type, simg,
-                    version, daddr, skip_crc32)
+            image = self.image_class(filename, image_type,
+                    simg, version, daddr, skip_crc32)
             self.images.append(image)
 
     def save_package(self, filename):
@@ -215,11 +203,7 @@ class Controller:
             addresses = []
             for i in range(start_i, end_i + 1):
                 address_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
-                address = (str(address_bytes[0]) + "." + str(address_bytes[1])
-                        + "." + str(address_bytes[2]) + "."
-                        + str(address_bytes[3]))
-
-                addresses.append(address)
+                addresses.append("%i.%i.%i.%i" % tuple(address_bytes))
 
             return addresses
 
@@ -343,42 +327,48 @@ class Controller:
         results, errors = self._run_command("get_sensors")
 
         if len(results) > 0:
-            sensors = {}
+            # Get sensor names
             sensor_names = []
-            for target in self.targets:
-                for sensor in results.get(target.address, []):
-                    sensor_name = sensor.sensor_name
-                    reading = sensor.sensor_reading.replace("(+/- 0) ", "")
-                    if name in [None, sensor_name]:
-                        if not sensor_name in sensors:
-                            sensors[sensor_name] = {}
-                            sensor_names.append(sensor_name)
-                        sensors[sensor_name][target.address] = reading
+            for address in results:
+                for sensor in results[address]:
+                    if (name in [None, sensor.sensor_name] and not
+                            sensor.sensor_name in sensor_names):
+                        sensor_names.append(sensor.sensor_name)
 
+            # Print all sensors
             for sensor_name in sensor_names:
                 print sensor_name
 
+                count = 0
                 average = 0.0
                 for target in self.targets:
                     address = target.address
-                    if address in sensors[sensor_name]:
-                        reading = sensors[sensor_name][address]
-
-                        # Add to average and print
+                    if address in results:
                         try:
-                            value = float(reading.split()[0])
-                            if average != None:
-                                average += value
-                                suffix = reading.lstrip("%f " % value)
-                            print "%s: %.2f %s" % (address.ljust(16),
-                                    value, suffix)
-                        except ValueError:
-                            average = None
-                            print "%s: %s" % (address.ljust(16), reading)
+                            sensor = [x for x in results[address]
+                                    if x.sensor_name == sensor_name][0]
+                            reading = sensor.sensor_reading.replace(
+                                    "(+/- 0) ", "")
+
+                            # Add to average and print
+                            try:
+                                value = float(reading.split()[0])
+                                if average != None:
+                                    count += 1
+                                    average += value
+                                    suffix = reading.lstrip("%f " % value)
+                                print "%s: %.2f %s" % (address.ljust(16),
+                                        value, suffix)
+                            except ValueError:
+                                average = None
+                                print "%s: %s" % (address.ljust(16), reading)
+
+                        except IndexError:
+                            pass
 
                 # Print average
-                if len(sensors[sensor_name]) > 1 and average != None:
-                    average /= len(self.targets)
+                if count > 1 and average != None:
+                    average /= count
                     print "%s: %.2f %s" % ("Average".ljust(16),
                             average, suffix)
 
