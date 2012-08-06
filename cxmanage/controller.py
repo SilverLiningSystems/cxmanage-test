@@ -474,6 +474,28 @@ class Controller:
 
         return len(errors) > 0
 
+    def info_basic(self):
+        """ Get basic SoC info from all targets """
+        results, errors = self._run_command("info_basic")
+
+        # Print results
+        if len(results) > 0:
+            for target in self.targets:
+                if target.address in results:
+                    result = results[target.address]
+                    print "[ Info from %s ]" % target.address
+                    print result.header
+                    print "  Version: %s" % result.version
+                    print "  Build Number: %s" % result.build_number
+                    print "  Timestamp (%s): %s" % (result.timestamp,
+                            time.ctime(int(result.timestamp)))
+                    print
+
+        # Print errors
+        self._print_errors(errors)
+
+        return len(errors) > 0
+
     def info_dump(self):
         """ Dump info from all targets """
         for target in self.targets:

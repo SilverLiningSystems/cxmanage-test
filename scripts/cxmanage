@@ -190,9 +190,10 @@ def build_parser():
 
     #info command
     p['info'] = p['subparsers'].add_parser('info', help='get host info')
-    p['info'].add_argument('info_type', metavar="INFO_TYPE",
+    p['info'].add_argument('info_type', metavar="INFO_TYPE", nargs="?",
             help='info type to get', type=lambda string: string.lower(),
             choices=list(sorted([
+                'basic',
                 'dump'
             ])))
     p['info'].set_defaults(func=info_command)
@@ -366,6 +367,8 @@ def config_boot_command(controller, args):
 
 def info_command(controller, args):
     """print info from a cluster or host"""
+    if args.info_type in [None, 'basic']:
+        return controller.info_basic()
     if args.info_type == 'dump':
         return controller.info_dump()
     else:

@@ -319,6 +319,13 @@ class Target:
         ubootenv = self._download_ubootenv(tftp, active_slot)
         return ubootenv.get_boot_order()
 
+    def info_basic(self):
+        """ Get basic SoC info from this target """
+        result = self.bmc.get_info_basic()
+        if hasattr(result, "error"):
+            raise CxmanageError("Failed to retrieve SoC info")
+        return result
+
     def info_dump(self, tftp):
         """ Dump info from this target """
         print_info_dump(tftp, self)
