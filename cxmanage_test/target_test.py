@@ -240,6 +240,19 @@ class TargetTest(unittest.TestCase):
 
             self.assertEqual(result, ["disk", "pxe"])
 
+    def test_info_basic(self):
+        """ Test info_basic command """
+        for target in self.targets:
+            result = target.info_basic()
+
+            executed = target.bmc.executed
+            self.assertEqual(len(executed), 1)
+            self.assertEqual(executed[0], "info_basic")
+            self.assertTrue(hasattr(result, "header"))
+            self.assertTrue(hasattr(result, "version"))
+            self.assertTrue(hasattr(result, "build_number"))
+            self.assertTrue(hasattr(result, "timestamp"))
+
 class DummyBMC(LanBMC):
     """ Dummy BMC for the target tests """
     def __init__(self, **kwargs):
@@ -379,6 +392,18 @@ class DummyBMC(LanBMC):
         ]
 
         return sensors
+
+    def get_info_basic(self):
+        """ Get basic SoC info from this node """
+        self.executed.append("info_basic")
+
+        class Result:
+            def __init__(self):
+                self.header = "Calxeda SoC (0x0096CD)"
+                self.version = "0.0.0"
+                self.build_number = "00000000"
+                self.timestamp = "0"
+        return Result()
 
 class Partition:
     def __init__(self, slot, slot_type, offset=0,

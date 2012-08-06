@@ -34,6 +34,7 @@ import time
 import unittest
 
 from cxmanage.controller import Controller
+from cxmanage.ubootenv import UbootEnv
 from cxmanage_test import TestSensor
 
 NUM_NODES = 128
@@ -278,6 +279,32 @@ class ControllerTargetTest(unittest.TestCase):
             for image_type in ["S2_ELF", "SOC_ELF", "CDB"]:
                 self.assertTrue(image_type in updated_types)
 
+    def test_info_basic(self):
+        """ Test controller info basic command """
+        # Add targets
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
+
+        # Send config boot status command
+        self.assertFalse(self.controller.info_basic())
+
+        for target in self.controller.targets:
+            # Verify command
+            self.assertTrue(len(target.executed), 1)
+            self.assertEqual(target.executed[0], "info_basic")
+
+    def test_info_ubootenv(self):
+        """ Test controller info ubootenv command """
+        # Add targets
+        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
+
+        # Send config boot status command
+        self.assertFalse(self.controller.info_ubootenv())
+
+        for target in self.controller.targets:
+            # Verify command
+            self.assertTrue(len(target.executed), 1)
+            self.assertEqual(target.executed[0], "get_ubootenv")
+
     def test_info_dump(self):
         """ Test controller info dump command """
         # Add targets
@@ -348,6 +375,17 @@ class DummyTarget:
         self.executed.append("config_boot_status")
         return ["disk", "pxe"]
 
+    def info_basic(self):
+        self.executed.append("info_basic")
+
+        class Result:
+            def __init__(self):
+                self.header = "Calxeda SoC (0x0096CD)"
+                self.version = "0.0.0"
+                self.build_number = "00000000"
+                self.timestamp = "0"
+        return Result()
+
     def info_dump(self, tftp):
         self.executed.append("info_dump")
 
@@ -355,6 +393,13 @@ class DummyTarget:
         self.executed.append(("ipmitool_command", ipmitool_args))
         return "Dummy output"
 
+    def get_ubootenv(self, tftp):
+        self.executed.append("get_ubootenv")
+
+        ubootenv = UbootEnv()
+        ubootenv.variables["bootcmd0"] = "run bootcmd_default"
+        ubootenv.variables["bootcmd_default"] = "run bootcmd_sata"
+        return ubootenv
 
 class DummyImage:
     def __init__(self, filename, image_type, *args):
