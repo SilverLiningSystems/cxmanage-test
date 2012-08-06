@@ -496,6 +496,25 @@ class Controller:
 
         return len(errors) > 0
 
+    def info_ubootenv(self):
+        """ Print u-boot environment for all targets """
+        results, errors = self._run_command("get_ubootenv", self.tftp)
+
+        # Print results
+        if len(results) > 0:
+            for target in self.targets:
+                if target.address in results:
+                    ubootenv = results[target.address]
+                    print "[ U-Boot Environment from %s ]" % target.address
+                    for variable in ubootenv.variables:
+                        print "%s=%s" % (variable, ubootenv.variables[variable])
+                    print
+
+        # Print errors
+        self._print_errors(errors)
+
+        return len(errors) > 0
+
     def info_dump(self):
         """ Dump info from all targets """
         for target in self.targets:

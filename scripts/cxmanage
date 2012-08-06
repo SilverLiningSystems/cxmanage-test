@@ -194,6 +194,7 @@ def build_parser():
             help='info type to get', type=lambda string: string.lower(),
             choices=list(sorted([
                 'basic',
+                'ubootenv',
                 'dump'
             ])))
     p['info'].set_defaults(func=info_command)
@@ -369,7 +370,9 @@ def info_command(controller, args):
     """print info from a cluster or host"""
     if args.info_type in [None, 'basic']:
         return controller.info_basic()
-    if args.info_type == 'dump':
+    elif args.info_type == 'ubootenv':
+        return controller.info_ubootenv()
+    elif args.info_type == 'dump':
         return controller.info_dump()
     else:
         return True
