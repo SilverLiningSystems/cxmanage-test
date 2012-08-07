@@ -62,7 +62,7 @@ class TargetTest(unittest.TestCase):
         shutil.rmtree(self.work_dir)
 
     def test_get_ipinfo(self):
-        """ Test get_ipinfo command """
+        """ Test target.get_ipinfo method """
         for target in self.targets:
             result = target.get_ipinfo(self.tftp)
 
@@ -74,52 +74,52 @@ class TargetTest(unittest.TestCase):
             for i in range(NUM_NODES):
                 self.assertEqual(result[i], (i, ADDRESSES[i]))
 
-    def test_power(self):
-        """ Test power command """
+    def test_get_power(self):
+        """ Test target.get_power method """
         for target in self.targets:
-            modes = ["off", "on", "reset", "off"]
-            for mode in modes:
-                target.power(mode)
-
-            executed = target.bmc.executed
-            self.assertEqual(len(executed), len(modes))
-            for i in range(len(modes)):
-                self.assertEqual(executed[i], ("set_chassis_power", modes[i]))
-
-    def test_power_status(self):
-        """ Test power_status command """
-        for target in self.targets:
-            result = target.power_status()
+            result = target.get_power()
 
             executed = target.bmc.executed
             self.assertEqual(len(executed), 1)
             self.assertEqual(executed[0], "get_chassis_status")
             self.assertEqual(result, False)
 
-    def test_power_policy(self):
-        """ Test power_policy command """
+    def test_set_power(self):
+        """ Test target.set_power method """
         for target in self.targets:
-            modes = ["always-on", "previous", "always-off"]
+            modes = ["off", "on", "reset", "off"]
             for mode in modes:
-                target.power_policy(mode)
+                target.set_power(mode)
 
             executed = target.bmc.executed
             self.assertEqual(len(executed), len(modes))
             for i in range(len(modes)):
-                self.assertEqual(executed[i], ("set_chassis_policy", modes[i]))
+                self.assertEqual(executed[i], ("set_chassis_power", modes[i]))
 
-    def test_power_policy_status(self):
-        """ Test power_policy_status command """
+    def test_get_power_policy(self):
+        """ Test target.get_power_policy method """
         for target in self.targets:
-            result = target.power_policy_status()
+            result = target.get_power_policy()
 
             executed = target.bmc.executed
             self.assertEqual(len(executed), 1)
             self.assertEqual(executed[0], "get_chassis_status")
             self.assertEqual(result, "always-off")
 
-    def test_sensor(self):
-        """ Test sensor read command """
+    def test_set_power_policy(self):
+        """ Test target.set_power_policy method """
+        for target in self.targets:
+            modes = ["always-on", "previous", "always-off"]
+            for mode in modes:
+                target.set_power_policy(mode)
+
+            executed = target.bmc.executed
+            self.assertEqual(len(executed), len(modes))
+            for i in range(len(modes)):
+                self.assertEqual(executed[i], ("set_chassis_policy", modes[i]))
+
+    def test_get_sensors(self):
+        """ Test target.get_sensors method """
         for target in self.targets:
             result = target.get_sensors()
 
@@ -134,7 +134,7 @@ class TargetTest(unittest.TestCase):
             self.assertTrue(result[1].sensor_reading.endswith("degrees C"))
 
     def test_update_firmware(self):
-        """ Test firmware update command """
+        """ Test target.update_firmware method """
         filename = "%s/%s" % (self.work_dir, "image.bin")
         open(filename, "w").write("")
 
@@ -170,7 +170,7 @@ class TargetTest(unittest.TestCase):
             self.assertEqual(ubootenv_partition.activates, 1)
 
     def test_config_reset(self):
-        """ Test config_reset command """
+        """ Test target.config_reset method """
         for target in self.targets:
             target.config_reset(self.tftp)
 
@@ -195,11 +195,11 @@ class TargetTest(unittest.TestCase):
             self.assertEqual(inactive.checks, 0)
             self.assertEqual(inactive.activates, 0)
 
-    def test_config_boot(self):
-        """ Test config_boot command """
+    def test_set_boot_order(self):
+        """ Test target.set_boot_order method """
         boot_args = ["disk", "pxe", "retry"]
         for target in self.targets:
-            target.config_boot(self.tftp, boot_args)
+            target.set_boot_order(self.tftp, boot_args)
 
             partitions = target.bmc.partitions
             ubootenv_partition = partitions[5]
@@ -217,10 +217,10 @@ class TargetTest(unittest.TestCase):
                 self.assertEqual(partition.checks, 0)
                 self.assertEqual(partition.activates, 0)
 
-    def test_config_boot_status(self):
-        """ Test config_boot_status command """
+    def test_get_boot_order(self):
+        """ Test target.get_boot_order method """
         for target in self.targets:
-            result = target.config_boot_status(self.tftp)
+            result = target.get_boot_order(self.tftp)
 
             partitions = target.bmc.partitions
             ubootenv_partition = partitions[5]
@@ -241,7 +241,7 @@ class TargetTest(unittest.TestCase):
             self.assertEqual(result, ["disk", "pxe"])
 
     def test_info_basic(self):
-        """ Test info_basic command """
+        """ Test target.info_basic method """
         for target in self.targets:
             result = target.info_basic()
 

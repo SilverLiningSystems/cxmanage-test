@@ -94,7 +94,7 @@ class ControllerTargetTest(unittest.TestCase):
         self.assertEqual(cdb_image.type, "CDB")
 
     def test_power(self):
-        """ Test controller power command """
+        """ Test power command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -107,10 +107,10 @@ class ControllerTargetTest(unittest.TestCase):
             # Verify commands
             self.assertTrue(len(target.executed), 3)
             for a in range(len(modes)):
-                self.assertEqual(target.executed[a], ("power", modes[a]))
+                self.assertEqual(target.executed[a], ("set_power", modes[a]))
 
     def test_power_status(self):
-        """ Test controller power status command """
+        """ Test power status command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -120,10 +120,10 @@ class ControllerTargetTest(unittest.TestCase):
         for target in self.controller.targets:
             # Verify command
             self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "power_status")
+            self.assertEqual(target.executed[0], "get_power")
 
     def test_power_policy(self):
-        """ Test controller power policy command """
+        """ Test power policy command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -137,10 +137,10 @@ class ControllerTargetTest(unittest.TestCase):
             self.assertTrue(len(target.executed), 3)
             for a in range(len(modes)):
                 self.assertEqual(target.executed[a],
-                        ("power_policy", modes[a]))
+                        ("set_power_policy", modes[a]))
 
     def test_power_policy_status(self):
-        """ Test controller power policy status command """
+        """ Test power policy status command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -150,10 +150,10 @@ class ControllerTargetTest(unittest.TestCase):
         for target in self.controller.targets:
             # Verify command
             self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "power_policy_status")
+            self.assertEqual(target.executed[0], "get_power_policy")
 
     def test_mc_reset(self):
-        """ Test controller mc reset command """
+        """ Test mc reset command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -166,7 +166,7 @@ class ControllerTargetTest(unittest.TestCase):
             self.assertEqual(target.executed[0], "mc_reset")
 
     def test_get_sensors(self):
-        """ Test controller get sensors command """
+        """ Test get sensors command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -180,7 +180,7 @@ class ControllerTargetTest(unittest.TestCase):
             self.assertTrue(all([x == "get_sensors" for x in target.executed]))
 
     def test_get_ipinfo(self):
-        """ Test controller get ipinfo command """
+        """ Test get ipinfo command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin")
 
@@ -193,7 +193,7 @@ class ControllerTargetTest(unittest.TestCase):
             self.assertEqual(target.executed[0], "get_ipinfo")
 
     def test_get_macaddrs(self):
-        """ Test controller get macaddrs command """
+        """ Test get macaddrs command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin")
 
@@ -206,7 +206,7 @@ class ControllerTargetTest(unittest.TestCase):
             self.assertEqual(target.executed[0], "get_macaddrs")
 
     def test_config_reset(self):
-        """ Test controller config reset command """
+        """ Test config reset command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -219,7 +219,7 @@ class ControllerTargetTest(unittest.TestCase):
             self.assertEqual(target.executed[0], "config_reset")
 
     def test_config_boot(self):
-        """ Test controller config boot command """
+        """ Test config boot command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -230,10 +230,10 @@ class ControllerTargetTest(unittest.TestCase):
         for target in self.controller.targets:
             # Verify command
             self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], ("config_boot", boot_args))
+            self.assertEqual(target.executed[0], ("set_boot_order", boot_args))
 
     def test_config_boot_status(self):
-        """ Test controller config boot status command """
+        """ Test config boot status command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -243,10 +243,10 @@ class ControllerTargetTest(unittest.TestCase):
         for target in self.controller.targets:
             # Verify command
             self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "config_boot_status")
+            self.assertEqual(target.executed[0], "get_boot_order")
 
     def test_ipmitool_command(self):
-        """ Test controller ipmitool command """
+        """ Test ipmitool command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -260,8 +260,8 @@ class ControllerTargetTest(unittest.TestCase):
             self.assertEqual(target.executed[0][0], "ipmitool_command")
             self.assertEqual(target.executed[0][1], ipmitool_args)
 
-    def test_firmware_update(self):
-        """ Test controller firmware update command """
+    def test_update_firmware(self):
+        """ Test fwupdate command """
         # Add targets and images
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
         self.controller.add_image("stage2boot.bin", "S2_ELF")
@@ -280,7 +280,7 @@ class ControllerTargetTest(unittest.TestCase):
                 self.assertTrue(image_type in updated_types)
 
     def test_info_basic(self):
-        """ Test controller info basic command """
+        """ Test info basic command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -293,7 +293,7 @@ class ControllerTargetTest(unittest.TestCase):
             self.assertEqual(target.executed[0], "info_basic")
 
     def test_info_ubootenv(self):
-        """ Test controller info ubootenv command """
+        """ Test info ubootenv command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -306,7 +306,7 @@ class ControllerTargetTest(unittest.TestCase):
             self.assertEqual(target.executed[0], "get_ubootenv")
 
     def test_info_dump(self):
-        """ Test controller info dump command """
+        """ Test info dump command """
         # Add targets
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
@@ -334,19 +334,19 @@ class DummyTarget:
         # TODO: return real mac addresses
         return [(a, 0, ADDRESSES[a]) for a in range(NUM_NODES)]
 
-    def power(self, mode):
-        self.executed.append(("power", mode))
-
-    def power_status(self):
-        self.executed.append("power_status")
+    def get_power(self):
+        self.executed.append("get_power")
         return False
 
-    def power_policy(self, mode):
-        self.executed.append(("power_policy", mode))
+    def set_power(self, mode):
+        self.executed.append(("set_power", mode))
 
-    def power_policy_status(self):
-        self.executed.append("power_policy_status")
+    def get_power_policy(self):
+        self.executed.append("get_power_policy")
         return "always-off"
+
+    def set_power_policy(self, mode):
+        self.executed.append(("set_power_policy", mode))
 
     def mc_reset(self):
         self.executed.append("mc_reset")
@@ -368,11 +368,11 @@ class DummyTarget:
     def config_reset(self, tftp):
         self.executed.append("config_reset")
 
-    def config_boot(self, tftp, boot_args):
-        self.executed.append(("config_boot", boot_args))
+    def set_boot_order(self, tftp, boot_args):
+        self.executed.append(("set_boot_order", boot_args))
 
-    def config_boot_status(self, tftp):
-        self.executed.append("config_boot_status")
+    def get_boot_order(self, tftp):
+        self.executed.append("get_boot_order")
         return ["disk", "pxe"]
 
     def info_basic(self):

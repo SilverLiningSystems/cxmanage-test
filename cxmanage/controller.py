@@ -221,7 +221,7 @@ class Controller:
                 print target.address
             print
 
-        results, errors = self._run_command("power", mode)
+        results, errors = self._run_command("set_power", mode)
 
         if self.verbosity >= 1 and len(errors) == 0:
             print "Command completed successfully.\n"
@@ -232,7 +232,7 @@ class Controller:
     def power_status(self):
         """ Retrieve power status from all targets in group """
 
-        results, errors = self._run_command("power_status")
+        results, errors = self._run_command("get_power")
 
         # Print results
         if len(results) > 0:
@@ -260,7 +260,7 @@ class Controller:
                 print target.address
             print
 
-        results, errors = self._run_command("power_policy", mode)
+        results, errors = self._run_command("set_power_policy", mode)
 
         if self.verbosity >= 1 and len(errors) == 0:
             print "Command completed successfully.\n"
@@ -270,7 +270,7 @@ class Controller:
 
     def power_policy_status(self):
         """ Get power policy status for all targets """
-        results, errors = self._run_command("power_policy_status")
+        results, errors = self._run_command("get_power_policy")
 
         # Print results
         if len(results) > 0:
@@ -290,7 +290,7 @@ class Controller:
         """ Send an MC reset command to all targets """
 
         if self.verbosity >= 1:
-            print "Sending MC reset to these hosts:"
+            print "Sending MC reset command to these hosts:"
             for target in self.targets:
                 print target.address
             print
@@ -448,7 +448,8 @@ class Controller:
                 print target.address
             print
 
-        results, errors = self._run_command("config_boot", self.tftp, boot_args)
+        results, errors = self._run_command("set_boot_order",
+                self.tftp, boot_args)
 
         if self.verbosity >= 1 and len(errors) == 0:
             print "Command completed successfully.\n"
@@ -458,7 +459,7 @@ class Controller:
 
     def config_boot_status(self):
         """ Get boot order from all targets """
-        results, errors = self._run_command("config_boot_status", self.tftp)
+        results, errors = self._run_command("get_boot_order", self.tftp)
 
         # Print results
         if len(results) > 0:

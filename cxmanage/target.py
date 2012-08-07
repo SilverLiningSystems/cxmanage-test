@@ -160,33 +160,33 @@ class Target:
 
         return results
 
-    def power(self, mode):
+    def get_power(self):
+        """ Return power status reported by IPMI """
+        try:
+            return self.bmc.get_chassis_status().power_on
+        except IpmiError:
+            raise CxmanageError("Failed to retrieve power status")
+
+    def set_power(self, mode):
         """ Send an IPMI power command to this target """
         try:
             self.bmc.set_chassis_power(mode=mode)
         except IpmiError:
             raise CxmanageError("Failed to send power %s command" % mode)
 
-    def power_policy(self, state):
-        """ Set default power state for A9 """
-        try:
-            self.bmc.set_chassis_policy(state)
-        except IpmiError:
-            raise CxmanageError("Failed to set power policy to \"%s\"" % state)
-
-    def power_policy_status(self):
+    def get_power_policy(self):
         """ Return power status reported by IPMI """
         try:
             return self.bmc.get_chassis_status().power_restore_policy
         except IpmiError:
             raise CxmanageError("Failed to retrieve power status")
 
-    def power_status(self):
-        """ Return power status reported by IPMI """
+    def set_power_policy(self, state):
+        """ Set default power state for A9 """
         try:
-            return self.bmc.get_chassis_status().power_on
+            self.bmc.set_chassis_policy(state)
         except IpmiError:
-            raise CxmanageError("Failed to retrieve power status")
+            raise CxmanageError("Failed to set power policy to \"%s\"" % state)
 
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """
@@ -300,8 +300,8 @@ class Target:
         except IpmiError:
             raise CxmanageError("Failed to reset configuration")
 
-    def config_boot(self, tftp, boot_args):
-        """ Configure boot order """
+    def set_boot_order(self, tftp, boot_args):
+        """ Set boot order """
         fwinfo = self.get_firmware_info()
         first_slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
         active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
@@ -312,7 +312,7 @@ class Target:
         version = max(int(x.version, 16) for x in [first_slot, active_slot])
         self._upload_ubootenv(tftp, ubootenv, first_slot, version)
 
-    def config_boot_status(self, tftp):
+    def get_boot_order(self, tftp):
         """ Get boot order """
         fwinfo = self.get_firmware_info()
         active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
