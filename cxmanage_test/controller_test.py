@@ -40,8 +40,8 @@ from cxmanage_test import TestSensor
 NUM_NODES = 128
 ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]
 
-class ControllerTargetTest(unittest.TestCase):
-    """ Tests involving the cxmanage controller """
+class ControllerTest(unittest.TestCase):
+    """ Test the cxmanage controller """
 
     def setUp(self):
         # Set up the controller
@@ -93,177 +93,136 @@ class ControllerTargetTest(unittest.TestCase):
         self.assertEqual(cdb_image.filename, "factory.cdb")
         self.assertEqual(cdb_image.type, "CDB")
 
-    def test_power(self):
-        """ Test power command """
-        # Add targets
+class ControllerCommandTest(unittest.TestCase):
+    """ Test the various controller commands """
+    def setUp(self):
+        # Set up the controller and add targets
+        self.controller = Controller(max_threads=32,
+                image_class=DummyImage, target_class=DummyTarget)
         self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
 
+    def test_power(self):
+        """ Test power command """
         # Send power commands
         modes = ["on", "reset", "off"]
         for mode in modes:
             self.assertFalse(self.controller.power(mode))
 
+        # Verify commands
         for target in self.controller.targets:
-            # Verify commands
-            self.assertTrue(len(target.executed), 3)
-            for a in range(len(modes)):
-                self.assertEqual(target.executed[a], ("set_power", modes[a]))
+            self.assertEqual(target.executed,
+                    [("set_power", x) for x in modes])
 
     def test_power_status(self):
         """ Test power status command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send power status command
         self.assertFalse(self.controller.power_status())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "get_power")
+            self.assertEqual(target.executed, ["get_power"])
 
     def test_power_policy(self):
         """ Test power policy command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send power policy commands
         modes = ["always-on", "previous", "always-off"]
         for mode in modes:
             self.assertFalse(self.controller.power_policy(mode))
 
+        # Verify commands
         for target in self.controller.targets:
-            # Verify commands
-            self.assertTrue(len(target.executed), 3)
-            for a in range(len(modes)):
-                self.assertEqual(target.executed[a],
-                        ("set_power_policy", modes[a]))
+            self.assertEqual(target.executed,
+                    [("set_power_policy", x) for x in modes])
 
     def test_power_policy_status(self):
         """ Test power policy status command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send power policy status command
         self.assertFalse(self.controller.power_policy_status())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "get_power_policy")
+            self.assertEqual(target.executed, ["get_power_policy"])
 
     def test_mc_reset(self):
         """ Test mc reset command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send mc reset command
         self.assertFalse(self.controller.mc_reset())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "mc_reset")
+            self.assertEqual(target.executed, ["mc_reset"])
 
     def test_get_sensors(self):
         """ Test get sensors command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send get sensors commands
         self.assertFalse(self.controller.get_sensors())
         self.assertFalse(self.controller.get_sensors("Node Power"))
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
             self.assertTrue(len(target.executed), 2)
             self.assertTrue(all([x == "get_sensors" for x in target.executed]))
 
     def test_get_ipinfo(self):
         """ Test get ipinfo command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin")
-
         # Send get ipinfo command
         self.assertFalse(self.controller.get_ipinfo())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "get_ipinfo")
+            self.assertEqual(target.executed, ["get_ipinfo"])
 
     def test_get_macaddrs(self):
         """ Test get macaddrs command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin")
-
         # Send get macaddrs command
         self.assertFalse(self.controller.get_macaddrs())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "get_macaddrs")
+            self.assertEqual(target.executed, ["get_macaddrs"])
 
     def test_config_reset(self):
         """ Test config reset command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send config reset command
         self.assertFalse(self.controller.config_reset())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "config_reset")
+            self.assertEqual(target.executed, ["config_reset"])
 
     def test_config_boot(self):
         """ Test config boot command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send config boot command
         boot_args = ["disk", "pxe", "retry"]
         self.assertFalse(self.controller.config_boot(boot_args))
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], ("set_boot_order", boot_args))
+            self.assertEqual(target.executed, [("set_boot_order", boot_args)])
 
     def test_config_boot_status(self):
         """ Test config boot status command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send config boot status command
         self.assertFalse(self.controller.config_boot_status())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "get_boot_order")
+            self.assertEqual(target.executed, ["get_boot_order"])
 
     def test_ipmitool_command(self):
         """ Test ipmitool command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send ipmitool command
         ipmitool_args = ["chassis", "status"]
         self.assertFalse(self.controller.ipmitool_command(ipmitool_args))
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0][0], "ipmitool_command")
-            self.assertEqual(target.executed[0][1], ipmitool_args)
+            self.assertEqual(target.executed,
+                    [("ipmitool_command", ipmitool_args)])
 
     def test_update_firmware(self):
         """ Test fwupdate command """
-        # Add targets and images
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
+        # Add images
         self.controller.add_image("stage2boot.bin", "S2_ELF")
         self.controller.add_image("socmanager.elf", "SOC_ELF")
         self.controller.add_image("factory.cdb", "CDB")
@@ -271,8 +230,8 @@ class ControllerTargetTest(unittest.TestCase):
         # Perform firmware update
         self.assertFalse(self.controller.update_firmware())
 
+        # Check updated types
         for target in self.controller.targets:
-            # Check updated types
             self.assertEqual(len(target.executed), 1)
             self.assertEqual(target.executed[0][0], "update_firmware")
             updated_types = [x.type for x in target.executed[0][1]]
@@ -281,42 +240,30 @@ class ControllerTargetTest(unittest.TestCase):
 
     def test_info_basic(self):
         """ Test info basic command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send config boot status command
         self.assertFalse(self.controller.info_basic())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "info_basic")
+            self.assertEqual(target.executed, ["info_basic"])
 
     def test_info_ubootenv(self):
         """ Test info ubootenv command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send config boot status command
         self.assertFalse(self.controller.info_ubootenv())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "get_ubootenv")
+            self.assertEqual(target.executed, ["get_ubootenv"])
 
     def test_info_dump(self):
         """ Test info dump command """
-        # Add targets
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
-
         # Send mc reset command
         self.assertFalse(self.controller.info_dump())
 
+        # Verify command
         for target in self.controller.targets:
-            # Verify command
-            self.assertTrue(len(target.executed), 1)
-            self.assertEqual(target.executed[0], "info_dump")
+            self.assertEqual(target.executed, ["info_dump"])
 
 
 class DummyTarget:
@@ -331,8 +278,12 @@ class DummyTarget:
 
     def get_macaddrs(self, tftp):
         self.executed.append("get_macaddrs")
-        # TODO: return real mac addresses
-        return [(a, 0, ADDRESSES[a]) for a in range(NUM_NODES)]
+        result = []
+        for node in range(NUM_NODES):
+            for port in range(3):
+                address = "00:00:00:00:%02x:%02x" % (node, port)
+                result.append((node, port, address))
+        return result
 
     def get_power(self):
         self.executed.append("get_power")

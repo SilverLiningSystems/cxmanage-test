@@ -66,22 +66,16 @@ class TargetTest(unittest.TestCase):
         for target in self.targets:
             result = target.get_ipinfo(self.tftp)
 
-            executed = target.bmc.executed
-            self.assertEqual(len(executed), 1)
-            self.assertEqual(executed[0], "get_fabric_ipinfo")
-
-            self.assertEqual(len(result), NUM_NODES)
-            for i in range(NUM_NODES):
-                self.assertEqual(result[i], (i, ADDRESSES[i]))
+            self.assertEqual(target.bmc.executed, ["get_fabric_ipinfo"])
+            self.assertEqual(result, [(i, ADDRESSES[i])
+                    for i in range(NUM_NODES)])
 
     def test_get_power(self):
         """ Test target.get_power method """
         for target in self.targets:
             result = target.get_power()
 
-            executed = target.bmc.executed
-            self.assertEqual(len(executed), 1)
-            self.assertEqual(executed[0], "get_chassis_status")
+            self.assertEqual(target.bmc.executed, ["get_chassis_status"])
             self.assertEqual(result, False)
 
     def test_set_power(self):
@@ -91,19 +85,15 @@ class TargetTest(unittest.TestCase):
             for mode in modes:
                 target.set_power(mode)
 
-            executed = target.bmc.executed
-            self.assertEqual(len(executed), len(modes))
-            for i in range(len(modes)):
-                self.assertEqual(executed[i], ("set_chassis_power", modes[i]))
+            self.assertEqual(target.bmc.executed,
+                    [("set_chassis_power", x) for x in modes])
 
     def test_get_power_policy(self):
         """ Test target.get_power_policy method """
         for target in self.targets:
             result = target.get_power_policy()
 
-            executed = target.bmc.executed
-            self.assertEqual(len(executed), 1)
-            self.assertEqual(executed[0], "get_chassis_status")
+            self.assertEqual(target.bmc.executed, ["get_chassis_status"])
             self.assertEqual(result, "always-off")
 
     def test_set_power_policy(self):
@@ -113,19 +103,15 @@ class TargetTest(unittest.TestCase):
             for mode in modes:
                 target.set_power_policy(mode)
 
-            executed = target.bmc.executed
-            self.assertEqual(len(executed), len(modes))
-            for i in range(len(modes)):
-                self.assertEqual(executed[i], ("set_chassis_policy", modes[i]))
+            self.assertEqual(target.bmc.executed,
+                    [("set_chassis_policy", x) for x in modes])
 
     def test_get_sensors(self):
         """ Test target.get_sensors method """
         for target in self.targets:
             result = target.get_sensors()
 
-            executed = target.bmc.executed
-            self.assertEqual(len(executed), 1)
-            self.assertEqual(executed[0], "sdr_list")
+            self.assertEqual(target.bmc.executed, ["sdr_list"])
 
             self.assertEqual(len(result), 2)
             self.assertEqual(result[0].sensor_name, "Node Power")
@@ -245,13 +231,9 @@ class TargetTest(unittest.TestCase):
         for target in self.targets:
             result = target.info_basic()
 
-            executed = target.bmc.executed
-            self.assertEqual(len(executed), 1)
-            self.assertEqual(executed[0], "info_basic")
-            self.assertTrue(hasattr(result, "header"))
-            self.assertTrue(hasattr(result, "version"))
-            self.assertTrue(hasattr(result, "build_number"))
-            self.assertTrue(hasattr(result, "timestamp"))
+            self.assertEqual(target.bmc.executed, ["info_basic"])
+            for attr in ["header", "version", "build_number", "timestamp"]:
+                self.assertTrue(hasattr(result, attr))
 
 class DummyBMC(LanBMC):
     """ Dummy BMC for the target tests """
