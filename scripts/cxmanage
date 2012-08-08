@@ -40,7 +40,7 @@ import sys
 from cxmanage.controller import Controller
 
 # Load plugins
-PREFIX = "cxmanage_plugin"
+PREFIX = 'cxmanage_plugin'
 PLUGINS = [__import__(x[1]) for x in pkgutil.iter_modules()
         if x[1].startswith(PREFIX)]
 
@@ -60,17 +60,17 @@ def build_parser():
             help='Send command to all nodes reported by fabric')
     p['parser'].add_argument('--threads', type=int, default=4,
             metavar='THREAD_COUNT', help='Number of threads to use')
-    p['parser'].add_argument('--force-yes', action="store_true",
-            help="Don't stop at confirmation dialogue")
+    p['parser'].add_argument('--force-yes', action='store_true',
+            help='Don\'t stop at confirmation dialogue')
     p['verbosity'] = p['parser'].add_mutually_exclusive_group()
     p['verbosity'].add_argument('-v', '--verbose', action='store_true',
             help='Verbose output')
     p['verbosity'].add_argument('-q', '--quiet', action='store_true',
             help='Quiet output')
     p['tftp_type'] = p['parser'].add_mutually_exclusive_group()
-    p['tftp_type'].add_argument('-t', '--tftp', metavar="IP:PORT",
+    p['tftp_type'].add_argument('-t', '--tftp', metavar='IP:PORT',
             help='Connect to remote TFTP server at ip:port')
-    p['tftp_type'].add_argument('--internal-tftp', metavar="IP:PORT",
+    p['tftp_type'].add_argument('--internal-tftp', metavar='IP:PORT',
             help='Host an internal TFTP server listening on ip:port')
 
     p['subparsers'] = p['parser'].add_subparsers()
@@ -190,7 +190,7 @@ def build_parser():
 
     #info command
     p['info'] = p['subparsers'].add_parser('info', help='get host info')
-    p['info'].add_argument('info_type', metavar="INFO_TYPE", nargs="?",
+    p['info'].add_argument('info_type', metavar='INFO_TYPE', nargs='?',
             help='info type to get', type=lambda string: string.lower(),
             choices=list(sorted([
                 'basic',
@@ -205,8 +205,8 @@ def build_parser():
     p['ipmitool'].add_argument('-l', '--lanplus',
             action='store_true', default=False,
             help='use lanplus')
-    p['ipmitool'].add_argument('ipmitool_args', nargs="+",
-            help="ipmitool arguments")
+    p['ipmitool'].add_argument('ipmitool_args', nargs='+',
+            help='ipmitool arguments')
     p['ipmitool'].set_defaults(func=ipmitool_command)
 
     p['parser'].add_argument('hostname', help='hostname to target')
@@ -230,10 +230,8 @@ def validate_args(args):
 
 def main():
     """Get args and go"""
-
     parser = build_parser()
     args = parser.parse_args()
-
     validate_args(args)
 
     verbosity = 1
@@ -241,8 +239,17 @@ def main():
         verbosity = 2
     elif args.quiet:
         verbosity = 0
+
     controller = Controller(verbosity=verbosity, max_threads=args.threads)
 
+    set_tftp(controller, args)
+    add_targets(controller, args)
+
+    sys.exit(args.func(controller, args))
+
+
+def set_tftp(controller, args):
+    """Set up tftp server on controller"""
     if args.tftp:
         tftp_args = args.tftp.split(':')
         if len(tftp_args) == 1:
@@ -252,7 +259,7 @@ def main():
             tftp_address = tftp_args[0]
             tftp_port = int(tftp_args[1])
         else:
-            print "ERROR: %s is not a valid argument for --tftp" % args.tftp
+            print 'ERROR: %s is not a valid argument for --tftp' % args.tftp
             sys.exit(1)
         controller.set_external_tftp_server(tftp_address, tftp_port)
     elif args.internal_tftp:
@@ -264,16 +271,27 @@ def main():
             tftp_address = tftp_args[0]
             tftp_port = int(tftp_args[1])
         else:
-            print ("ERROR: %s is not a valid argument for --internal-tftp"
-                    % args.tftp)
+            print ('ERROR: %s is not a valid argument for --internal-tftp'
+                    % args.internal_tftp)
             sys.exit(1)
         controller.set_internal_tftp_server(tftp_address, tftp_port)
     else:
         controller.set_internal_tftp_server()
 
-    set_targets(controller, args)
 
-    sys.exit(args.func(controller, args))
+def add_targets(controller, args):
+    """add targets to controller addresses"""
+    for entry in args.hostname.split(','):
+        try:
+            # Treat the entry as an IP range
+            start, end = entry.split('-')
+            for address in controller.get_addresses_in_range(start, end):
+                controller.add_target(address, args.user,
+                        args.password, args.all_nodes)
+        except ValueError:
+            # Not an IP range, just add the host directly
+            controller.add_target(entry, args.user,
+                    args.password, args.all_nodes)
 
 
 def power_command(controller, args):
@@ -314,19 +332,19 @@ def fwupdate_command(controller, args):
 
     # Print all_nodes warning/confirmation
     if not args.all_nodes:
-        sys.stdout.write("WARNING: Updating firmware without --all-nodes is dangerous.")
+        sys.stdout.write('WARNING: Updating firmware without --all-nodes is dangerous.')
         if args.force_yes:
-            sys.stdout.write("\n\n")
+            sys.stdout.write('\n\n')
             sys.stdout.flush()
         else:
-            sys.stdout.write(" Continue? (y/n) ")
+            sys.stdout.write(' Continue? (y/n) ')
             sys.stdout.flush()
             while True:
                 command = raw_input().strip().lower()
-                if command in ["y", "yes"]:
+                if command in ['y', 'yes']:
                     print
                     break
-                elif command in ["n", "no"]:
+                elif command in ['n', 'no']:
                     return 1
 
     # Do firmware update
@@ -335,7 +353,7 @@ def fwupdate_command(controller, args):
 
 def sensor_command(controller, args):
     """read sensor values from a cluster or host"""
-    if args.sensor_name.upper() == "LIST":
+    if args.sensor_name.upper() == 'LIST':
         return controller.get_sensors()
     else:
         return controller.get_sensors(args.sensor_name)
@@ -358,12 +376,12 @@ def config_reset_command(controller, args):
 
 def config_boot_command(controller, args):
     """set A9 boot order"""
-    if args.boot_order == "status":
+    if args.boot_order == 'status':
         return controller.config_boot_status()
-    elif args.boot_order == "none":
+    elif args.boot_order == 'none':
         return controller.config_boot([])
     else:
-        return controller.config_boot(args.boot_order.split(","))
+        return controller.config_boot(args.boot_order.split(','))
 
 
 def info_command(controller, args):
@@ -386,22 +404,6 @@ def ipmitool_command(controller, args):
         ipmitool_args = args.ipmitool_args
 
     return controller.ipmitool_command(ipmitool_args)
-
-
-def set_targets(controller, args):
-    """get target addresses"""
-    for entry in args.hostname.split(','):
-        try:
-            # Treat the entry as an IP range
-            start, end = entry.split('-')
-            addresses = controller.get_addresses_in_range(start, end)
-            for address in addresses:
-                controller.add_target(address, args.user,
-                        args.password, args.all_nodes)
-        except ValueError:
-            # Not an IP range, just add the address directly
-            controller.add_target(entry, args.user,
-                    args.password, args.all_nodes)
 
 
 if __name__ == '__main__':
