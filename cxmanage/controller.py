@@ -139,7 +139,7 @@ class Controller:
                 config.set(section, "version", str(image.version))
             if image.daddr != None:
                 config.set(section, "daddr", "%x" % image.daddr)
-            if image.skip_crc32 != None:
+            if image.skip_crc32:
                 config.set(section, "skip_crc32", str(image.skip_crc32))
         manifest = open("%s/MANIFEST" % self.work_dir, "w")
         config.write(manifest)
@@ -167,6 +167,8 @@ class Controller:
                 print "Version: %i" % image.version
             if image.daddr != None:
                 print "Daddr: %x" % image.daddr
+            if image.skip_crc32:
+                print "Skip CRC32: %s" % image.skip_crc32
             print
 
 
