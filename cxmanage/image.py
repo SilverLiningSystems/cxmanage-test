@@ -35,7 +35,7 @@ import os
 import tempfile
 
 from cxmanage import CxmanageError
-from cxmanage.simg import create_simg, has_simg, valid_simg
+from cxmanage.simg import create_simg, has_simg, valid_simg, get_simg_contents
 
 class Image:
     """ An image consists of an image type, a filename, and any info needed
@@ -77,8 +77,9 @@ class Image:
                 daddr = self.daddr
 
             # Create simg
-            simg = create_simg(contents, version=version,
-                    daddr=daddr, skip_crc32=self.skip_crc32)
+            align = (self.type in ["CDB", "BOOT_LOG"])
+            simg = create_simg(contents, version=version, daddr=daddr,
+                    skip_crc32=self.skip_crc32, align=align)
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(simg)
 
@@ -97,17 +98,20 @@ class Image:
         if self.simg:
             return os.path.getsize(self.filename)
         else:
-            return os.path.getsize(self.filename) + 28
+            contents = open(self.filename).read()
+            align = (self.type in ["CDB", "BOOT_LOG"])
+            simg = create_simg(contents, skip_crc32=True, align=align)
+            return len(simg)
 
     def verify(self):
         """ Return true if the image is valid, false otherwise """
 
-        if self.type == "CDB":
+        if self.type in ["CDB", "BOOT_LOG"]:
             # Look for "CDBH"
             contents = open(self.filename).read()
             if self.simg:
-                return contents[28:32] == "CDBH"
-            else:
-                return contents[:4] == "CDBH"
+                contents = get_simg_contents(contents)
+
+            return contents[:4] == "CDBH"
 
         return True

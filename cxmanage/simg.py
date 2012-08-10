@@ -71,7 +71,7 @@ class SIMGHeader:
                 self.crc32)
 
 
-def create_simg(contents, version=0, daddr=0, skip_crc32=False):
+def create_simg(contents, version=0, daddr=0, skip_crc32=False, align=False):
     """Create an SIMG version of a file
 
     Assumes version and hdrfmt are 0.
@@ -81,6 +81,9 @@ def create_simg(contents, version=0, daddr=0, skip_crc32=False):
     header.version = version
     header.imglen = len(contents)
     header.daddr = daddr
+
+    if align:
+        header.imgoff = 4096
 
     # Calculate crc value
     if skip_crc32:
@@ -92,7 +95,7 @@ def create_simg(contents, version=0, daddr=0, skip_crc32=False):
     header.flags = 0xFFFFFFFF
     header.crc32 = crc32
 
-    return str(header) + contents
+    return str(header).ljust(header.imgoff, chr(0)) + contents
 
 
 def has_simg(simg):
@@ -112,16 +115,17 @@ def valid_simg(simg):
     if not has_simg(simg):
         return False
     header = SIMGHeader(simg[:28])
-    contents = simg[28:]
 
     # Check offset
-    if header.imgoff != 28:
+    if header.imgoff < 28:
         return False
 
     # Check length
+    start = header.imgoff
+    end = start + header.imglen
+    contents = simg[start:end]
     if len(contents) < header.imglen:
         return False
-    contents = contents[:header.imglen]
 
     # Check crc32
     crc32 = header.crc32
@@ -136,7 +140,15 @@ def valid_simg(simg):
 
 def get_simg_header(simg):
     """ Return the header of this SIMG """
-    if len(simg) < 28 or not has_simg(simg):
+    if not valid_simg(simg):
         raise ValueError("Failed to read invalid SIMG")
 
     return SIMGHeader(simg[:28])
+
+
+def get_simg_contents(simg):
+    """ Return the contents of this SIMG """
+    header = get_simg_header(simg)
+    start = header.imgoff
+    end = start + header.imglen
+    return simg[start:end]
