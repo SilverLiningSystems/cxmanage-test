@@ -68,10 +68,10 @@ def build_parser():
     p['verbosity'].add_argument('-q', '--quiet', action='store_true',
             help='Quiet output')
     p['tftp_type'] = p['parser'].add_mutually_exclusive_group()
-    p['tftp_type'].add_argument('-t', '--tftp', metavar='IP:PORT',
-            help='Connect to remote TFTP server at ip:port')
     p['tftp_type'].add_argument('--internal-tftp', metavar='IP:PORT',
             help='Host an internal TFTP server listening on ip:port')
+    p['tftp_type'].add_argument('--external-tftp', metavar='IP:PORT',
+            help='Connect to remote TFTP server at ip:port')
 
     p['subparsers'] = p['parser'].add_subparsers()
 
@@ -250,19 +250,7 @@ def main():
 
 def set_tftp(controller, args):
     """Set up tftp server on controller"""
-    if args.tftp:
-        tftp_args = args.tftp.split(':')
-        if len(tftp_args) == 1:
-            tftp_address = tftp_args[0]
-            tftp_port = 69
-        elif len(tftp_args) == 2:
-            tftp_address = tftp_args[0]
-            tftp_port = int(tftp_args[1])
-        else:
-            print 'ERROR: %s is not a valid argument for --tftp' % args.tftp
-            sys.exit(1)
-        controller.set_external_tftp_server(tftp_address, tftp_port)
-    elif args.internal_tftp:
+    if args.internal_tftp:
         tftp_args = args.internal_tftp.split(':')
         if len(tftp_args) == 1:
             tftp_address = tftp_args[0]
@@ -275,6 +263,19 @@ def set_tftp(controller, args):
                     % args.internal_tftp)
             sys.exit(1)
         controller.set_internal_tftp_server(tftp_address, tftp_port)
+    elif args.external_tftp:
+        tftp_args = args.external_tftp.split(':')
+        if len(tftp_args) == 1:
+            tftp_address = tftp_args[0]
+            tftp_port = 69
+        elif len(tftp_args) == 2:
+            tftp_address = tftp_args[0]
+            tftp_port = int(tftp_args[1])
+        else:
+            print ('ERROR: %s is not a valid argument for --external-tftp'
+                    % args.external_tftp)
+            sys.exit(1)
+        controller.set_external_tftp_server(tftp_address, tftp_port)
     else:
         controller.set_internal_tftp_server()
 
