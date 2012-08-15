@@ -81,8 +81,8 @@ class Target:
         # Send ipinfo command
         try:
             self.bmc.get_fabric_ipinfo(basename, tftp_address)
-        except IpmiError:
-            raise CxmanageError("Failed to retrieve IP info")
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
         # Wait for file
         for a in range(10):
@@ -126,8 +126,8 @@ class Target:
         # Send ipinfo command
         try:
             self.bmc.get_fabric_macaddresses(basename, tftp_address)
-        except IpmiError:
-            raise CxmanageError("Failed to retrieve mac addresses")
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
         # Wait for file
         for a in range(10):
@@ -164,29 +164,29 @@ class Target:
         """ Return power status reported by IPMI """
         try:
             return self.bmc.get_chassis_status().power_on
-        except IpmiError:
-            raise CxmanageError("Failed to retrieve power status")
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
     def set_power(self, mode):
         """ Send an IPMI power command to this target """
         try:
             self.bmc.set_chassis_power(mode=mode)
-        except IpmiError:
-            raise CxmanageError("Failed to send power %s command" % mode)
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
     def get_power_policy(self):
         """ Return power status reported by IPMI """
         try:
             return self.bmc.get_chassis_status().power_restore_policy
-        except IpmiError:
-            raise CxmanageError("Failed to retrieve power status")
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
     def set_power_policy(self, state):
         """ Set default power state for A9 """
         try:
             self.bmc.set_chassis_policy(state)
-        except IpmiError:
-            raise CxmanageError("Failed to set power policy to \"%s\"" % state)
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """
@@ -194,15 +194,15 @@ class Target:
             result = self.bmc.mc_reset("cold")
             if hasattr(result, "error"):
                 raise CxmanageError("Failed to send MC reset command")
-        except IpmiError:
-            raise CxmanageError("Failed to send MC reset command")
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
     def get_sensors(self):
         """ Get a list of sensors from this target """
         try:
             return self.bmc.sdr_list()
-        except IpmiError:
-            raise CxmanageError("Failed to retrieve sensor list")
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
     def get_firmware_info(self):
         """ Get firmware info from the target """
@@ -225,8 +225,8 @@ class Target:
 
             return fwinfo
 
-        except IpmiError:
-            raise CxmanageError("Failed to retrieve firmware info")
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
     def update_firmware(self, tftp, images, partition_arg="INACTIVE"):
         """ Update firmware on this target. """
@@ -300,8 +300,8 @@ class Target:
             # Clear SEL
             self.bmc.sel_clear()
 
-        except IpmiError:
-            raise CxmanageError("Failed to reset configuration")
+        except IpmiError as e:
+            raise CxmanageError(self._parse_ipmierror(e))
 
     def set_boot_order(self, tftp, boot_args):
         """ Set boot order """
@@ -488,3 +488,10 @@ class Target:
                 break
         if result.status != "Complete":
             raise CxmanageError("Node reported transfer failure")
+
+    def _parse_ipmierror(self, e):
+        """ Parse a meaningful message from an IpmiError """
+        error = str(e).lstrip().splitlines()[0].rstrip()
+        if error.startswith("Error: "):
+            error = error[7:]
+        return "IPMItool error (%s)" % error
