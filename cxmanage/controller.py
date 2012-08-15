@@ -305,7 +305,7 @@ class Controller:
 
         return len(errors) > 0
 
-    def update_firmware(self, slot_arg="INACTIVE"):
+    def update_firmware(self, partition_arg="INACTIVE"):
         """ Send firmware update commands to all targets in group. """
 
         if self.verbosity >= 1:
@@ -316,7 +316,7 @@ class Controller:
 
         # Get results and errors
         results, errors = self._run_command("update_firmware",
-                self.tftp, self.images, slot_arg)
+                self.tftp, self.images, partition_arg)
 
         if self.verbosity >= 1 and len(errors) == 0:
             print "Command completed successfully.\n"

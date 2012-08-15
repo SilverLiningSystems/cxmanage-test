@@ -132,17 +132,17 @@ def build_parser():
                 'PACKAGE'
             ])))
     p['fwupdate'].add_argument('filename', help='path to file to upload')
-    p['fwupdate'].add_argument('--slot', help='Specify slot to update',
-            default='INACTIVE', type=lambda string: string.upper(),
-            choices = list(sorted([
+    p['fwupdate'].add_argument('--partition',
+            help='Specify partition to update', default='INACTIVE',
+            type=lambda string: string.upper(),
+            choices = list([
                 'FIRST',
                 'SECOND',
-                'THIRD',
                 'BOTH',
                 'OLDEST',
                 'NEWEST',
                 'INACTIVE'
-            ])))
+            ]))
     p['simg_args'] = p['fwupdate'].add_mutually_exclusive_group()
     p['simg_args'].add_argument('--force-simg',
             help='Force addition of SIMG header',
@@ -363,7 +363,7 @@ def fwupdate_command(controller, args):
                     return 1
 
     # Do firmware update
-    return controller.update_firmware(args.slot)
+    return controller.update_firmware(args.partition)
 
 
 def sensor_command(controller, args):

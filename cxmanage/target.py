@@ -215,43 +215,44 @@ class Target:
             # Flag CDB as "in use" based on socman info
             for a in range(1, len(fwinfo)):
                 previous = fwinfo[a-1]
-                slot = fwinfo[a]
-                if (slot.type.split()[1][1:-1] == "CDB" and
-                        slot.in_use == "Unknown"):
+                partition = fwinfo[a]
+                if (partition.type.split()[1][1:-1] == "CDB" and
+                        partition.in_use == "Unknown"):
                     if previous.type.split()[1][1:-1] != "SOC_ELF":
-                        slot.in_use = "1"
+                        partition.in_use = "1"
                     else:
-                        slot.in_use = previous.in_use
+                        partition.in_use = previous.in_use
 
             return fwinfo
 
         except IpmiError:
             raise CxmanageError("Failed to retrieve firmware info")
 
-    def update_firmware(self, tftp, images, slot_arg="INACTIVE"):
+    def update_firmware(self, tftp, images, partition_arg="INACTIVE"):
         """ Update firmware on this target. """
         fwinfo = self.get_firmware_info()
 
         # Get the new version
         version = 0
         image_types = [x.type for x in images]
-        for slot in fwinfo:
-            # Make sure this slot one of the types we're updating
-            # and that the slot is flagged as "active"
-            if (slot.type.split()[1][1:-1] in image_types and
-                    int(slot.flags, 16) & 2 == 0):
-                version = max(version, int(slot.version, 16) + 1)
+        for partition in fwinfo:
+            # Make sure this partition is one of the types we're updating
+            # and that the partition is flagged as "active"
+            if (partition.type.split()[1][1:-1] in image_types and
+                    int(partition.flags, 16) & 2 == 0):
+                version = max(version, int(partition.version, 16) + 1)
         if version > 0xFFFF:
             raise CxmanageError("Unable to increment SIMG version, too high")
 
         for image in images:
             if image.type == "UBOOTENV":
-                # Get slots
-                running_slot = self._get_slot(fwinfo, image.type, "FIRST")
-                factory_slot = self._get_slot(fwinfo, image.type, "SECOND")
+                # Get partitions
+                running_part = self._get_partition(fwinfo, image.type, "FIRST")
+                factory_part = self._get_partition(fwinfo, image.type,
+                        "SECOND")
 
                 # Update running ubootenv
-                old_ubootenv = self._download_ubootenv(tftp, running_slot)
+                old_ubootenv = self._download_ubootenv(tftp, running_part)
                 if "bootcmd_default" in old_ubootenv.variables:
                     bootcmd = old_ubootenv.variables["bootcmd_default"]
                     contents = open(image.filename).read()
@@ -260,24 +261,26 @@ class Target:
                     ubootenv = self.ubootenv_class(contents)
                     ubootenv.variables["bootcmd_default"] = bootcmd
                     self._upload_ubootenv(tftp, ubootenv,
-                            running_slot, version)
+                            running_part, version)
                 else:
-                    self._upload_image(tftp, image, running_slot, version)
+                    self._upload_image(tftp, image, running_part, version)
 
                 # Update factory ubootenv
-                self._upload_image(tftp, image, factory_slot, version)
+                self._upload_image(tftp, image, factory_part, version)
 
             else:
-                # Get the slots
-                if slot_arg == "BOTH":
-                    slots = [self._get_slot(fwinfo, image.type, "FIRST"),
-                            self._get_slot(fwinfo, image.type, "SECOND")]
+                # Get the partitions
+                if partition_arg == "BOTH":
+                    partitions = [self._get_partition(fwinfo, image.type,
+                            "FIRST"), self._get_partition(fwinfo, image.type,
+                            "SECOND")]
                 else:
-                    slots = [self._get_slot(fwinfo, image.type, slot_arg)]
+                    partitions = [self._get_partition(fwinfo, image.type,
+                            partition_arg)]
 
                 # Update the image
-                for slot in slots:
-                    self._upload_image(tftp, image, slot, version)
+                for partition in partitions:
+                    self._upload_image(tftp, image, partition, version)
 
     def config_reset(self, tftp):
         """ Reset configuration to factory default """
@@ -289,10 +292,10 @@ class Target:
 
             # Reset ubootenv
             fwinfo = self.get_firmware_info()
-            running_slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
-            factory_slot = self._get_slot(fwinfo, "UBOOTENV", "SECOND")
-            image = self._download_image(tftp, factory_slot)
-            self._upload_image(tftp, image, running_slot)
+            running_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
+            factory_part = self._get_partition(fwinfo, "UBOOTENV", "SECOND")
+            image = self._download_image(tftp, factory_part)
+            self._upload_image(tftp, image, running_part)
 
             # Clear SEL
             self.bmc.sel_clear()
@@ -303,20 +306,20 @@ class Target:
     def set_boot_order(self, tftp, boot_args):
         """ Set boot order """
         fwinfo = self.get_firmware_info()
-        first_slot = self._get_slot(fwinfo, "UBOOTENV", "FIRST")
-        active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+        first_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
+        active_part = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
 
-        # Download active ubootenv, modify, then upload to first slot
-        ubootenv = self._download_ubootenv(tftp, active_slot)
+        # Download active ubootenv, modify, then upload to first partition
+        ubootenv = self._download_ubootenv(tftp, active_part)
         ubootenv.set_boot_order(boot_args)
-        version = max(int(x.version, 16) for x in [first_slot, active_slot])
-        self._upload_ubootenv(tftp, ubootenv, first_slot, version)
+        version = max(int(x.version, 16) for x in [first_part, active_part])
+        self._upload_ubootenv(tftp, ubootenv, first_part, version)
 
     def get_boot_order(self, tftp):
         """ Get boot order """
         fwinfo = self.get_firmware_info()
-        active_slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
-        ubootenv = self._download_ubootenv(tftp, active_slot)
+        active_part = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
+        ubootenv = self._download_ubootenv(tftp, active_part)
         return ubootenv.get_boot_order()
 
     def info_basic(self):
@@ -345,101 +348,102 @@ class Target:
     def get_ubootenv(self, tftp):
         """ Get the active u-boot environment """
         fwinfo = self.get_firmware_info()
-        slot = self._get_slot(fwinfo, "UBOOTENV", "ACTIVE")
+        partition = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
 
-        return self._download_ubootenv(tftp, slot)
+        return self._download_ubootenv(tftp, partition)
 
-    def _get_slot(self, fwinfo, image_type, slot_arg):
-        """ Get a slot for this image type based on the slot argument """
-        # Filter slots for this type
-        slots = [x for x in fwinfo if x.type.split()[1][1:-1] == image_type]
-        if len(slots) < 1:
-            raise CxmanageError("No slots found on host")
+    def _get_partition(self, fwinfo, image_type, partition_arg):
+        """ Get a partition for this image type based on the argument """
+        # Filter partitions for this type
+        partitions = [x for x in fwinfo if
+                x.type.split()[1][1:-1] == image_type]
+        if len(partitions) < 1:
+            raise CxmanageError("No partitions found on host")
 
-        if slot_arg == "FIRST":
-            return slots[0]
-        elif slot_arg == "SECOND":
-            if len(slots) < 2:
-                raise CxmanageError("No second slot found on host")
-            return slots[1]
-        elif slot_arg == "THIRD":
-            if len(slots) < 3:
-                raise CxmanageError("No third slot found on host")
-            return slots[2]
-        elif slot_arg == "OLDEST":
-            # Choose second slot if both are the same version
-            if len(slots) == 1 or slots[0].version < slots[1].version:
-                return slots[0]
+        if partition_arg == "FIRST":
+            return partitions[0]
+        elif partition_arg == "SECOND":
+            if len(partitions) < 2:
+                raise CxmanageError("No second partition found on host")
+            return partitions[1]
+        elif partition_arg == "OLDEST":
+            # Choose second partition if both are the same version
+            if (len(partitions) == 1 or
+                    partitions[0].version < partitions[1].version):
+                return partitions[0]
             else:
-                return slots[1]
-        elif slot_arg == "NEWEST":
-            # Choose first slot if both are the same version
-            if len(slots) == 1 or slots[0].version >= slots[1].version:
-                return slots[0]
+                return partitions[1]
+        elif partition_arg == "NEWEST":
+            # Choose first partition if both are the same version
+            if (len(partitions) == 1 or
+                    partitions[0].version >= partitions[1].version):
+                return partitions[0]
             else:
-                return slots[1]
-        elif slot_arg == "INACTIVE":
-            # Get inactive slots
-            slots = [x for x in slots if x.in_use != "1"]
-            if len(slots) < 1:
-                raise CxmanageError("No inactive slots found on host")
+                return partitions[1]
+        elif partition_arg == "INACTIVE":
+            # Get inactive partitions
+            partitions = [x for x in partitions if x.in_use != "1"]
+            if len(partitions) < 1:
+                raise CxmanageError("No inactive partitions found on host")
 
-            # Choose second slot if both are the same version
-            if len(slots) == 1 or slots[0].version < slots[1].version:
-                return slots[0]
+            # Choose second partition if both are the same version
+            if (len(partitions) == 1 or
+                    partitions[0].version < partitions[1].version):
+                return partitions[0]
             else:
-                return slots[1]
-        elif slot_arg == "ACTIVE":
-            # Get active slots
-            slots = [x for x in slots if x.in_use != "0"]
-            if len(slots) < 1:
-                raise CxmanageError("No active slots found on host")
+                return partitions[1]
+        elif partition_arg == "ACTIVE":
+            # Get active partitions
+            partitions = [x for x in partitions if x.in_use != "0"]
+            if len(partitions) < 1:
+                raise CxmanageError("No active partitions found on host")
 
-            # Choose first slot if both are the same version
-            if len(slots) == 1 or slots[0].version >= slots[1].version:
-                return slots[0]
+            # Choose first partition if both are the same version
+            if (len(partitions) == 1 or
+                    partitions[0].version >= partitions[1].version):
+                return partitions[0]
             else:
-                return slots[1]
+                return partitions[1]
         else:
-            raise ValueError("Invalid slot argument: %s" % slot_arg)
+            raise ValueError("Invalid partition argument: %s" % partition_arg)
 
-    def _upload_image(self, tftp, image, slot, version=None):
+    def _upload_image(self, tftp, image, partition, version=None):
         """ Upload a single image. This includes uploading the image,
         performing the firmware update, crc32 check, and activation."""
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
         if version == None:
-            version = int(slot.version, 16)
-        daddr = int(slot.daddr, 16)
+            version = int(partition.version, 16)
+        daddr = int(partition.daddr, 16)
 
         # Check image size
-        if image.size() > int(slot.size, 16):
-            raise CxmanageError("%s image is too large for slot %i" %
-                    image.type, int(slot.slot))
+        if image.size() > int(partition.size, 16):
+            raise CxmanageError("%s image is too large for partition %i" %
+                    image.type, int(partition.slot))
 
         # Upload image to tftp server
         filename = image.upload(self.work_dir, tftp, version, daddr)
 
         # Send firmware update command
-        slot_id = int(slot.slot)
+        partition_id = int(partition.slot)
         image_type = image.type
         result = self.bmc.update_firmware(filename,
-                slot_id, image_type, tftp_address)
+                partition_id, image_type, tftp_address)
         handle = result.tftp_handle_id
 
         # Wait for update to finish
         self._wait_for_transfer(handle)
 
         # Verify crc
-        result = self.bmc.check_firmware(slot_id)
+        result = self.bmc.check_firmware(partition_id)
         if hasattr(result, "crc32") and result.error == None:
             # Activate
-            self.bmc.activate_firmware(slot_id)
+            self.bmc.activate_firmware(partition_id)
         else:
             raise CxmanageError("Node reported crc32 check failure")
 
-    def _download_image(self, tftp, slot):
+    def _download_image(self, tftp, partition):
         """ Download an image from the target.
 
         Returns the filename. """
@@ -449,24 +453,24 @@ class Target:
         # Download the image
         filename = tempfile.mkstemp(prefix="%s/img_" % self.work_dir)[1]
         basename = os.path.basename(filename)
-        image_type = slot.type.split()[1][1:-1]
-        handle = self.bmc.retrieve_firmware(basename,
-                int(slot.slot), image_type, tftp_address).tftp_handle_id
+        image_type = partition.type.split()[1][1:-1]
+        handle = self.bmc.retrieve_firmware(basename, int(partition.slot),
+                image_type, tftp_address).tftp_handle_id
         self._wait_for_transfer(handle)
         tftp.get_file(basename, filename)
 
         return Image(filename, image_type)
 
-    def _upload_ubootenv(self, tftp, ubootenv, slot, version=None):
+    def _upload_ubootenv(self, tftp, ubootenv, partition, version=None):
         """ Upload a uboot environment to the target """
         filename = tempfile.mkstemp(prefix="%s/env_" % self.work_dir)[1]
         open(filename, "w").write(ubootenv.get_contents())
         image = Image(filename, "UBOOTENV")
-        self._upload_image(tftp, image, slot, version)
+        self._upload_image(tftp, image, partition, version)
 
-    def _download_ubootenv(self, tftp, slot):
+    def _download_ubootenv(self, tftp, partition):
         """ Download a uboot environment from the target """
-        image = self._download_image(tftp, slot)
+        image = self._download_image(tftp, partition)
 
         # Open the file
         simg = open(image.filename).read()
