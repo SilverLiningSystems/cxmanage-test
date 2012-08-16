@@ -164,7 +164,7 @@ def build_parser():
     p['sensor'] = p['subparsers'].add_parser('sensor',
             help='read sensor value')
     p['sensor'].add_argument('sensor_name', help='Sensor name to read',
-            nargs='?')
+            nargs='?', default='')
     p['sensor'].set_defaults(func=sensor_command)
 
     #ipinfo command
@@ -370,10 +370,11 @@ def fwupdate_command(controller, args):
 
 def sensor_command(controller, args):
     """read sensor values from a cluster or host"""
-    if not args.sensor_name or args.sensor_name.lower() == 'list':
-        return controller.get_sensors()
-    else:
-        return controller.get_sensors(args.sensor_name)
+    sensor_name = args.sensor_name
+    if sensor_name.lower() == 'list':
+        sensor_name = ''
+
+    return controller.get_sensors(sensor_name)
 
 
 def ipinfo_command(controller, args):

@@ -324,18 +324,18 @@ class Controller:
 
         return len(errors) > 0
 
-    def get_sensors(self, name=None):
+    def get_sensors(self, name=""):
         """ Get sensor readings from all targets """
-        results, errors = self._run_command("get_sensors")
+        results, errors = self._run_command("get_sensors", name)
 
         if len(results) > 0:
             # Get sensor names
             sensor_names = []
             for address in results:
                 for sensor in results[address]:
-                    if (name in [None, sensor.sensor_name] and not
-                            sensor.sensor_name in sensor_names):
-                        sensor_names.append(sensor.sensor_name)
+                    sensor_name = sensor.sensor_name
+                    if not sensor_name in sensor_names:
+                        sensor_names.append(sensor_name)
 
             # Print all sensors
             for sensor_name in sensor_names:

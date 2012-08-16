@@ -197,12 +197,22 @@ class Target:
         except IpmiError as e:
             raise CxmanageError(self._parse_ipmierror(e))
 
-    def get_sensors(self):
+    def get_sensors(self, name=""):
         """ Get a list of sensors from this target """
         try:
-            return self.bmc.sdr_list()
+            sensors =  [x for x in self.bmc.sdr_list()
+                    if name.lower() in x.sensor_name.lower()]
         except IpmiError as e:
             raise CxmanageError(self._parse_ipmierror(e))
+
+        if len(sensors) == 0:
+            if name == "":
+                raise CxmanageError("No sensors were found")
+            else:
+                raise CxmanageError("No sensors containing \"%s\" were found"
+                        % name)
+
+        return sensors
 
     def get_firmware_info(self):
         """ Get firmware info from the target """
