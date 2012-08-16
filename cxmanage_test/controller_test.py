@@ -306,7 +306,7 @@ class DummyTarget:
         self.executed.append(("update_firmware", images))
         time.sleep(random.randint(0, 2))
 
-    def get_sensors(self):
+    def get_sensors(self, name=""):
         self.executed.append("get_sensors")
         power_value = "%f (+/- 0) Watts" % random.uniform(0, 10)
         temp_value = "%f (+/- 0) degrees C" % random.uniform(30, 50)
@@ -314,7 +314,7 @@ class DummyTarget:
                 TestSensor("Node Power", power_value),
                 TestSensor("Board Temp", temp_value)
         ]
-        return sensors
+        return [x for x in sensors if name.lower() in x.sensor_name.lower()]
 
     def config_reset(self, tftp):
         self.executed.append("config_reset")

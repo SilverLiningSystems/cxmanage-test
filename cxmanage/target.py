@@ -218,20 +218,20 @@ class Target:
         """ Get firmware info from the target """
         try:
             fwinfo = [x for x in self.bmc.get_firmware_info()
-                    if hasattr(x, "slot")]
+                    if hasattr(x, "partition")]
             if len(fwinfo) == 0:
                 raise CxmanageError("Failed to retrieve firmware info")
 
             # Flag CDB as "in use" based on socman info
             for a in range(1, len(fwinfo)):
                 previous = fwinfo[a-1]
-                partition = fwinfo[a]
-                if (partition.type.split()[1][1:-1] == "CDB" and
-                        partition.in_use == "Unknown"):
+                current = fwinfo[a]
+                if (current.type.split()[1][1:-1] == "CDB" and
+                        current.in_use == "Unknown"):
                     if previous.type.split()[1][1:-1] != "SOC_ELF":
-                        partition.in_use = "1"
+                        current.in_use = "1"
                     else:
-                        partition.in_use = previous.in_use
+                        current.in_use = previous.in_use
 
             return fwinfo
 
@@ -423,6 +423,7 @@ class Target:
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
+        partition_id = int(partition.partition)
         if version == None:
             version = int(partition.version, 16)
         daddr = int(partition.daddr, 16)
@@ -430,13 +431,12 @@ class Target:
         # Check image size
         if image.size() > int(partition.size, 16):
             raise CxmanageError("%s image is too large for partition %i" %
-                    image.type, int(partition.slot))
+                    image.type, partition_id)
 
         # Upload image to tftp server
         filename = image.upload(self.work_dir, tftp, version, daddr)
 
         # Send firmware update command
-        partition_id = int(partition.slot)
         image_type = image.type
         result = self.bmc.update_firmware(filename,
                 partition_id, image_type, tftp_address)
@@ -463,8 +463,9 @@ class Target:
         # Download the image
         filename = tempfile.mkstemp(prefix="%s/img_" % self.work_dir)[1]
         basename = os.path.basename(filename)
+        partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
-        handle = self.bmc.retrieve_firmware(basename, int(partition.slot),
+        handle = self.bmc.retrieve_firmware(basename, partition_id,
                 image_type, tftp_address).tftp_handle_id
         self._wait_for_transfer(handle)
         tftp.get_file(basename, filename)
