@@ -36,6 +36,7 @@ and the objects it contains: tftp, images, and targets. """
 import atexit
 import os
 import shutil
+import sys
 import tempfile
 import threading
 import time
@@ -216,25 +217,18 @@ class Controller:
 
     def power(self, mode):
         """ Send the given power command to all targets """
-
         if self.verbosity >= 1:
             print "Sending power %s command to these hosts:" % mode
             for target in self.targets:
                 print target.address
             print
 
-        results, errors = self._run_command("set_power", mode)
-
-        if self.verbosity >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        self._print_errors(errors)
-
-        return len(errors) > 0
+        return self._retry_command("set_power", mode)
 
     def power_status(self):
         """ Retrieve power status from all targets in group """
 
-        results, errors = self._run_command("get_power")
+        results, errors = self._run_command(self.targets, "get_power")
 
         # Print results
         if len(results) > 0:
@@ -255,24 +249,17 @@ class Controller:
 
     def power_policy(self, mode):
         """ Set the power policy for all targets """
-
         if self.verbosity >= 1:
             print "Setting power policy on these hosts:"
             for target in self.targets:
                 print target.address
             print
 
-        results, errors = self._run_command("set_power_policy", mode)
-
-        if self.verbosity >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        self._print_errors(errors)
-
-        return len(errors) > 0
+        return self._retry_command("set_power_policy", mode)
 
     def power_policy_status(self):
         """ Get power policy status for all targets """
-        results, errors = self._run_command("get_power_policy")
+        results, errors = self._run_command(self.targets, "get_power_policy")
 
         # Print results
         if len(results) > 0:
@@ -290,43 +277,28 @@ class Controller:
 
     def mc_reset(self):
         """ Send an MC reset command to all targets """
-
         if self.verbosity >= 1:
             print "Sending MC reset command to these hosts:"
             for target in self.targets:
                 print target.address
             print
 
-        results, errors = self._run_command("mc_reset")
-
-        if self.verbosity >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        self._print_errors(errors)
-
-        return len(errors) > 0
+        return self._retry_command("mc_reset")
 
     def update_firmware(self, partition_arg="INACTIVE"):
         """ Send firmware update commands to all targets in group. """
-
         if self.verbosity >= 1:
             print "Updating firmware on these hosts:"
             for target in self.targets:
                 print target.address
             print
 
-        # Get results and errors
-        results, errors = self._run_command("update_firmware",
-                self.tftp, self.images, partition_arg)
-
-        if self.verbosity >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        self._print_errors(errors)
-
-        return len(errors) > 0
+        return self._retry_command("update_firmware", self.tftp, self.images,
+                partition_arg)
 
     def get_sensors(self, name=""):
         """ Get sensor readings from all targets """
-        results, errors = self._run_command("get_sensors", name)
+        results, errors = self._run_command(self.targets, "get_sensors", name)
 
         if len(results) > 0:
             # Get sensor names
@@ -382,7 +354,8 @@ class Controller:
 
     def get_ipinfo(self):
         """ Get IP info from all targets """
-        results, errors = self._run_command("get_ipinfo", self.tftp)
+        results, errors = self._run_command(self.targets, "get_ipinfo",
+                self.tftp)
 
         # Print results
         if len(results) > 0:
@@ -400,7 +373,8 @@ class Controller:
 
     def get_macaddrs(self):
         """ Get mac addresses from all targets """
-        results, errors = self._run_command("get_macaddrs", self.tftp)
+        results, errors = self._run_command(self.targets, "get_macaddrs",
+                self.tftp)
 
         # Print results
         if len(results) > 0:
@@ -419,20 +393,13 @@ class Controller:
 
     def config_reset(self):
         """ Send config reset command to all targets """
-
         if self.verbosity >= 1:
             print "Resetting configuration on these hosts:"
             for target in self.targets:
                 print target.address
             print
 
-        results, errors = self._run_command("config_reset", self.tftp)
-
-        if self.verbosity >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        self._print_errors(errors)
-
-        return len(errors) > 0
+        return self._retry_command("config_reset", self.tftp)
 
     def config_boot(self, boot_args):
         """ Send config boot command to all targets """
@@ -450,18 +417,12 @@ class Controller:
                 print target.address
             print
 
-        results, errors = self._run_command("set_boot_order",
-                self.tftp, boot_args)
-
-        if self.verbosity >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        self._print_errors(errors)
-
-        return len(errors) > 0
+        return self._retry_command("set_boot_order", self.tftp, boot_args)
 
     def config_boot_status(self):
         """ Get boot order from all targets """
-        results, errors = self._run_command("get_boot_order", self.tftp)
+        results, errors = self._run_command(self.targets, "get_boot_order",
+                self.tftp)
 
         # Print results
         if len(results) > 0:
@@ -479,7 +440,7 @@ class Controller:
 
     def info_basic(self):
         """ Get basic SoC info from all targets """
-        results, errors = self._run_command("info_basic")
+        results, errors = self._run_command(self.targets, "info_basic")
 
         # Print results
         if len(results) > 0:
@@ -501,7 +462,8 @@ class Controller:
 
     def info_ubootenv(self):
         """ Print u-boot environment for all targets """
-        results, errors = self._run_command("get_ubootenv", self.tftp)
+        results, errors = self._run_command(self.targets, "get_ubootenv",
+                self.tftp)
 
         # Print results
         if len(results) > 0:
@@ -528,7 +490,8 @@ class Controller:
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
-        results, errors = self._run_command("ipmitool_command", ipmitool_args)
+        results, errors = self._run_command(self.targets, "ipmitool_command",
+                ipmitool_args)
 
         # Print results
         if len(results) > 0:
@@ -543,7 +506,35 @@ class Controller:
 
         return len(errors) > 0
 
-    def _run_command(self, name, *args):
+    def _retry_command(self, name, *args):
+        """ Run a generic retrying command on all targets """
+        targets = self.targets
+
+        while True:
+            # Get results and errors
+            results, errors = self._run_command(targets, name, *args)
+
+            if len(errors) == 0:
+                # No errors encountered, print message and return
+                if self.verbosity >= 1:
+                    print "Command completed successfully.\n"
+                return False
+            else:
+                # Print errors and retry prompt, update target list
+                self._print_errors(errors)
+                sys.stdout.write("Retry on failed hosts? (y/n): ")
+                sys.stdout.flush()
+                while True:
+                    command = raw_input().strip().lower()
+                    if command in ['y', 'yes']:
+                        print
+                        break
+                    elif command in ['n', 'no']:
+                        print
+                        return True
+                targets = [x for x in targets if x.address in errors]
+
+    def _run_command(self, targets, name, *args):
         """ Run a target command with multiple threads
 
         Returns (results, errors) which map addresses to their results """
@@ -554,11 +545,11 @@ class Controller:
         errors = {}
 
         # Start indicator
-        indicator = Indicator(self.targets, results, errors)
+        indicator = Indicator(targets, results, errors)
         if self.verbosity == 1:
             indicator.start()
 
-        for target in self.targets:
+        for target in targets:
             # Wait while we have too many running threads
             while len(threads) >= self.max_threads:
                 time.sleep(0.001)
@@ -604,6 +595,7 @@ class Controller:
                     print "%s: %s" % (target.address.ljust(16),
                             errors[target.address])
             print
+
 
 class ControllerCommandThread(threading.Thread):
     """ Thread for executing a command on a target """
