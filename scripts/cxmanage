@@ -34,6 +34,7 @@
 """Command line tool for managing a Calxeda cluster"""
 
 import argparse
+import os
 import pkgutil
 import sys
 
@@ -64,6 +65,8 @@ def build_parser():
             help='Don\'t stop at confirmation dialogue')
     p['parser'].add_argument('--retry', help='Retry command on multiple times',
             type=int, default=None, metavar='COUNT')
+    p['parser'].add_argument('--ipmipath', help='Path to ipmitool command',
+            default=None)
     p['verbosity'] = p['parser'].add_mutually_exclusive_group()
     p['verbosity'].add_argument('-v', '--verbose', action='store_true',
             help='Verbose output')
@@ -240,6 +243,12 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
     validate_args(args)
+
+    if args.ipmipath:
+        if os.path.isdir(args.ipmipath):
+            args.ipmipath = args.ipmipath.rstrip('/') + '/ipmitool'
+        print args.ipmipath
+        os.environ['IPMITOOL_PATH'] = args.ipmipath
 
     verbosity = 1
     if args.verbose:
