@@ -286,7 +286,7 @@ class Controller:
         return self._retry_command("mc_reset")
 
     def update_firmware(self, partition_arg="INACTIVE"):
-        """ Send firmware update commands to all targets in group. """
+        """ Send firmware update commands to all targets """
         if self.verbosity >= 1:
             print "Updating firmware on these hosts:"
             for target in self.targets:
@@ -295,6 +295,29 @@ class Controller:
 
         return self._retry_command("update_firmware", self.tftp, self.images,
                 partition_arg)
+
+    def firmware_info(self):
+        """ Print firmware info for all targets """
+        results, errors = self._run_command(self.targets, "get_firmware_info")
+
+        for target in self.targets:
+            if target.address in results:
+                print "[ Firmware info for %s ]" % target.address
+
+                for partition in results[target.address]:
+                    print "Partition          : %s" % partition.partition
+                    print "Type               : %s" % partition.type
+                    print "Offset             : %s" % partition.offset
+                    print "Size               : %s" % partition.size
+                    print "Version            : %s" % partition.version
+                    print "Daddr              : %s" % partition.daddr
+                    print "Flags              : %s" % partition.flags
+                    print "In Use             : %s" % partition.in_use
+                    print
+
+        self._print_errors(errors)
+
+        return len(errors) > 0
 
     def get_sensors(self, name=""):
         """ Get sensor readings from all targets """

@@ -160,6 +160,10 @@ def build_parser():
             default=False, action='store_true')
     p['fwupdate'].set_defaults(func=fwupdate_command)
 
+    #fwinfo command
+    p['fwinfo'] = p['subparsers'].add_parser('fwinfo', help='get FW info')
+    p['fwinfo'].set_defaults(func=fwinfo_command)
+
     #sensor command
     p['sensor'] = p['subparsers'].add_parser('sensor',
             help='read sensor value')
@@ -366,6 +370,11 @@ def fwupdate_command(controller, args):
 
     # Do firmware update
     return controller.update_firmware(args.partition)
+
+
+def fwinfo_command(controller, args):
+    """print firmware info"""
+    return controller.firmware_info()
 
 
 def sensor_command(controller, args):
