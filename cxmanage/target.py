@@ -377,43 +377,29 @@ class Target:
                 raise CxmanageError("No second partition found on host")
             return partitions[1]
         elif partition_arg == "OLDEST":
-            # Choose second partition if both are the same version
-            if (len(partitions) == 1 or
-                    partitions[0].version < partitions[1].version):
-                return partitions[0]
-            else:
-                return partitions[1]
+            # Return the oldest partition
+            partitions.sort(key=lambda x: x.partition, reverse=True)
+            partitions.sort(key=lambda x: x.version)
+            return partitions[0]
         elif partition_arg == "NEWEST":
-            # Choose first partition if both are the same version
-            if (len(partitions) == 1 or
-                    partitions[0].version >= partitions[1].version):
-                return partitions[0]
-            else:
-                return partitions[1]
+            # Return the newest partition
+            partitions.sort(key=lambda x: x.partition)
+            partitions.sort(key=lambda x: x.version, reverse=True)
+            return partitions[0]
         elif partition_arg == "INACTIVE":
-            # Get inactive partitions
-            partitions = [x for x in partitions if x.in_use != "1"]
-            if len(partitions) < 1:
-                raise CxmanageError("No inactive partitions found on host")
-
-            # Choose second partition if both are the same version
-            if (len(partitions) == 1 or
-                    partitions[0].version < partitions[1].version):
-                return partitions[0]
-            else:
-                return partitions[1]
+            # Return the partition that's not in use (or least likely to be)
+            partitions.sort(key=lambda x: x.partition, reverse=True)
+            partitions.sort(key=lambda x: x.version)
+            partitions.sort(key=lambda x: int(x.flags, 16) & 2 == 0)
+            partitions.sort(key=lambda x: x.in_use == "1")
+            return partitions[0]
         elif partition_arg == "ACTIVE":
-            # Get active partitions
-            partitions = [x for x in partitions if x.in_use != "0"]
-            if len(partitions) < 1:
-                raise CxmanageError("No active partitions found on host")
-
-            # Choose first partition if both are the same version
-            if (len(partitions) == 1 or
-                    partitions[0].version >= partitions[1].version):
-                return partitions[0]
-            else:
-                return partitions[1]
+            # Return the partition that's in use (or most likely to be)
+            partitions.sort(key=lambda x: x.partition)
+            partitions.sort(key=lambda x: x.version, reverse=True)
+            partitions.sort(key=lambda x: int(x.flags, 16) & 2 == 1)
+            partitions.sort(key=lambda x: x.in_use == "0")
+            return partitions[0]
         else:
             raise ValueError("Invalid partition argument: %s" % partition_arg)
 
