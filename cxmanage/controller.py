@@ -54,13 +54,14 @@ class Controller:
     cxmanage. Scripts or UIs can build on top of this to provide an user
     interface. """
 
-    def __init__(self, verbosity=0, max_threads=1,
-            image_class=Image, target_class=Target):
+    def __init__(self, verbosity=0, max_threads=1, image_class=Image,
+            target_class=Target, retries=None):
         self.tftp = None
         self.targets = []
         self.images = []
         self.verbosity = verbosity
         self.max_threads = max_threads
+        self.retries = retries
         self.target_class = target_class
         self.image_class = image_class
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage-")
@@ -532,6 +533,7 @@ class Controller:
     def _retry_command(self, name, *args):
         """ Run a generic retrying command on all targets """
         targets = self.targets
+        retries = self.retries
 
         while True:
             # Get results and errors
@@ -543,18 +545,31 @@ class Controller:
                     print "Command completed successfully.\n"
                 return False
             else:
-                # Print errors and retry prompt, update target list
+                # Print errors
                 self._print_errors(errors)
-                sys.stdout.write("Retry on failed hosts? (y/n): ")
-                sys.stdout.flush()
-                while True:
-                    command = raw_input().strip().lower()
-                    if command in ['y', 'yes']:
-                        print
-                        break
-                    elif command in ['n', 'no']:
-                        print
+
+                # Decide whether or not to retry
+                if retries == None:
+                    sys.stdout.write("Retry on failed hosts? (y/n): ")
+                    sys.stdout.flush()
+                    while True:
+                        command = raw_input().strip().lower()
+                        if command in ['y', 'yes']:
+                            print
+                            break
+                        elif command in ['n', 'no']:
+                            print
+                            return True
+                else:
+                    if retries == 0:
                         return True
+                    if retries == 1:
+                        print "Retrying command 1 more time...\n"
+                    else:
+                        print "Retrying command %i more times...\n" % retries
+                    retries -= 1
+
+                # Update target list
                 targets = [x for x in targets if x.address in errors]
 
     def _run_command(self, targets, name, *args):

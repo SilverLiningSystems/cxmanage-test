@@ -62,6 +62,8 @@ def build_parser():
             metavar='THREAD_COUNT', help='Number of threads to use')
     p['parser'].add_argument('--force-yes', action='store_true',
             help='Don\'t stop at confirmation dialogue')
+    p['parser'].add_argument('--retry', help='Retry command on multiple times',
+            type=int, default=None, metavar='COUNT')
     p['verbosity'] = p['parser'].add_mutually_exclusive_group()
     p['verbosity'].add_argument('-v', '--verbose', action='store_true',
             help='Verbose output')
@@ -245,7 +247,8 @@ def main():
     elif args.quiet:
         verbosity = 0
 
-    controller = Controller(verbosity=verbosity, max_threads=args.threads)
+    controller = Controller(verbosity=verbosity, max_threads=args.threads,
+            retries=args.retry)
 
     set_tftp(controller, args)
     add_targets(controller, args)
