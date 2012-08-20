@@ -302,7 +302,7 @@ class DummyTarget:
     def mc_reset(self):
         self.executed.append("mc_reset")
 
-    def update_firmware(self, tftp, images, slot_arg):
+    def update_firmware(self, tftp, images, partition_arg):
         self.executed.append(("update_firmware", images))
         time.sleep(random.randint(0, 2))
 

@@ -308,28 +308,28 @@ class DummyBMC(LanBMC):
 
         return [x.fwinfo for x in self.partitions]
 
-    def update_firmware(self, filename, slot_id, image_type, tftp_address):
-        """ Download a file from a TFTP server to a given slot.
+    def update_firmware(self, filename, partition, image_type, tftp_addr):
+        """ Download a file from a TFTP server to a given partition.
 
         Make sure the image type matches. """
         self.executed.append(("update_firmware", filename,
-                slot_id, image_type, tftp_address))
-        self.partitions[slot_id].updates += 1
+                partition, image_type, tftp_addr))
+        self.partitions[partition].updates += 1
 
         class Result:
             def __init__(self):
                 self.tftp_handle_id = 0
         return Result()
 
-    def retrieve_firmware(self, filename, slot_id, image_type, tftp_address):
+    def retrieve_firmware(self, filename, partition, image_type, tftp_addr):
         self.executed.append(("retrieve_firmware", filename,
-                slot_id, image_type, tftp_address))
-        self.partitions[slot_id].retrieves += 1
+                partition, image_type, tftp_addr))
+        self.partitions[partition].retrieves += 1
 
         # Upload blank image to tftp
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         open("%s/%s" % (work_dir, filename), "w").write(create_simg(""))
-        address, port = tftp_address.split(":")
+        address, port = tftp_addr.split(":")
         port = int(port)
         tftp = ExternalTftp(address, port)
         tftp.put_file("%s/%s" % (work_dir, filename), filename)
@@ -348,9 +348,9 @@ class DummyBMC(LanBMC):
                 self.status = "Complete"
         return Result()
 
-    def check_firmware(self, slot_id):
-        self.executed.append(("check_firmware", slot_id))
-        self.partitions[slot_id].checks += 1
+    def check_firmware(self, partition):
+        self.executed.append(("check_firmware", partition))
+        self.partitions[partition].checks += 1
 
         class Result:
             def __init__(self):
@@ -358,9 +358,9 @@ class DummyBMC(LanBMC):
                 self.error = None
         return Result()
 
-    def activate_firmware(self, slot_id):
-        self.executed.append(("activate_firmware", slot_id))
-        self.partitions[slot_id].activates += 1
+    def activate_firmware(self, partition):
+        self.executed.append(("activate_firmware", partition))
+        self.partitions[partition].activates += 1
 
     def sdr_list(self):
         """ Get sensor info from the node. """
