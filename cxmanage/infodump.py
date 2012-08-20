@@ -145,8 +145,9 @@ def user(tftp, target):
 
 def session(tftp, target):
     """ Print session information. """
-    print '[ IPMI Sessions Info ]'
-    print ipmitool(target, 'session info all') + '\n'
+    # FIXME: This command seems to cause an mpu fault, so disable it for now.
+    # print '[ IPMI Sessions Info ]'
+    # print ipmitool(target, 'session info all') + '\n'
 
 def channel(tftp, target):
     """ Print channel information. """
