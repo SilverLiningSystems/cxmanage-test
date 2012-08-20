@@ -345,15 +345,21 @@ class Target:
 
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """
-        command = ["ipmitool", "-U", self.username, "-P", self.password, "-H",
+        if "IPMITOOL_PATH" in os.environ:
+            command = [os.environ["IPMITOOL_PATH"]]
+        else:
+            command = ["ipmitool"]
+
+        command += ["-U", self.username, "-P", self.password, "-H",
                 self.address]
         command += ipmitool_args
 
         if self.verbosity >= 2:
             print "Running %s" % " ".join(command)
 
-        output = subprocess.check_output(command, stderr=subprocess.STDOUT)
-        return output.strip()
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        return (stdout + stderr).strip()
 
     def get_ubootenv(self, tftp):
         """ Get the active u-boot environment """
