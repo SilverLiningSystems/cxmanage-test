@@ -38,6 +38,7 @@ import os
 import pkgutil
 import sys
 
+from cxmanage import CxmanageError
 from cxmanage.controller import Controller
 
 # Load plugins
@@ -323,8 +324,13 @@ def add_targets(controller, args, hosts=None):
                 add_targets(controller, args, addresses)
             except ValueError:
                 # Not a hostfile or IP range, add it as a regular host
-                controller.add_target(entry, args.user,
-                        args.password, args.all_nodes)
+                try:
+                    controller.add_target(entry, args.user,
+                            args.password, args.all_nodes)
+                except CxmanageError:
+                    print ("ERROR: Failed to retrieve IP info from %s\n"
+                            % entry)
+                    sys.exit(1)
 
 
 def power_command(controller, args):
