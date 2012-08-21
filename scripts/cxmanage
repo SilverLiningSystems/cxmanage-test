@@ -231,6 +231,8 @@ def build_parser():
 
 def validate_args(args):
     """ Bail out if the arguments don't make sense"""
+    if args.threads < 1:
+        sys.exit('ERROR: --threads must be at least 1')
     if args.func == fwupdate_command:
         if args.skip_simg and args.version:
             sys.exit('Invalid argument --version when supplied with --skip-simg')
