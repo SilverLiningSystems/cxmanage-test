@@ -207,7 +207,12 @@ def print_ubootenv(tftp, target):
 def print_cdb(target, cids=None):
     """ Print info for each CDB entry. """
     if cids == None:
-        cids = resource_string('cxmanage', 'data/cids').split()
+        string = resource_string('cxmanage', 'data/cids')
+        cids = set()
+        for line in string.splitlines():
+            for entry in line.partition('#')[0].split():
+                cids.add(entry)
+        cids = sorted(cids)
 
     for cid in cids:
         print '[ CDB %s ]' % cid
@@ -266,7 +271,11 @@ def get_register_ranges(regfile=None):
     else:
         string = open(regfile).read()
 
-    registers = sorted(set(int(x, 16) for x in string.split()))
+    registers = set()
+    for line in string.splitlines():
+        for entry in line.partition('#')[0].split():
+            registers.add(int(entry, 16))
+    registers = sorted(registers)
 
     # Build register ranges
     register_ranges = []
