@@ -33,12 +33,12 @@ from setuptools import setup
 
 setup(
     name='cxmanage',
-    version='0.3.0',
+    version='0.4.0',
     packages=['cxmanage'],
     scripts=['scripts/cxmanage', 'scripts/cxpackage'],
     package_data={'cxmanage': ['data/cids', 'data/registers']},
     description='Calxeda Management Utility',
-    install_requires=['tftpy', 'pyipmi', 'argparse'],
+    install_requires=['tftpy', 'pyipmi>=0.3.0', 'argparse'],
     classifiers=[
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 2.7']
