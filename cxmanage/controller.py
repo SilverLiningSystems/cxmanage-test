@@ -202,30 +202,6 @@ class Controller:
 
         return len(errors) > 0
 
-    def get_addresses_in_range(self, start, end):
-        """ Return a list of addresses in the given IP range """
-        try:
-            # Convert startaddr to int
-            start_bytes = map(int, start.split("."))
-            start_i = ((start_bytes[0] << 24) | (start_bytes[1] << 16)
-                    | (start_bytes[2] << 8) | (start_bytes[3]))
-
-            # Convert endaddr to int
-            end_bytes = map(int, end.split("."))
-            end_i = ((end_bytes[0] << 24) | (end_bytes[1] << 16)
-                    | (end_bytes[2] << 8) | (end_bytes[3]))
-
-            # Get ip addresses in range
-            addresses = []
-            for i in range(start_i, end_i + 1):
-                address_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
-                addresses.append("%i.%i.%i.%i" % tuple(address_bytes))
-
-            return addresses
-
-        except IndexError:
-            raise ValueError("Invalid arguments to get_targets_in_range")
-
 #########################    Execution methods    #########################
 
     def power(self, mode):

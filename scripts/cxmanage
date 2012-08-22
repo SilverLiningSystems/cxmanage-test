@@ -300,7 +300,13 @@ def set_tftp(controller, args):
 
 
 def add_targets(controller, args):
-    hosts = parse_hosts(controller, args.hostname.split(','))
+    """add targets to controller"""
+    # Get a list of hosts
+    hosts = []
+    for entry in args.hostname.split(','):
+        hosts.extend(parse_host_entry(entry))
+
+    # Add hosts to controller
     if args.all_nodes:
         if controller.add_fabrics(hosts, args.user, args.password):
             print "ERROR: Failed to get IP addresses. Aborting.\n"
@@ -309,32 +315,69 @@ def add_targets(controller, args):
         for host in hosts:
             controller.add_target(host, args.user, args.password)
 
-def parse_hosts(controller, hosts):
-    """add targets to controller addresses"""
-    results = []
-    for entry in hosts:
-        # Check if it's a hostfile
-        if entry.startswith('hostfile='):
-            try:
-                hostfile_entries = []
-                for line in open(entry[9:]):
-                    elements = line.partition('#')[0].split()
-                    for element in elements:
-                        hostfile_entries.extend(element.split(','))
-                hosts.extend(parse_hosts(controller, hostfile_entries))
-            except IOError:
-                print 'ERROR: %s is not a valid hostfile entry' % entry
-                sys.exit(1)
-        else:
-            # Not a hostfile, is it an IP range?
-            try:
-                start, end = entry.split('-')
-                hosts.extend(controller.get_addresses_in_range(start, end))
-            except ValueError:
-                # Not a hostfile or IP range, add it as a regular host
-                results.append(entry)
 
-    return results
+def parse_host_entry(entry, hostfiles=set()):
+    """parse a host entry"""
+    try:
+        return parse_hostfile_entry(entry, hostfiles)
+    except ValueError:
+        try:
+            return parse_ip_range_entry(entry)
+        except ValueError:
+            return [entry]
+
+
+def parse_hostfile_entry(entry, hostfiles=set()):
+    """parse a hostfile entry, returning a list of hosts"""
+    if entry.startswith('file='):
+        filename = entry[5:]
+    elif entry.startswith('hostfile='):
+        filename = entry[9:]
+    else:
+        raise ValueError('%s is not a hostfile entry' % entry)
+
+    if filename in hostfiles:
+        return []
+    hostfiles.add(filename)
+
+    entries = []
+    try:
+        for line in open(filename):
+            for element in line.partition('#')[0].split():
+                for hostfile_entry in element.split(','):
+                    entries.extend(parse_host_entry(hostfile_entry, hostfiles))
+    except IOError:
+        print 'ERROR: %s is not a valid hostfile entry' % entry
+        sys.exit(1)
+
+    return entries
+
+
+def parse_ip_range_entry(entry):
+    """ Get a list of ip addresses in a given range"""
+    try:
+        start, end = entry.split('-')
+
+        # Convert start address to int
+        start_bytes = map(int, start.split('.'))
+        start_i = ((start_bytes[0] << 24) | (start_bytes[1] << 16)
+                | (start_bytes[2] << 8) | (start_bytes[3]))
+
+        # Convert end address to int
+        end_bytes = map(int, end.split('.'))
+        end_i = ((end_bytes[0] << 24) | (end_bytes[1] << 16)
+                | (end_bytes[2] << 8) | (end_bytes[3]))
+
+        # Get ip addresses in range
+        addresses = []
+        for i in range(start_i, end_i + 1):
+            address_bytes = [(i >> (24 - 8 * x)) & 0xff for x in range(4)]
+            addresses.append('%i.%i.%i.%i' % tuple(address_bytes))
+
+    except (ValueError, IndexError):
+        raise ValueError('%s is not an IP range' % entry)
+
+    return addresses
 
 
 def power_command(controller, args):
