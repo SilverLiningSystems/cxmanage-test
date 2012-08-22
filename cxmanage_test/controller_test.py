@@ -65,7 +65,7 @@ class ControllerTest(unittest.TestCase):
         """ Test adding targets with ipinfo """
         # Add targets
         self.assertEqual(len(self.controller.targets), 0)
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
+        self.controller.add_fabrics([ADDRESSES[0]], "admin", "admin")
 
         # Examine targets
         self.assertEqual(len(ADDRESSES), len(self.controller.targets))
@@ -99,7 +99,7 @@ class ControllerCommandTest(unittest.TestCase):
         # Set up the controller and add targets
         self.controller = Controller(max_threads=32,
                 image_class=DummyImage, target_class=DummyTarget)
-        self.controller.add_target(ADDRESSES[0], "admin", "admin", True)
+        self.controller.add_fabrics([ADDRESSES[0]], "admin", "admin")
 
     def test_power(self):
         """ Test power command """

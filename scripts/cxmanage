@@ -38,7 +38,6 @@ import os
 import pkgutil
 import sys
 
-from cxmanage import CxmanageError
 from cxmanage.controller import Controller
 
 # Load plugins
@@ -300,11 +299,19 @@ def set_tftp(controller, args):
         controller.set_internal_tftp_server()
 
 
-def add_targets(controller, args, hosts=None):
-    """add targets to controller addresses"""
-    if hosts == None:
-        hosts = args.hostname.split(',')
+def add_targets(controller, args):
+    hosts = parse_hosts(controller, args.hostname.split(','))
+    if args.all_nodes:
+        if controller.add_fabrics(hosts, args.user, args.password):
+            print "ERROR: Failed to get IP addresses. Aborting.\n"
+            sys.exit(1)
+    else:
+        for host in hosts:
+            controller.add_target(host, args.user, args.password)
 
+def parse_hosts(controller, hosts):
+    """add targets to controller addresses"""
+    results = []
     for entry in hosts:
         # Check if it's a hostfile
         if entry.startswith('hostfile='):
@@ -314,7 +321,7 @@ def add_targets(controller, args, hosts=None):
                     elements = line.partition('#')[0].split()
                     for element in elements:
                         hostfile_entries.extend(element.split(','))
-                add_targets(controller, args, hostfile_entries)
+                hosts.extend(parse_hosts(controller, hostfile_entries))
             except IOError:
                 print 'ERROR: %s is not a valid hostfile entry' % entry
                 sys.exit(1)
@@ -322,17 +329,12 @@ def add_targets(controller, args, hosts=None):
             # Not a hostfile, is it an IP range?
             try:
                 start, end = entry.split('-')
-                addresses = controller.get_addresses_in_range(start, end)
-                add_targets(controller, args, addresses)
+                hosts.extend(controller.get_addresses_in_range(start, end))
             except ValueError:
                 # Not a hostfile or IP range, add it as a regular host
-                try:
-                    controller.add_target(entry, args.user,
-                            args.password, args.all_nodes)
-                except CxmanageError:
-                    print ("ERROR: Failed to retrieve IP info from %s\n"
-                            % entry)
-                    sys.exit(1)
+                results.append(entry)
+
+    return results
 
 
 def power_command(controller, args):

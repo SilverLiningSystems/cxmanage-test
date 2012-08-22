@@ -175,20 +175,32 @@ class Controller:
 
 
 ###########################  Targets-specific methods #########################
-
-    def add_target(self, address, username, password, all_nodes=False):
-        """ Add the target to the list of targets for the group. """
-        # Do nothing if the target is already present
+    def add_target(self, address, username, password):
+        """ Add a target to the controller """
         for target in self.targets:
             if target.address == address:
                 return
 
         target = self.target_class(address, username, password, self.verbosity)
-        if all_nodes:
-            for entry in target.get_ipinfo(self.tftp):
-                self.add_target(entry[1], username, password)
-        else:
-            self.targets.append(target)
+        self.targets.append(target)
+
+    def add_fabrics(self, addresses, username, password):
+        """ Add all targets reported by each fabric """
+        targets = [self.target_class(x, username, password, self.verbosity)
+                for x in addresses]
+
+        if self.verbosity >= 1:
+            print "Getting IP addresses..."
+        results, errors = self._run_command(targets, "get_ipinfo", self.tftp)
+
+        for target in targets:
+            if target.address in results:
+                for ipinfo in results[target.address]:
+                    self.add_target(ipinfo[1], username, password)
+
+        self._print_errors(targets, errors)
+
+        return len(errors) > 0
 
     def get_addresses_in_range(self, start, end):
         """ Return a list of addresses in the given IP range """
@@ -229,6 +241,8 @@ class Controller:
     def power_status(self):
         """ Retrieve power status from all targets in group """
 
+        if self.verbosity >= 1:
+            print "Getting power status..."
         results, errors = self._run_command(self.targets, "get_power")
 
         # Print results
@@ -244,7 +258,7 @@ class Controller:
             print
 
         # Print errors
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
@@ -260,6 +274,8 @@ class Controller:
 
     def power_policy_status(self):
         """ Get power policy status for all targets """
+        if self.verbosity >= 1:
+            print "Getting power policy status..."
         results, errors = self._run_command(self.targets, "get_power_policy")
 
         # Print results
@@ -272,7 +288,7 @@ class Controller:
             print
 
         # Print errors
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
@@ -299,6 +315,8 @@ class Controller:
 
     def firmware_info(self):
         """ Print firmware info for all targets """
+        if self.verbosity >= 1:
+            print "Getting firmware info..."
         results, errors = self._run_command(self.targets, "get_firmware_info")
 
         for target in self.targets:
@@ -316,12 +334,14 @@ class Controller:
                     print "In Use             : %s" % partition.in_use
                     print
 
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
     def get_sensors(self, name=""):
         """ Get sensor readings from all targets """
+        if self.verbosity >= 1:
+            print "Getting sensor readings..."
         results, errors = self._run_command(self.targets, "get_sensors", name)
 
         if len(results) > 0:
@@ -372,12 +392,14 @@ class Controller:
 
                 print
 
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
     def get_ipinfo(self):
         """ Get IP info from all targets """
+        if self.verbosity >= 1:
+            print "Getting IP info..."
         results, errors = self._run_command(self.targets, "get_ipinfo",
                 self.tftp)
 
@@ -391,12 +413,14 @@ class Controller:
                         print "Node %i: %s" % entry
                     print
 
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
     def get_macaddrs(self):
         """ Get mac addresses from all targets """
+        if self.verbosity >= 1:
+            print "Getting MAC addresses..."
         results, errors = self._run_command(self.targets, "get_macaddrs",
                 self.tftp)
 
@@ -411,7 +435,7 @@ class Controller:
                     if target != self.targets[-1] or len(errors) > 0:
                         print
 
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
@@ -445,6 +469,8 @@ class Controller:
 
     def config_boot_status(self):
         """ Get boot order from all targets """
+        if self.verbosity >= 1:
+            print "Getting boot orders..."
         results, errors = self._run_command(self.targets, "get_boot_order",
                 self.tftp)
 
@@ -458,12 +484,14 @@ class Controller:
             print
 
         # Print errors
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
     def info_basic(self):
         """ Get basic SoC info from all targets """
+        if self.verbosity >= 1:
+            print "Getting SoC info..."
         results, errors = self._run_command(self.targets, "info_basic")
 
         # Print results
@@ -480,12 +508,14 @@ class Controller:
                     print
 
         # Print errors
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
     def info_ubootenv(self):
         """ Print u-boot environment for all targets """
+        if self.verbosity >= 1:
+            print "Getting u-boot environments..."
         results, errors = self._run_command(self.targets, "get_ubootenv",
                 self.tftp)
 
@@ -500,7 +530,7 @@ class Controller:
                     print
 
         # Print errors
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
@@ -514,6 +544,8 @@ class Controller:
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """
+        if self.verbosity >= 1:
+            print "Running IPMItool command..."
         results, errors = self._run_command(self.targets, "ipmitool_command",
                 ipmitool_args)
 
@@ -526,7 +558,7 @@ class Controller:
                     print
 
         # Print errors
-        self._print_errors(errors)
+        self._print_errors(self.targets, errors)
 
         return len(errors) > 0
 
@@ -546,7 +578,7 @@ class Controller:
                 return False
             else:
                 # Print errors
-                self._print_errors(errors)
+                self._print_errors(targets, errors)
 
                 # Decide whether or not to retry
                 if retries == None:
@@ -624,11 +656,11 @@ class Controller:
 
         return results, errors
 
-    def _print_errors(self, errors):
+    def _print_errors(self, targets, errors):
         """ Print errors if they occured """
         if len(errors) > 0:
             print "Command failed on these hosts"
-            for target in self.targets:
+            for target in targets:
                 if target.address in errors:
                     print "%s: %s" % (target.address.ljust(16),
                             errors[target.address])
