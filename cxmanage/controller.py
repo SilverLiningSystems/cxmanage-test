@@ -497,11 +497,23 @@ class Controller:
 
     def info_dump(self):
         """ Dump info from all targets """
-        for target in self.targets:
-            print "[ Info dump from %s ]" % target.address
-            target.info_dump(self.tftp)
+        if self.verbosity >= 1:
+            print "Getting all info..."
+        results, errors = self._run_command(self.targets, "info_dump",
+                self.tftp)
 
-        return False
+        # Print results
+        if len(results) > 0:
+            for target in self.targets:
+                if target.address in results:
+                    print "[ Info dump from %s ]" % target.address
+                    print results[target.address]
+                    print
+
+        # Print errors
+        self._print_errors(self.targets, errors)
+
+        return len(errors) > 0
 
     def ipmitool_command(self, ipmitool_args):
         """ Run an arbitrary ipmitool command on all targets """

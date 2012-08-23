@@ -30,29 +30,27 @@
 
 from pkg_resources import resource_string
 
-def print_info_dump(tftp, target):
+def get_info_dump(tftp, target):
     """ Print the IPMI data available from the SoC. """
-    # See if we need a tftp server
-    chassis(tftp, target)
-    lan(tftp, target)
-    power(tftp, target)
-    event(tftp, target)
-    controller(tftp, target)
-    sdr(tftp, target)
-    sensor(tftp, target)
-    fru(tftp, target)
-    sel(tftp, target)
-    pef(tftp, target)
-    user(tftp, target)
-    channel(tftp, target)
-    session(tftp, target)
-    firmware(tftp, target)
-    fabric(tftp, target)
-
-    print_ubootenv(tftp, target)
-
-    print_cdb(target)
-    print_registers(target)
+    lines = [
+        chassis(tftp, target),
+        lan(tftp, target),
+        controller(tftp, target),
+        sdr(tftp, target),
+        sensor(tftp, target),
+        fru(tftp, target),
+        sel(tftp, target),
+        pef(tftp, target),
+        user(tftp, target),
+        channel(tftp, target),
+        #session(tftp, target),
+        firmware(tftp, target),
+        fabric(tftp, target),
+        get_ubootenv(tftp, target),
+        get_cdb(target),
+        get_registers(target)
+    ]
+    return '\n\n'.join(lines)
 
 def ipmitool(target, cmd):
     """ Run an ipmitool command on the target """
@@ -64,148 +62,183 @@ def ipmitool(target, cmd):
 
 def chassis(tftp, target):
     """ Print Chassis information. """
-    print '[ IPMI Chassis status ]'
-    print ipmitool(target, 'chassis status') + '\n'
-    print '[ IPMI Chassis Power status ]'
-    print ipmitool(target, 'chassis power status') + '\n'
-    #print '[ IPMI Chassis Restart Cause ]'
-    #print ipmitool(target, 'chassis restart-cause')
-    print '[ CXOEM Info ]'
-    print ipmitool(target, 'cxoem info basic') + '\n'
-    print ipmitool(target, 'cxoem info partnum') + '\n'
-    print ipmitool(target, 'cxoem info chassis') + '\n'
-    print ipmitool(target, 'cxoem info node') + '\n'
-    print '[ IPMI Chassis Boot parameters ]'
-    print ipmitool(target, 'chassis bootparam get 0') + '\n'
-    print ipmitool(target, 'chassis bootparam get 1') + '\n'
-    print ipmitool(target, 'chassis bootparam get 2') + '\n'
-    print ipmitool(target, 'chassis bootparam get 3') + '\n'
-    print ipmitool(target, 'chassis bootparam get 4') + '\n'
-    print ipmitool(target, 'chassis bootparam get 5') + '\n'
-    print ipmitool(target, 'chassis bootparam get 6') + '\n'
-    print ipmitool(target, 'chassis bootparam get 7') + '\n'
+    lines = [
+        '[ IPMI Chassis status ]',
+        ipmitool(target, 'chassis status') + '\n',
+        '[ IPMI Chassis Power status ]',
+        ipmitool(target, 'chassis power status') + '\n',
+        #'[ IPMI Chassis Restart Cause ]',
+        #ipmitool(target, 'chassis restart-cause'),
+        '[ CXOEM Info ]',
+        ipmitool(target, 'cxoem info basic') + '\n',
+        ipmitool(target, 'cxoem info partnum') + '\n',
+        ipmitool(target, 'cxoem info chassis') + '\n',
+        ipmitool(target, 'cxoem info node') + '\n',
+         '[ IPMI Chassis Boot parameters ]',
+        ipmitool(target, 'chassis bootparam get 0') + '\n',
+        ipmitool(target, 'chassis bootparam get 1') + '\n',
+        ipmitool(target, 'chassis bootparam get 2') + '\n',
+        ipmitool(target, 'chassis bootparam get 3') + '\n',
+        ipmitool(target, 'chassis bootparam get 4') + '\n',
+        ipmitool(target, 'chassis bootparam get 5') + '\n',
+        ipmitool(target, 'chassis bootparam get 6') + '\n',
+        ipmitool(target, 'chassis bootparam get 7')
+    ]
+    return '\n'.join(lines)
 
 def lan(tftp, target):
     """ Print LAN information. """
-    print '[ IPMI LAN Configuration ]'
-    print ipmitool(target, 'lan print') + '\n'
-    print '[ IPMI LAN Alerts ]'
-    print ipmitool(target, 'lan alert print') + '\n'
-    print '[ IPMI LAN Stats ]'
-    print ipmitool(target, 'lan stats get') + '\n'
-
-def power(tftp, target):
-    """ If there were power commands that it makes sense to issue, they would
-    be here. """
-    pass
-
-def event(tftp, target):
-    """ If there were event commands that it makes sense to issue, they would
-    be here. """
-    pass
+    lines = [
+        '[ IPMI LAN Configuration ]',
+        ipmitool(target, 'lan print') + '\n',
+        '[ IPMI LAN Alerts ]',
+        ipmitool(target, 'lan alert print') + '\n',
+        '[ IPMI LAN Stats ]',
+        ipmitool(target, 'lan stats get')
+    ]
+    return '\n'.join(lines)
 
 def controller(tftp, target):
     """ Print management controller information. """
-    print '[ IPMI BMC GUID ]'
-    print ipmitool(target, 'mc guid') + '\n'
-    #print '[ IPMI BMC Watchdog Timer ]'
-    #print ipmitool(target, 'mc watchdog get') + '\n'
-    print '[ IPMI BMC Global Enables ]'
-    print ipmitool(target, 'mc getenables') + '\n'
+    lines = [
+        '[ IPMI BMC GUID ]',
+        ipmitool(target, 'mc guid') + '\n',
+        #'[ IPMI BMC Watchdog Timer ]',
+        #ipmitool(target, 'mc watchdog get') + '\n',
+        '[ IPMI BMC Global Enables ]',
+        ipmitool(target, 'mc getenables')
+    ]
+    return '\n'.join(lines)
 
 def sdr(tftp, target):
     """ Print sensor data record information. """
-    print '[ IPMI Sensor Description Records ]'
-    print ipmitool(target, 'sdr') + '\n'
+    lines = [
+        '[ IPMI Sensor Description Records ]',
+        ipmitool(target, 'sdr')
+    ]
+    return '\n'.join(lines)
 
 def sensor(tftp, target):
     """ Print sensor information """
-    print '[ IPMI Sensors ]'
-    print ipmitool(target, 'sensor') + '\n'
+    lines = [
+        '[ IPMI Sensors ]',
+        ipmitool(target, 'sensor')
+    ]
+    return '\n'.join(lines)
 
 def fru(tftp, target):
     """ Print FRU information. """
-    print '[ IPMI FRU data records ]'
-    print ipmitool(target, 'fru') + '\n'
+    lines = [
+        '[ IPMI FRU data records ]',
+        ipmitool(target, 'fru')
+    ]
+    return '\n'.join(lines)
 
 def sel(tftp, target):
     """ Print event log. """
-    print '[ IPMI System Event Log ]'
-    print ipmitool(target, 'sel') + '\n'
+    lines = [
+        '[ IPMI System Event Log ]',
+        ipmitool(target, 'sel')
+    ]
+    return '\n'.join(lines)
 
 def pef(tftp, target):
     """ Print PEF information. """
-    print '[ IPMI Platform Event Filters ]'
-    print ipmitool(target, 'pef') + '\n'
+    lines = [
+        '[ IPMI Platform Event Filters ]',
+        ipmitool(target, 'pef')
+    ]
+    return '\n'.join(lines)
 
 def user(tftp, target):
     """ Print user information. """
-    print '[ IPMI Users ]'
-    print ipmitool(target, 'user list') + '\n'
+    lines = [
+        '[ IPMI Users ]',
+        ipmitool(target, 'user list')
+    ]
+    return '\n'.join(lines)
 
 def session(tftp, target):
     """ Print session information. """
-    # FIXME: This command seems to cause an mpu fault, so disable it for now.
-    # print '[ IPMI Sessions Info ]'
-    # print ipmitool(target, 'session info all') + '\n'
+    lines = [
+        # FIXME: This command seems to cause an mpu fault
+        #'[ IPMI Sessions Info ]',
+        #ipmitool(target, 'session info all')
+    ]
+    return '\n'.join(lines)
 
 def channel(tftp, target):
     """ Print channel information. """
-    #print '[ IPMI Channel Access ]'
-    #print ipmitool(target, 'channel getaccess')
-    print '[ IPMI Channel Info ]'
-    print ipmitool(target, 'channel info') + '\n'
-    #print '[ IPMI Channel Ciphers ]'
-    #print ipmitool(target, 'channel getciphers')
+    lines = [
+        #'[ IPMI Channel Access ]',
+        #ipmitool(target, 'channel getaccess'),
+        '[ IPMI Channel Info ]',
+        ipmitool(target, 'channel info')
+        #'[ IPMI Channel Ciphers ]',
+        #ipmitool(target, 'channel getciphers')
+    ]
+    return '\n'.join(lines)
 
 def firmware(tftp, target):
     """ Print firmware information. """
-    print '[ IPMI Firmware Info ]'
-    print ipmitool(target, 'cxoem fw info') + '\n'
+    lines = [
+        '[ IPMI Firmware Info ]',
+        ipmitool(target, 'cxoem fw info')
+    ]
+    return '\n'.join(lines)
 
 def fabric(tftp, target):
     """ Print the fabric-related data. """
-    print '[ CXOEM Fabric Data ]'
+    lines = [
+        '[ CXOEM Fabric Data ]'
+    ]
 
     ipinfo = []
     try:
         ipinfo = target.get_ipinfo(tftp)
         for entry in ipinfo:
-            print 'Node %i: %s' % entry
+            lines.append('Node %i: %s' % entry)
     except Exception as e:
-        print '%s: %s' % (e.__class__.__name__, e)
+        lines.append('%s: %s' % (e.__class__.__name__, e))
 
     try:
         macaddrs = target.get_macaddrs(tftp)
         for entry in macaddrs:
-            print 'Node %i, Port %i: %s' % entry
+            lines.append('Node %i, Port %i: %s' % entry)
     except Exception as e:
-        print '%s: %s' % (e.__class__.__name__, e)
+        lines.append('%s: %s' % (e.__class__.__name__, e))
 
     for entry in ipinfo:
         node_id = entry[0]
         for item in ['netmask', 'defgw', 'ipsrc']:
             value = ipmitool(target, 'cxoem fabric get %s node %i'
                     % (item, node_id))
-            print 'Node %i, %s: %s' % (node_id, item, value)
-    print
+            lines.append('Node %i, %s: %s' % (node_id, item, value))
+
+    return '\n'.join(lines)
 
 
-def print_ubootenv(tftp, target):
+def get_ubootenv(tftp, target):
     """ Print u-boot environment variables """
-    print '[ U-Boot Environment ]'
+    lines = [
+        '[ U-Boot Environment ]'
+    ]
+
     try:
         fwinfo = target.get_firmware_info()
         partition = target._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
         ubootenv = target._download_ubootenv(tftp, partition)
         for variable in sorted(ubootenv.variables):
-            print '%s=%s' % (variable, ubootenv.variables[variable])
+            lines.append('%s=%s' % (variable, ubootenv.variables[variable]))
     except Exception as e:
-        print '%s: %s' % (e.__class__.__name__, e)
-    print
+        lines.append('%s: %s' % (e.__class__.__name__, e))
 
-def print_cdb(target, cids=None):
+    return '\n'.join(lines)
+
+def get_cdb(target, cids=None):
     """ Print info for each CDB entry. """
+    lines = []
+
     if cids == None:
         string = resource_string('cxmanage', 'data/cids')
         cids = set()
@@ -215,25 +248,31 @@ def print_cdb(target, cids=None):
         cids = sorted(cids)
 
     for cid in cids:
-        print '[ CDB %s ]' % cid
+        lines.append('[ CDB %s ]' % cid)
         output = ipmitool(target, 'cxoem data cdb read 64 %s' % cid)
         size_lines = [x for x in output.split('\n')
                 if x.startswith('CID size')]
         value_lines = [x for x in output.split('\n') if x.startswith('Value')]
 
         if len(size_lines) == 1 and len(value_lines) == 1:
-            print 'CID size : %s' % size_lines[0].partition(':')[2].strip()
-            print 'Value    : %s' % value_lines[0].partition(':')[2].strip()
+            lines.append('CID size : %s' %
+                    size_lines[0].partition(':')[2].strip())
+            lines.append('Value    : %s' %
+                    value_lines[0].partition(':')[2].strip())
         else:
-            print output
-        print
+            lines.append(output)
+        lines.append('')
+
+    return '\n'.join(lines).rstrip()
 
 
-def print_registers(target, regfile=None):
+def get_registers(target, regfile=None):
     """ Print info for each register. """
-    register_ranges = get_register_ranges(regfile)
+    lines = [
+        '[ Memory dump ]'
+    ]
 
-    print '[ Memory dump ]'
+    register_ranges = get_register_ranges(regfile)
     for register_range in register_ranges:
         address = register_range[0]
         while address <= register_range[1]:
@@ -256,13 +295,15 @@ def print_registers(target, regfile=None):
 
                 # Print
                 for i in range(words_to_read):
-                    print 'Memory address %08x: %s' % (address + i * 4,
-                            values[i])
+                    lines.append('Memory address %08x: %s' % (address + i * 4,
+                            values[i]))
             except:
-                print 'Failed to read memory address %08x' % address
-                return
+                lines.append('Failed to read memory address %08x' % address)
+                return '\n'.join(lines)
 
             address += bytes_to_read
+
+    return '\n'.join(lines)
 
 def get_register_ranges(regfile=None):
     """ Get registers as a list of (start, end) ranges """

@@ -41,7 +41,7 @@ import time
 from cxmanage import CxmanageError
 from cxmanage.image import Image
 from cxmanage.ubootenv import UbootEnv
-from cxmanage.infodump import print_info_dump
+from cxmanage.infodump import get_info_dump
 
 from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC
@@ -341,7 +341,7 @@ class Target:
 
     def info_dump(self, tftp):
         """ Dump info from this target """
-        print_info_dump(tftp, self)
+        return get_info_dump(tftp, self)
 
     def ipmitool_command(self, ipmitool_args):
         """ Execute an arbitrary ipmitool command """
