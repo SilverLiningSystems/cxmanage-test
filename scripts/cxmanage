@@ -37,6 +37,7 @@ import argparse
 import os
 import pkgutil
 import sys
+import subprocess
 
 from cxmanage.controller import Controller
 
@@ -242,29 +243,52 @@ def validate_args(args):
 
 def main():
     """Get args and go"""
+    # Parse arguments
     parser = build_parser()
     args = parser.parse_args()
     validate_args(args)
 
+    # Set ipmitool path
     if args.ipmipath:
         if os.path.isdir(args.ipmipath):
             args.ipmipath = args.ipmipath.rstrip('/') + '/ipmitool'
         print args.ipmipath
         os.environ['IPMITOOL_PATH'] = args.ipmipath
 
+    # Check versions
+    check_versions()
+
+    # Make the controller
     verbosity = 1
     if args.verbose:
         verbosity = 2
     elif args.quiet:
         verbosity = 0
-
     controller = Controller(verbosity=verbosity, max_threads=args.threads,
             retries=args.retry)
 
+    # Set TFTP and add targets
     set_tftp(controller, args)
     add_targets(controller, args)
 
+    # Run the command
     sys.exit(args.func(controller, args))
+
+
+def check_versions():
+    """Check versions of dependencies"""
+    # Check ipmitool version
+    if 'IPMITOOL_PATH' in os.environ:
+        args = [os.environ['IPMITOOL_PATH'], '-V']
+    else:
+        args = ['ipmitool', '-V']
+    ipmitool_version = subprocess.check_output(args).split()[2]
+    if not '-cx' in ipmitool_version:
+        print ('ERROR: cxmanage is not compatible with IPMItool version %s\n'
+                % ipmitool_version)
+        print 'Please make sure a Calxeda extended version of IPMItool is available'
+        print 'in your PATH, or point to one with the --ipmipath argument.'
+        sys.exit(1)
 
 
 def set_tftp(controller, args):
