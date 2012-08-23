@@ -175,6 +175,7 @@ class Controller:
 
 
 ###########################  Targets-specific methods #########################
+
     def add_target(self, address, username, password):
         """ Add a target to the controller """
         for target in self.targets:
@@ -189,15 +190,23 @@ class Controller:
         targets = [self.target_class(x, username, password, self.verbosity)
                 for x in addresses]
 
+        # Get IP info
         if self.verbosity >= 1:
             print "Getting IP addresses..."
         results, errors = self._run_command(targets, "get_ipinfo", self.tftp)
 
+        # Add all resulting targets
         for target in targets:
             if target.address in results:
                 for ipinfo in results[target.address]:
                     self.add_target(ipinfo[1], username, password)
 
+        # Print results and errors
+        if self.verbosity >= 1:
+            print "Discovered the following IP addresses:"
+            for target in self.targets:
+                print target.address
+            print
         self._print_errors(targets, errors)
 
         return len(errors) > 0
@@ -207,11 +216,7 @@ class Controller:
     def power(self, mode):
         """ Send the given power command to all targets """
         if self.verbosity >= 1:
-            print "Sending power %s command to these hosts:" % mode
-            for target in self.targets:
-                print target.address
-            print
-
+            print "Sending power %s command..." % mode
         return self._retry_command("set_power", mode)
 
     def power_status(self):
@@ -241,11 +246,7 @@ class Controller:
     def power_policy(self, mode):
         """ Set the power policy for all targets """
         if self.verbosity >= 1:
-            print "Setting power policy on these hosts:"
-            for target in self.targets:
-                print target.address
-            print
-
+            print "Setting power policy to %s..." % mode
         return self._retry_command("set_power_policy", mode)
 
     def power_policy_status(self):
@@ -271,21 +272,13 @@ class Controller:
     def mc_reset(self):
         """ Send an MC reset command to all targets """
         if self.verbosity >= 1:
-            print "Sending MC reset command to these hosts:"
-            for target in self.targets:
-                print target.address
-            print
-
+            print "Sending MC reset command..."
         return self._retry_command("mc_reset")
 
     def update_firmware(self, partition_arg="INACTIVE"):
         """ Send firmware update commands to all targets """
         if self.verbosity >= 1:
-            print "Updating firmware on these hosts:"
-            for target in self.targets:
-                print target.address
-            print
-
+            print "Updating firmware..."
         return self._retry_command("update_firmware", self.tftp, self.images,
                 partition_arg)
 
@@ -418,11 +411,7 @@ class Controller:
     def config_reset(self):
         """ Send config reset command to all targets """
         if self.verbosity >= 1:
-            print "Resetting configuration on these hosts:"
-            for target in self.targets:
-                print target.address
-            print
-
+            print "Sending config reset command..."
         return self._retry_command("config_reset", self.tftp)
 
     def config_boot(self, boot_args):
@@ -436,11 +425,7 @@ class Controller:
             return True
 
         if self.verbosity >= 1:
-            print "Setting boot order on these hosts:"
-            for target in self.targets:
-                print target.address
-            print
-
+            print "Setting boot order..."
         return self._retry_command("set_boot_order", self.tftp, boot_args)
 
     def config_boot_status(self):
