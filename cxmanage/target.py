@@ -80,9 +80,11 @@ class Target:
 
         # Send ipinfo command
         try:
-            self.bmc.get_fabric_ipinfo(basename, tftp_address)
+            result = self.bmc.get_fabric_ipinfo(basename, tftp_address)
         except IpmiError as e:
             raise CxmanageError(self._parse_ipmierror(e))
+        if hasattr(result, "error"):
+            raise CxmanageError(result.error)
 
         # Wait for file
         for a in range(10):
@@ -125,9 +127,11 @@ class Target:
 
         # Send ipinfo command
         try:
-            self.bmc.get_fabric_macaddresses(basename, tftp_address)
+            result = self.bmc.get_fabric_macaddresses(basename, tftp_address)
         except IpmiError as e:
             raise CxmanageError(self._parse_ipmierror(e))
+        if hasattr(result, "error"):
+            raise CxmanageError(result.error)
 
         # Wait for file
         for a in range(10):
@@ -193,7 +197,7 @@ class Target:
         try:
             result = self.bmc.mc_reset("cold")
             if hasattr(result, "error"):
-                raise CxmanageError("Failed to send MC reset command")
+                raise CxmanageError(result.error)
         except IpmiError as e:
             raise CxmanageError(self._parse_ipmierror(e))
 
@@ -298,7 +302,7 @@ class Target:
             # Reset CDB
             result = self.bmc.reset_firmware()
             if hasattr(result, "error"):
-                raise CxmanageError("Failed to reset configuration")
+                raise CxmanageError(result.error)
 
             # Reset ubootenv
             fwinfo = self.get_firmware_info()
@@ -336,7 +340,7 @@ class Target:
         """ Get basic SoC info from this target """
         result = self.bmc.get_info_basic()
         if hasattr(result, "error"):
-            raise CxmanageError("Failed to retrieve SoC info")
+            raise CxmanageError(result.error)
         return result
 
     def info_dump(self, tftp):
