@@ -333,7 +333,8 @@ def add_targets(controller, args):
     # Add hosts to controller
     if args.all_nodes:
         if controller.add_fabrics(hosts, args.user, args.password):
-            print "ERROR: Failed to get IP addresses. Aborting.\n"
+            print "ERROR: Failed to get IP info from all hosts. Aborting."
+            print
             sys.exit(1)
     else:
         for host in hosts:
