@@ -87,7 +87,7 @@ class Controller:
 ###########################  Images-specific methods ##########################
 
     def add_image(self, filename, image_type, simg=None,
-            priority=None, daddr=None, skip_crc32=False):
+            priority=None, daddr=None, skip_crc32=False, version=None):
         """ Add an image to our collection """
         if image_type == "PACKAGE":
             # Extract files and read config
@@ -109,6 +109,7 @@ class Controller:
                 image_priority = priority
                 image_daddr = daddr
                 image_skip_crc32 = skip_crc32
+                image_version = version
 
                 # Read image options from config
                 if simg == None and config.has_option(section, "simg"):
@@ -120,14 +121,17 @@ class Controller:
                 if (skip_crc32 == False and
                         config.has_option(section, "skip_crc32")):
                     image_skip_crc32 = config.getboolean(section, "skip_crc32")
+                if version == None and config.has_option(section, "versionstr"):
+                    image_version = config.get(section, "versionstr")
 
                 image = self.image_class(filename, image_type, image_simg,
-                        image_priority, image_daddr, image_skip_crc32)
+                        image_priority, image_daddr, image_skip_crc32,
+                        image_version)
                 self.images.append(image)
 
         else:
             image = self.image_class(filename, image_type,
-                    simg, priority, daddr, skip_crc32)
+                    simg, priority, daddr, skip_crc32, version)
             self.images.append(image)
 
     def save_package(self, filename):
@@ -145,6 +149,8 @@ class Controller:
                 config.set(section, "daddr", "%x" % image.daddr)
             if image.skip_crc32:
                 config.set(section, "skip_crc32", str(image.skip_crc32))
+            if image.version != None:
+                config.set(section, "versionstr", image.version)
         manifest = open("%s/MANIFEST" % self.work_dir, "w")
         config.write(manifest)
         manifest.close()
@@ -173,6 +179,8 @@ class Controller:
                 print "Daddr: %x" % image.daddr
             if image.skip_crc32:
                 print "Skip CRC32: %s" % image.skip_crc32
+            if image.version != None:
+                print "Version: %s" % image.version
             print
 
 
@@ -326,6 +334,7 @@ class Controller:
                     print "Priority           : %s" % partition.priority
                     print "Daddr              : %s" % partition.daddr
                     print "Flags              : %s" % partition.flags
+                    print "Version            : %s" % partition.version
                     print "In Use             : %s" % partition.in_use
                     print
 

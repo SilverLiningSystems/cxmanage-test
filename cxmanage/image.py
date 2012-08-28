@@ -42,12 +42,13 @@ class Image:
     to build an SIMG out of it. """
 
     def __init__(self, filename, image_type, simg=None,
-            priority=None, daddr=None, skip_crc32=False):
+            priority=None, daddr=None, skip_crc32=False, version=None):
         self.filename = filename
         self.type = image_type
         self.priority = priority
         self.daddr = daddr
         self.skip_crc32 = skip_crc32
+        self.version = version
 
         if not os.path.exists(filename):
             raise ValueError("File %s does not exist" % filename)
@@ -79,7 +80,8 @@ class Image:
             # Create simg
             align = (self.type in ["CDB", "BOOT_LOG"])
             simg = create_simg(contents, priority=priority, daddr=daddr,
-                    skip_crc32=self.skip_crc32, align=align)
+                    skip_crc32=self.skip_crc32, align=align,
+                    version=self.version)
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(simg)
 

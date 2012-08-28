@@ -35,21 +35,26 @@ import struct
 
 from cxmanage.crc32 import get_crc32
 
+HEADER_LENGTH = 60
+MIN_HEADER_LENGTH = 28
+
 class SIMGHeader:
     """ Container for an SIMG header """
 
     def __init__(self, header_string=None):
         if header_string == None:
             self.magic_string = 'SIMG'
-            self.hdrfmt = 0
+            self.hdrfmt = 2
             self.priority = 0
-            self.imgoff = 28
+            self.imgoff = HEADER_LENGTH
             self.imglen = 0
             self.daddr = 0
             self.flags = 0
             self.crc32 = 0
+            self.version = ''
         else:
-            tup = struct.unpack('<4sHHIIIII', header_string)
+            header_string = header_string.ljust(HEADER_LENGTH, chr(0))
+            tup = struct.unpack('<4sHHIIIII32s', header_string)
             self.magic_string = tup[0]
             self.hdrfmt = tup[1]
             self.priority = tup[2]
@@ -58,9 +63,13 @@ class SIMGHeader:
             self.daddr = tup[5]
             self.flags = tup[6]
             self.crc32 = tup[7]
+            if self.hdrfmt >= 2:
+                self.version = tup[8]
+            else:
+                self.version = ''
 
     def __str__(self):
-        return struct.pack('<4sHHIIIII',
+        return struct.pack('<4sHHIIIII32s',
                 self.magic_string,
                 self.hdrfmt,
                 self.priority,
@@ -68,15 +77,21 @@ class SIMGHeader:
                 self.imglen,
                 self.daddr,
                 self.flags,
-                self.crc32)
+                self.crc32,
+                self.version)
 
 
-def create_simg(contents, priority=0, daddr=0, skip_crc32=False, align=False):
+def create_simg(contents, priority=0, daddr=0, skip_crc32=False, align=False,
+        version=None):
     """Create an SIMG version of a file"""
+    if version == None:
+        version = ''
+
     header = SIMGHeader()
     header.priority = priority
     header.imglen = len(contents)
     header.daddr = daddr
+    header.version = version
 
     if align:
         header.imgoff = 4096
@@ -85,7 +100,7 @@ def create_simg(contents, priority=0, daddr=0, skip_crc32=False, align=False):
     if skip_crc32:
         crc32 = 0
     else:
-        crc32 = get_crc32(contents, get_crc32(str(header)))
+        crc32 = get_crc32(contents, get_crc32(str(header)[:MIN_HEADER_LENGTH]))
 
     # Get SIMG header
     header.flags = 0xFFFFFFFF
@@ -97,9 +112,9 @@ def create_simg(contents, priority=0, daddr=0, skip_crc32=False, align=False):
 def has_simg(simg):
     """Return true if this string has an SIMG header"""
 
-    if len(simg) < 28:
+    if len(simg) < MIN_HEADER_LENGTH:
         return False
-    header = SIMGHeader(simg[:28])
+    header = SIMGHeader(simg[:HEADER_LENGTH])
 
     # Check for magic word
     return header.magic_string == 'SIMG'
@@ -110,10 +125,10 @@ def valid_simg(simg):
 
     if not has_simg(simg):
         return False
-    header = SIMGHeader(simg[:28])
+    header = SIMGHeader(simg[:HEADER_LENGTH])
 
     # Check offset
-    if header.imgoff < 28:
+    if header.imgoff < MIN_HEADER_LENGTH:
         return False
 
     # Check length
@@ -128,7 +143,8 @@ def valid_simg(simg):
     if crc32 != 0:
         header.flags = 0
         header.crc32 = 0
-        if crc32 != get_crc32(contents, get_crc32(str(header))):
+        if crc32 != get_crc32(contents,
+                get_crc32(str(header)[:MIN_HEADER_LENGTH])):
             return False
 
     return True
@@ -139,7 +155,7 @@ def get_simg_header(simg):
     if not valid_simg(simg):
         raise ValueError("Failed to read invalid SIMG")
 
-    return SIMGHeader(simg[:28])
+    return SIMGHeader(simg[:HEADER_LENGTH])
 
 
 def get_simg_contents(simg):
