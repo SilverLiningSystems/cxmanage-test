@@ -76,7 +76,7 @@ def build_parser():
             default=False, action='store_true')
     simg_args.add_argument('--skip-simg', help='Skip addition of SIMG header',
             default=False, action='store_true')
-    add.add_argument('-v', '--version', help='Version for SIMG header',
+    add.add_argument('-v', '--priority', help='Priority for SIMG header',
             default=None, type=int)
     add.add_argument('-d', '--daddr', help='Destination address for SIMG',
             default=None, type=lambda x : int(x, 16))
@@ -92,8 +92,8 @@ def build_parser():
 def validate_args(args):
     """ Bail out if the arguments don't make sense"""
     if args.func == add_command:
-        if args.skip_simg and args.version:
-            sys.exit('Invalid argument --version when supplied with --skip-simg')
+        if args.skip_simg and args.priority:
+            sys.exit('Invalid argument --priority when supplied with --skip-simg')
         if args.skip_simg and args.daddr:
             sys.exit('Invalid argument --daddr when supplied with --skip-simg')
         if args.skip_simg and args.skip_crc32:
@@ -128,7 +128,7 @@ def add_command(controller, args):
         simg = True
 
     controller.add_image(args.filename, args.image_type,
-            simg, args.version, args.daddr, args.skip_crc32)
+            simg, args.priority, args.daddr, args.skip_crc32)
 
     controller.save_package(args.package)
 

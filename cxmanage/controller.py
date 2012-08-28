@@ -87,7 +87,7 @@ class Controller:
 ###########################  Images-specific methods ##########################
 
     def add_image(self, filename, image_type, simg=None,
-            version=None, daddr=None, skip_crc32=False):
+            priority=None, daddr=None, skip_crc32=False):
         """ Add an image to our collection """
         if image_type == "PACKAGE":
             # Extract files and read config
@@ -106,15 +106,15 @@ class Controller:
                 filename = "%s/%s" % (self.work_dir, section)
                 image_type = config.get(section, "type").upper()
                 image_simg = simg
-                image_version = version
+                image_priority = priority
                 image_daddr = daddr
                 image_skip_crc32 = skip_crc32
 
                 # Read image options from config
                 if simg == None and config.has_option(section, "simg"):
                     image_simg = config.getboolean(section, "simg")
-                if version == None and config.has_option(section, "version"):
-                    image_version = config.getint(section, "version")
+                if priority == None and config.has_option(section, "priority"):
+                    image_priority = config.getint(section, "priority")
                 if daddr == None and config.has_option(section, "daddr"):
                     image_daddr = int(config.get(section, "daddr"), 16)
                 if (skip_crc32 == False and
@@ -122,12 +122,12 @@ class Controller:
                     image_skip_crc32 = config.getboolean(section, "skip_crc32")
 
                 image = self.image_class(filename, image_type, image_simg,
-                        image_version, image_daddr, image_skip_crc32)
+                        image_priority, image_daddr, image_skip_crc32)
                 self.images.append(image)
 
         else:
             image = self.image_class(filename, image_type,
-                    simg, version, daddr, skip_crc32)
+                    simg, priority, daddr, skip_crc32)
             self.images.append(image)
 
     def save_package(self, filename):
@@ -139,8 +139,8 @@ class Controller:
             config.add_section(section)
             config.set(section, "type", image.type)
             config.set(section, "simg", str(image.simg))
-            if image.version != None:
-                config.set(section, "version", str(image.version))
+            if image.priority != None:
+                config.set(section, "priority", str(image.priority))
             if image.daddr != None:
                 config.set(section, "daddr", "%x" % image.daddr)
             if image.skip_crc32:
@@ -167,8 +167,8 @@ class Controller:
             print "File: %s" % os.path.basename(image.filename)
             print "Type: %s" % image.type
             print "SIMG: %s" % image.simg
-            if image.version != None:
-                print "Version: %i" % image.version
+            if image.priority != None:
+                print "Priority: %i" % image.priority
             if image.daddr != None:
                 print "Daddr: %x" % image.daddr
             if image.skip_crc32:
@@ -323,7 +323,7 @@ class Controller:
                     print "Type               : %s" % partition.type
                     print "Offset             : %s" % partition.offset
                     print "Size               : %s" % partition.size
-                    print "Version            : %s" % partition.version
+                    print "Priority           : %s" % partition.priority
                     print "Daddr              : %s" % partition.daddr
                     print "Flags              : %s" % partition.flags
                     print "In Use             : %s" % partition.in_use

@@ -226,6 +226,14 @@ class Target:
             if len(fwinfo) == 0:
                 raise CxmanageError("Failed to retrieve firmware info")
 
+            # For compatibility with old ipmitool versions, make sure
+            # we have a "priority" field. It used to be called "version"
+            for entry in fwinfo:
+                if not hasattr(entry, "priority"):
+                    entry.priority = entry.version
+                    entry.version = "Unknown"
+
+            # TODO: remove this later
             # Flag CDB as "in use" based on socman info
             for a in range(1, len(fwinfo)):
                 previous = fwinfo[a-1]
@@ -246,17 +254,17 @@ class Target:
         """ Update firmware on this target. """
         fwinfo = self.get_firmware_info()
 
-        # Get the new version
-        version = 0
+        # Get the new priority
+        priority = 0
         image_types = [x.type for x in images]
         for partition in fwinfo:
             # Make sure this partition is one of the types we're updating
             # and that the partition is flagged as "active"
             if (partition.type.split()[1][1:-1] in image_types and
                     int(partition.flags, 16) & 2 == 0):
-                version = max(version, int(partition.version, 16) + 1)
-        if version > 0xFFFF:
-            raise CxmanageError("Unable to increment SIMG version, too high")
+                priority = max(priority, int(partition.priority, 16) + 1)
+        if priority > 0xFFFF:
+            raise CxmanageError("Unable to increment SIMG priority, too high")
 
         for image in images:
             if image.type == "UBOOTENV":
@@ -275,12 +283,12 @@ class Target:
                     ubootenv = self.ubootenv_class(contents)
                     ubootenv.variables["bootcmd_default"] = bootcmd
                     self._upload_ubootenv(tftp, ubootenv,
-                            running_part, version)
+                            running_part, priority)
                 else:
-                    self._upload_image(tftp, image, running_part, version)
+                    self._upload_image(tftp, image, running_part, priority)
 
                 # Update factory ubootenv
-                self._upload_image(tftp, image, factory_part, version)
+                self._upload_image(tftp, image, factory_part, priority)
 
             else:
                 # Get the partitions
@@ -294,7 +302,7 @@ class Target:
 
                 # Update the image
                 for partition in partitions:
-                    self._upload_image(tftp, image, partition, version)
+                    self._upload_image(tftp, image, partition, priority)
 
     def config_reset(self, tftp):
         """ Reset configuration to factory default """
@@ -326,8 +334,8 @@ class Target:
         # Download active ubootenv, modify, then upload to first partition
         ubootenv = self._download_ubootenv(tftp, active_part)
         ubootenv.set_boot_order(boot_args)
-        version = max(int(x.version, 16) for x in [first_part, active_part])
-        self._upload_ubootenv(tftp, ubootenv, first_part, version)
+        priority = max(int(x.priority, 16) for x in [first_part, active_part])
+        self._upload_ubootenv(tftp, ubootenv, first_part, priority)
 
     def get_boot_order(self, tftp):
         """ Get boot order """
@@ -389,39 +397,39 @@ class Target:
         elif partition_arg == "OLDEST":
             # Return the oldest partition
             partitions.sort(key=lambda x: x.partition, reverse=True)
-            partitions.sort(key=lambda x: x.version)
+            partitions.sort(key=lambda x: x.priority)
             return partitions[0]
         elif partition_arg == "NEWEST":
             # Return the newest partition
             partitions.sort(key=lambda x: x.partition)
-            partitions.sort(key=lambda x: x.version, reverse=True)
+            partitions.sort(key=lambda x: x.priority, reverse=True)
             return partitions[0]
         elif partition_arg == "INACTIVE":
             # Return the partition that's not in use (or least likely to be)
             partitions.sort(key=lambda x: x.partition, reverse=True)
-            partitions.sort(key=lambda x: x.version)
+            partitions.sort(key=lambda x: x.priority)
             partitions.sort(key=lambda x: int(x.flags, 16) & 2 == 0)
             partitions.sort(key=lambda x: x.in_use == "1")
             return partitions[0]
         elif partition_arg == "ACTIVE":
             # Return the partition that's in use (or most likely to be)
             partitions.sort(key=lambda x: x.partition)
-            partitions.sort(key=lambda x: x.version, reverse=True)
+            partitions.sort(key=lambda x: x.priority, reverse=True)
             partitions.sort(key=lambda x: int(x.flags, 16) & 2 == 1)
             partitions.sort(key=lambda x: x.in_use == "0")
             return partitions[0]
         else:
             raise ValueError("Invalid partition argument: %s" % partition_arg)
 
-    def _upload_image(self, tftp, image, partition, version=None):
+    def _upload_image(self, tftp, image, partition, priority=None):
         """ Upload a single image. This includes uploading the image,
         performing the firmware update, crc32 check, and activation."""
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
         partition_id = int(partition.partition)
-        if version == None:
-            version = int(partition.version, 16)
+        if priority == None:
+            priority = int(partition.priority, 16)
         daddr = int(partition.daddr, 16)
 
         # Check image size
@@ -430,7 +438,7 @@ class Target:
                     image.type, partition_id)
 
         # Upload image to tftp server
-        filename = image.upload(self.work_dir, tftp, version, daddr)
+        filename = image.upload(self.work_dir, tftp, priority, daddr)
 
         # Send firmware update command
         image_type = image.type
@@ -468,12 +476,12 @@ class Target:
 
         return Image(filename, image_type)
 
-    def _upload_ubootenv(self, tftp, ubootenv, partition, version=None):
+    def _upload_ubootenv(self, tftp, ubootenv, partition, priority=None):
         """ Upload a uboot environment to the target """
         filename = tempfile.mkstemp(prefix="%s/env_" % self.work_dir)[1]
         open(filename, "w").write(ubootenv.get_contents())
         image = Image(filename, "UBOOTENV")
-        self._upload_image(tftp, image, partition, version)
+        self._upload_image(tftp, image, partition, priority)
 
     def _download_ubootenv(self, tftp, partition):
         """ Download a uboot environment from the target """

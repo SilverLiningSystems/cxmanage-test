@@ -57,7 +57,7 @@ class ImageTest(unittest.TestCase):
         """ Test image creation and upload """
 
         imglen = 1024
-        version = 1
+        priority = 1
         daddr = 12345
 
         # Create image
@@ -67,7 +67,7 @@ class ImageTest(unittest.TestCase):
 
         # Upload image and delete file
         image_filename = image.upload(self.work_dir,
-                self.tftp, version, daddr)
+                self.tftp, priority, daddr)
         os.remove(filename)
 
         # Download image
@@ -77,7 +77,7 @@ class ImageTest(unittest.TestCase):
         # Examine image
         simg = open(filename).read()
         header = get_simg_header(simg)
-        self.assertEqual(header.version, version)
+        self.assertEqual(header.priority, priority)
         self.assertEqual(header.imglen, imglen)
         self.assertEqual(header.daddr, daddr)
         self.assertEqual(simg[header.imgoff:], contents)

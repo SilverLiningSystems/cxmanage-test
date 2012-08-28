@@ -42,10 +42,10 @@ class Image:
     to build an SIMG out of it. """
 
     def __init__(self, filename, image_type, simg=None,
-            version=None, daddr=None, skip_crc32=False):
+            priority=None, daddr=None, skip_crc32=False):
         self.filename = filename
         self.type = image_type
-        self.version = version
+        self.priority = priority
         self.daddr = daddr
         self.skip_crc32 = skip_crc32
 
@@ -62,7 +62,7 @@ class Image:
             raise CxmanageError("%s is not a valid %s image" %
                     (os.path.basename(filename), image_type))
 
-    def upload(self, work_dir, tftp, version, daddr):
+    def upload(self, work_dir, tftp, priority, daddr):
         """ Create and upload an SIMG file """
         filename = self.filename
 
@@ -70,15 +70,15 @@ class Image:
         if not self.simg:
             contents = open(filename).read()
 
-            # Figure out version and daddr
-            if self.version != None:
-                version = self.version
+            # Figure out priority and daddr
+            if self.priority != None:
+                priority = self.priority
             if self.daddr != None:
                 daddr = self.daddr
 
             # Create simg
             align = (self.type in ["CDB", "BOOT_LOG"])
-            simg = create_simg(contents, version=version, daddr=daddr,
+            simg = create_simg(contents, priority=priority, daddr=daddr,
                     skip_crc32=self.skip_crc32, align=align)
             filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
             open(filename, "w").write(simg)

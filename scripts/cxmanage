@@ -156,8 +156,8 @@ def build_parser():
     p['simg_args'].add_argument('--skip-simg',
             help='Skip addition of SIMG header',
             default=False, action='store_true')
-    p['fwupdate'].add_argument('--version',
-            help='Version for SIMG header', default=None, type=int)
+    p['fwupdate'].add_argument('--priority',
+            help='Priority for SIMG header', default=None, type=int)
     p['fwupdate'].add_argument('-d', '--daddr',
             help='Destination address for SIMG',
             default=None, type=lambda x : int(x, 16))
@@ -234,8 +234,8 @@ def validate_args(args):
     if args.threads < 1:
         sys.exit('ERROR: --threads must be at least 1')
     if args.func == fwupdate_command:
-        if args.skip_simg and args.version:
-            sys.exit('Invalid argument --version when supplied with --skip-simg')
+        if args.skip_simg and args.priority:
+            sys.exit('Invalid argument --priority when supplied with --skip-simg')
         if args.skip_simg and args.daddr:
             sys.exit('Invalid argument --daddr when supplied with --skip-simg')
         if args.skip_simg and args.skip_crc32:
@@ -439,7 +439,7 @@ def fwupdate_command(controller, args):
 
     # Add image
     controller.add_image(args.filename, args.image_type,
-            simg, args.version, args.daddr, args.skip_crc32)
+            simg, args.priority, args.daddr, args.skip_crc32)
 
     # Print all_nodes warning/confirmation
     if not args.all_nodes:

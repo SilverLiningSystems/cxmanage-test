@@ -42,7 +42,7 @@ class SIMGHeader:
         if header_string == None:
             self.magic_string = 'SIMG'
             self.hdrfmt = 0
-            self.version = 0
+            self.priority = 0
             self.imgoff = 28
             self.imglen = 0
             self.daddr = 0
@@ -52,7 +52,7 @@ class SIMGHeader:
             tup = struct.unpack('<4sHHIIIII', header_string)
             self.magic_string = tup[0]
             self.hdrfmt = tup[1]
-            self.version = tup[2]
+            self.priority = tup[2]
             self.imgoff = tup[3]
             self.imglen = tup[4]
             self.daddr = tup[5]
@@ -63,7 +63,7 @@ class SIMGHeader:
         return struct.pack('<4sHHIIIII',
                 self.magic_string,
                 self.hdrfmt,
-                self.version,
+                self.priority,
                 self.imgoff,
                 self.imglen,
                 self.daddr,
@@ -71,14 +71,10 @@ class SIMGHeader:
                 self.crc32)
 
 
-def create_simg(contents, version=0, daddr=0, skip_crc32=False, align=False):
-    """Create an SIMG version of a file
-
-    Assumes version and hdrfmt are 0.
-    """
-
+def create_simg(contents, priority=0, daddr=0, skip_crc32=False, align=False):
+    """Create an SIMG version of a file"""
     header = SIMGHeader()
-    header.version = version
+    header.priority = priority
     header.imglen = len(contents)
     header.daddr = daddr
 

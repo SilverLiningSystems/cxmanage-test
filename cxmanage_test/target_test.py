@@ -389,18 +389,18 @@ class DummyBMC(LanBMC):
 
 class Partition:
     def __init__(self, partition, type, offset=0,
-            size=0, version=0, daddr=0, in_use=None):
+            size=0, priority=0, daddr=0, in_use=None):
         self.updates = 0
         self.retrieves = 0
         self.checks = 0
         self.activates = 0
         self.fwinfo = FWInfoEntry(partition, type, offset,
-                size, version, daddr, in_use)
+                size, priority, daddr, in_use)
 
 class FWInfoEntry:
     """ Firmware info for a single partition """
     def __init__(self, partition, type, offset=0,
-            size=0, version=0, daddr=0, in_use=None):
+            size=0, priority=0, daddr=0, in_use=None):
         self.partition = "%2i" % partition
         self.type = {
                 2: "02 (S2_ELF)",
@@ -410,7 +410,7 @@ class FWInfoEntry:
             }[type]
         self.offset = "%8x" % offset
         self.size = "%8x" % size
-        self.version = "%8x" % version
+        self.priority = "%8x" % priority
         self.daddr = "%8x" % daddr
         self.in_use = {None: "Unknown", True: "1", False: "0"}[in_use]
         self.flags = "fffffffd"
