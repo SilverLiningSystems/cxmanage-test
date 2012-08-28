@@ -164,6 +164,8 @@ def build_parser():
     p['fwupdate'].add_argument('--skip-crc32',
             help='Skip crc32 calculation for SIMG',
             default=False, action='store_true')
+    p['fwupdate'].add_argument('--version',
+            help='Version for SIMG header', default=None)
     p['fwupdate'].set_defaults(func=fwupdate_command)
 
     #fwinfo command
@@ -240,6 +242,8 @@ def validate_args(args):
             sys.exit('Invalid argument --daddr when supplied with --skip-simg')
         if args.skip_simg and args.skip_crc32:
             sys.exit('Invalid argument --skip-crc32 when supplied with --skip-simg')
+        if args.skip_simg and args.version:
+            sys.exit('Invalid argument --version when supplied with --skip-simg')
 
 def main():
     """Get args and go"""
@@ -438,8 +442,8 @@ def fwupdate_command(controller, args):
         simg = True
 
     # Add image
-    controller.add_image(args.filename, args.image_type,
-            simg, args.priority, args.daddr, args.skip_crc32)
+    controller.add_image(args.filename, args.image_type, simg, args.priority,
+            args.daddr, args.skip_crc32, args.version)
 
     # Print all_nodes warning/confirmation
     if not args.all_nodes:

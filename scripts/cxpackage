@@ -82,6 +82,7 @@ def build_parser():
             default=None, type=lambda x : int(x, 16))
     add.add_argument('--skip-crc32', help='Skip crc32 calculation for SIMG',
             default=False, action='store_true')
+    add.add_argument('--version', help='Version for SIMG header', default=None)
     add.add_argument('filename', help='image path')
     add.set_defaults(func=add_command)
 
@@ -98,6 +99,8 @@ def validate_args(args):
             sys.exit('Invalid argument --daddr when supplied with --skip-simg')
         if args.skip_simg and args.skip_crc32:
             sys.exit('Invalid argument --skip-crc32 when supplied with --skip-simg')
+        if args.skip_simg and args.version:
+            sys.exit('Invalid argument --version when supplied with --skip-simg')
 
 def main():
     """Get args and go"""
@@ -127,8 +130,8 @@ def add_command(controller, args):
     elif args.skip_simg:
         simg = True
 
-    controller.add_image(args.filename, args.image_type,
-            simg, args.priority, args.daddr, args.skip_crc32)
+    controller.add_image(args.filename, args.image_type, simg, args.priority,
+            args.daddr, args.skip_crc32, args.version)
 
     controller.save_package(args.package)
 
