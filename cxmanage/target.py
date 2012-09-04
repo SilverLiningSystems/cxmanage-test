@@ -493,6 +493,7 @@ class Target:
 
     def _wait_for_transfer(self, handle):
         """ Wait for a firmware transfer to finish"""
+        counter = 0
 
         while True:
             time.sleep(1)
@@ -501,6 +502,12 @@ class Target:
                 raise CxmanageError("Unable to retrieve transfer info")
             if result.status != "In progress":
                 break
+
+            # Time out after 5 minutes
+            counter += 1
+            if counter >= 300:
+                raise CxmanageError("Transfer timed out after 5 minutes")
+
         if result.status != "Complete":
             raise CxmanageError("Node reported transfer failure")
 
