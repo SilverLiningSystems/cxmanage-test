@@ -440,22 +440,27 @@ class Target:
         # Upload image to tftp server
         filename = image.upload(self.work_dir, tftp, priority, daddr)
 
-        # Send firmware update command
-        image_type = image.type
-        result = self.bmc.update_firmware(filename,
-                partition_id, image_type, tftp_address)
-        handle = result.tftp_handle_id
+        errors = 0
+        while True:
+            try:
+                # Update the firmware
+                handle = self.bmc.update_firmware(filename,
+                        partition_id, image.type, tftp_address).tftp_handle_id
+                self._wait_for_transfer(handle)
 
-        # Wait for update to finish
-        self._wait_for_transfer(handle)
+                # Verify crc and activate
+                result = self.bmc.check_firmware(partition_id)
+                if hasattr(result, "crc32") and result.error == None:
+                    self.bmc.activate_firmware(partition_id)
+                else:
+                    raise CxmanageError("Node reported crc32 check failure")
 
-        # Verify crc
-        result = self.bmc.check_firmware(partition_id)
-        if hasattr(result, "crc32") and result.error == None:
-            # Activate
-            self.bmc.activate_firmware(partition_id)
-        else:
-            raise CxmanageError("Node reported crc32 check failure")
+                break
+
+            except CxmanageError as e:
+                errors += 1
+                if errors >= 3:
+                    raise e
 
     def _download_image(self, tftp, partition):
         """ Download an image from the target.
@@ -503,10 +508,10 @@ class Target:
             if result.status != "In progress":
                 break
 
-            # Time out after 5 minutes
+            # Time out after 3 minutes
             counter += 1
-            if counter >= 300:
-                raise CxmanageError("Transfer timed out after 5 minutes")
+            if counter >= 180:
+                raise CxmanageError("Transfer timed out after 3 minutes")
 
         if result.status != "Complete":
             raise CxmanageError("Node reported transfer failure")
