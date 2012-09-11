@@ -444,9 +444,11 @@ class Target:
         while True:
             try:
                 # Update the firmware
-                handle = self.bmc.update_firmware(filename,
-                        partition_id, image.type, tftp_address).tftp_handle_id
-                self._wait_for_transfer(handle)
+                result = self.bmc.update_firmware(filename,
+                        partition_id, image.type, tftp_address)
+                if hasattr(result, "fw_error") and result.fw_error != None:
+                    raise CxmanageError(result.fw_error)
+                self._wait_for_transfer(result.tftp_handle_id)
 
                 # Verify crc and activate
                 result = self.bmc.check_firmware(partition_id)
@@ -474,9 +476,21 @@ class Target:
         basename = os.path.basename(filename)
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
-        handle = self.bmc.retrieve_firmware(basename, partition_id,
-                image_type, tftp_address).tftp_handle_id
-        self._wait_for_transfer(handle)
+
+        errors = 0
+        while True:
+            try:
+                result = self.bmc.retrieve_firmware(basename, partition_id,
+                        image_type, tftp_address)
+                if hasattr(result, "fw_error") and result.fw_error != None:
+                    raise CxmanageError(result.fw_error)
+                self._wait_for_transfer(result.tftp_handle_id)
+                break
+            except CxmanageError as e:
+                errors += 1
+                if errors >= 3:
+                    raise e
+
         tftp.get_file(basename, filename)
 
         return Image(filename, image_type)
@@ -506,7 +520,6 @@ class Target:
 
         while result.status == "In progress":
             if time.time() >= deadline:
-                self.bmc.cancel_firmware(handle)
                 raise CxmanageError("Transfer timed out after 3 minutes")
 
             time.sleep(1)
