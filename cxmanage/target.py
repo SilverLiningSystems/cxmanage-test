@@ -498,20 +498,22 @@ class Target:
 
     def _wait_for_transfer(self, handle):
         """ Wait for a firmware transfer to finish"""
-        counter = 0
+        deadline = time.time() + 180
 
-        while True:
+        result = self.bmc.get_firmware_status(handle)
+        if not hasattr(result, "status"):
+            raise CxmanageError("Unable to retrieve transfer info")
+
+        while result.status == "In progress":
+            if time.time() >= deadline:
+                self.bmc.cancel_firmware(handle)
+                raise CxmanageError("Transfer timed out after 3 minutes")
+
             time.sleep(1)
+
             result = self.bmc.get_firmware_status(handle)
             if not hasattr(result, "status"):
                 raise CxmanageError("Unable to retrieve transfer info")
-            if result.status != "In progress":
-                break
-
-            # Time out after 3 minutes
-            counter += 1
-            if counter >= 180:
-                raise CxmanageError("Transfer timed out after 3 minutes")
 
         if result.status != "Complete":
             raise CxmanageError("Node reported transfer failure")
