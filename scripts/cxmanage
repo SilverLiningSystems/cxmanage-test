@@ -38,6 +38,7 @@ import os
 import pkgutil
 import sys
 import subprocess
+import pkg_resources
 
 from cxmanage.controller import Controller
 
@@ -281,6 +282,21 @@ def main():
 
 def check_versions():
     """Check versions of dependencies"""
+    # Check pyipmi version
+    required_pyipmi_version = '0.3.0'
+    try:
+        pyipmi_version = pkg_resources.require('pyipmi')[0].version
+        if pyipmi_version != required_pyipmi_version:
+            print 'ERROR: cxmanage requires pyipmi version %s'\
+                    % required_pyipmi_version
+            print 'Current pyipmi version is %s' % pyipmi_version
+            sys.exit(1)
+    except pkg_resources.DistributionNotFound:
+        print 'ERROR: cxmanage requires pyipmi version %s'\
+                % required_pyipmi_version
+        print 'No existing version was found.'
+        sys.exit(1)
+
     # Check ipmitool version
     if 'IPMITOOL_PATH' in os.environ:
         args = [os.environ['IPMITOOL_PATH'], '-V']
@@ -288,8 +304,8 @@ def check_versions():
         args = ['ipmitool', '-V']
     ipmitool_version = subprocess.check_output(args).split()[2]
     if not '-cx' in ipmitool_version:
-        print ('ERROR: cxmanage is not compatible with IPMItool version %s\n'
-                % ipmitool_version)
+        print 'ERROR: cxmanage is not compatible with IPMItool version %s\n'\
+                % ipmitool_version
         print 'Please make sure a Calxeda extended version of IPMItool is available'
         print 'in your PATH, or point to one with the --ipmipath argument.'
         sys.exit(1)

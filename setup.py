@@ -38,6 +38,8 @@ setup(
     scripts=['scripts/cxmanage', 'scripts/cxpackage'],
     package_data={'cxmanage': ['data/cids', 'data/registers']},
     description='Calxeda Management Utility',
+    # NOTE: As of right now, the pyipmi version requirement needs to be updated
+    # in the scripts/cxmanage check_versions() function as well.
     install_requires=['tftpy', 'pyipmi>=0.3.0', 'argparse'],
     classifiers=[
         'License :: OSI Approved :: BSD License',
