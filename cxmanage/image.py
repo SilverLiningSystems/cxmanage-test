@@ -32,6 +32,7 @@
 """ Image objects used by the cxmanage controller """
 
 import os
+import subprocess
 import tempfile
 
 from cxmanage import CxmanageError
@@ -107,13 +108,24 @@ class Image:
 
     def verify(self):
         """ Return true if the image is valid, false otherwise """
+        try:
+            file_type = subprocess.check_output(["file", self.filename]
+                    ).split()[1]
+            if self.type == "SOC_ELF":
+                if file_type != "ELF":
+                    return False
+            elif file_type != "data":
+                return False
+        except OSError:
+            # "file" tool wasn't found, just continue without it
+            pass
 
         if self.type in ["CDB", "BOOT_LOG"]:
             # Look for "CDBH"
             contents = open(self.filename).read()
             if self.simg:
                 contents = get_simg_contents(contents)
-
-            return contents[:4] == "CDBH"
+            if contents[:4] != "CDBH":
+                return False
 
         return True
