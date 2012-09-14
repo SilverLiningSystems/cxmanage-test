@@ -601,9 +601,27 @@ class Controller:
         if self.verbosity == 1:
             indicator.start()
 
-        for target in targets:
-            # Wait while we have too many running threads
-            while len(threads) >= self.max_threads:
+        try:
+            for target in targets:
+                # Wait while we have too many running threads
+                while len(threads) >= self.max_threads:
+                    time.sleep(0.001)
+                    for thread in threads:
+                        if not thread.is_alive():
+                            threads.remove(thread)
+                            if thread.error == None:
+                                results[thread.target.address] = thread.result
+                            else:
+                                errors[thread.target.address] = thread.error
+                            break
+
+                # Start the new thread
+                thread = ControllerCommandThread(target, name, args)
+                thread.start()
+                threads.add(thread)
+
+            # Join with any remaining threads
+            while len(threads) > 0:
                 time.sleep(0.001)
                 for thread in threads:
                     if not thread.is_alive():
@@ -613,23 +631,17 @@ class Controller:
                         else:
                             errors[thread.target.address] = thread.error
                         break
-
-            # Start the new thread
-            thread = ControllerCommandThread(target, name, args)
-            thread.start()
-            threads.add(thread)
-
-        # Join with any remaining threads
-        while len(threads) > 0:
-            time.sleep(0.001)
+        except KeyboardInterrupt:
+            retries = 0
             for thread in threads:
                 if not thread.is_alive():
-                    threads.remove(thread)
                     if thread.error == None:
                         results[thread.target.address] = thread.result
                     else:
                         errors[thread.target.address] = thread.error
-                    break
+            for target in targets:
+                if not (target.address in errors or target.address in results):
+                    errors[target.address] = "Aborted by keyboard interrupt"
 
         # Stop indicator
         if self.verbosity == 1:
