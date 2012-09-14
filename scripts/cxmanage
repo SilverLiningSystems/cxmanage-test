@@ -259,7 +259,6 @@ def main():
     if args.ipmipath:
         if os.path.isdir(args.ipmipath):
             args.ipmipath = args.ipmipath.rstrip('/') + '/ipmitool'
-        print args.ipmipath
         os.environ['IPMITOOL_PATH'] = args.ipmipath
 
     # Check versions
