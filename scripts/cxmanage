@@ -303,7 +303,8 @@ def check_versions():
         args = [os.environ['IPMITOOL_PATH'], '-V']
     else:
         args = ['ipmitool', '-V']
-    ipmitool_version = subprocess.check_output(args).split()[2]
+    ipmitool_process = subprocess.Popen(args, stdout=subprocess.PIPE)
+    ipmitool_version = ipmitool_process.communicate()[0].split()[2]
     if not '-cx' in ipmitool_version:
         print 'ERROR: cxmanage is not compatible with IPMItool version %s\n'\
                 % ipmitool_version

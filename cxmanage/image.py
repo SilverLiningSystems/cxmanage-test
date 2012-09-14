@@ -109,8 +109,9 @@ class Image:
     def verify(self):
         """ Return true if the image is valid, false otherwise """
         try:
-            file_type = subprocess.check_output(["file", self.filename]
-                    ).split()[1]
+            file_process = subprocess.Popen(["file", self.filename],
+                    stdout=subprocess.PIPE)
+            file_type = file_process.communicate()[0].split()[1]
             if self.type == "SOC_ELF":
                 if file_type != "ELF":
                     return False
