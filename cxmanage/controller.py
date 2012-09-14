@@ -216,7 +216,7 @@ class Controller:
                     self.add_target(ipinfo[1], username, password)
 
         # Print results and errors
-        if self.verbosity >= 1:
+        if self.verbosity >= 1 and len(self.targets) > 0:
             print "Discovered the following IP addresses:"
             for target in self.targets:
                 print target.address
