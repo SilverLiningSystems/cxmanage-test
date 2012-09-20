@@ -498,7 +498,7 @@ class Controller:
     def info_basic(self):
         """ Get basic SoC info from all targets """
         if self.verbosity >= 1:
-            print "Getting SoC info..."
+            print "Getting info..."
         results, errors = self._run_command(False, "info_basic")
 
         # Print results
@@ -508,10 +508,12 @@ class Controller:
                     result = results[target.address]
                     print "[ Info from %s ]" % target.address
                     print result.header
-                    print "  Version: %s" % result.version
-                    print "  Build Number: %s" % result.build_number
-                    print "  Timestamp (%s): %s" % (result.timestamp,
-                            time.ctime(int(result.timestamp)))
+                    print "Firmware version : %s" % result.version
+                    print "Socman version   : %s" % result.soc_version
+                    if hasattr(result, "a9boot_version"):
+                        print "A9Boot version   : %s" % result.a9boot_version
+                    if hasattr(result, "uboot_version"):
+                        print "U-Boot version   : %s" % result.uboot_version
                     print
 
         if self.verbosity >= 1 and len(errors) > 0:

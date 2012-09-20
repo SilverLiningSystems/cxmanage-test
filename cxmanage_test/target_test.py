@@ -231,8 +231,10 @@ class TargetTest(unittest.TestCase):
         for target in self.targets:
             result = target.info_basic()
 
-            self.assertEqual(target.bmc.executed, ["info_basic"])
-            for attr in ["header", "version", "build_number", "timestamp"]:
+            self.assertEqual(target.bmc.executed, ["info_basic",
+                    "get_firmware_info"])
+            for attr in ["header", "version", "build_number", "timestamp",
+                    "soc_version"]:
                 self.assertTrue(hasattr(result, attr))
 
 class DummyBMC(LanBMC):
@@ -382,7 +384,8 @@ class DummyBMC(LanBMC):
         class Result:
             def __init__(self):
                 self.header = "Calxeda SoC (0x0096CD)"
-                self.version = "0.0.0"
+                self.version = "v0.0.0"
+                self.soc_version = "0.0.0"
                 self.build_number = "00000000"
                 self.timestamp = "0"
         return Result()

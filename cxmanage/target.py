@@ -349,6 +349,21 @@ class Target:
         result = self.bmc.get_info_basic()
         if hasattr(result, "error"):
             raise CxmanageError(result.error)
+
+        fwinfo = self.get_firmware_info()
+
+        try:
+            a9boot_partition = self._get_partition(fwinfo, "A9_EXEC", "ACTIVE")
+            setattr(result, "a9boot_version", a9boot_partition.version)
+        except CxmanageError:
+            pass
+
+        try:
+            uboot_partition = self._get_partition(fwinfo, "A9_UBOOT", "ACTIVE")
+            setattr(result, "uboot_version", uboot_partition.version)
+        except CxmanageError:
+            pass
+
         return result
 
     def info_dump(self, tftp):

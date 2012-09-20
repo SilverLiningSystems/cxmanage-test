@@ -332,9 +332,12 @@ class DummyTarget:
         class Result:
             def __init__(self):
                 self.header = "Calxeda SoC (0x0096CD)"
-                self.version = "0.0.0"
+                self.version = "v0.0.0"
                 self.build_number = "00000000"
                 self.timestamp = "0"
+                self.soc_version = "0.0.0"
+                self.a9boot_version = "0.0.0"
+                self.uboot_version = "0.0.0"
         return Result()
 
     def info_dump(self, tftp):
