@@ -303,11 +303,18 @@ def check_versions():
         args = [os.environ['IPMITOOL_PATH'], '-V']
     else:
         args = ['ipmitool', '-V']
-    ipmitool_process = subprocess.Popen(args, stdout=subprocess.PIPE)
-    ipmitool_version = ipmitool_process.communicate()[0].split()[2]
-    if not '-cx' in ipmitool_version:
-        print 'ERROR: cxmanage is not compatible with IPMItool version %s\n'\
-                % ipmitool_version
+
+    try:
+        ipmitool_process = subprocess.Popen(args, stdout=subprocess.PIPE)
+        ipmitool_version = ipmitool_process.communicate()[0].split()[2]
+        if not '-cx' in ipmitool_version:
+            print 'ERROR: cxmanage is not compatible with IPMItool version %s\n'\
+                    % ipmitool_version
+            print 'Please make sure a Calxeda extended version of IPMItool is available'
+            print 'in your PATH, or point to one with the --ipmipath argument.'
+            sys.exit(1)
+    except OSError:
+        print 'ERROR: cxmanage failed to find IPMItool.\n'
         print 'Please make sure a Calxeda extended version of IPMItool is available'
         print 'in your PATH, or point to one with the --ipmipath argument.'
         sys.exit(1)
