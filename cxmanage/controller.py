@@ -55,7 +55,7 @@ class Controller:
     interface. """
 
     def __init__(self, verbosity=0, max_threads=1, image_class=Image,
-            target_class=Target, retries=None):
+            target_class=Target, retries=None, command_delay=0):
         if retries == None:
             retries = "prompt"
         self.tftp = None
@@ -63,6 +63,7 @@ class Controller:
         self.images = []
         self.verbosity = verbosity
         self.max_threads = max_threads
+        self.command_delay = command_delay
         self.retries = retries
         self.target_class = target_class
         self.image_class = image_class
@@ -616,6 +617,9 @@ class Controller:
                             else:
                                 errors[thread.target.address] = thread.error
                             break
+
+                #delay some if requested
+                time.sleep(self.command_delay)
 
                 # Start the new thread
                 thread = ControllerCommandThread(target, name, args)

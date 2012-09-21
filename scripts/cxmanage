@@ -65,6 +65,9 @@ def build_parser():
             help='Send command to all nodes reported by fabric')
     p['parser'].add_argument('--threads', type=int, default=4,
             metavar='THREAD_COUNT', help='Number of threads to use')
+    p['parser'].add_argument('--command_delay', type=float,
+            metavar='SECONDS', default=0.0,
+            help='Per thread time to delay between issuing commands')
     p['parser'].add_argument('--force-yes', action='store_true',
             help='Don\'t stop at confirmation dialogue')
     p['parser'].add_argument('--retry', help='Retry command on multiple times',
@@ -270,8 +273,9 @@ def main():
         verbosity = 2
     elif args.quiet:
         verbosity = 0
+
     controller = Controller(verbosity=verbosity, max_threads=args.threads,
-            retries=args.retry)
+            retries=args.retry, command_delay=args.command_delay)
 
     # Set TFTP and add targets
     set_tftp(controller, args)

@@ -101,6 +101,22 @@ class ControllerCommandTest(unittest.TestCase):
                 image_class=DummyImage, target_class=DummyTarget)
         self.controller.add_fabrics([ADDRESSES[0]], "admin", "admin")
 
+    def test_command_delay(self):
+        """Test that we delay for at least command_delay"""
+        orig_delay = self.controller.command_delay
+        orig_targets = self.controller.targets
+        try:
+            delay = random.randint(1, 5)
+            self.controller.command_delay = delay
+            self.controller.targets = [orig_targets[0]]
+            start = time.time() 
+            self.controller.power_status()
+            finish = time.time()
+            self.assertLess(delay, finish - start)
+        finally:
+            self.controller.command_delay = orig_delay
+            self.controller.targets = orig_targets
+
     def test_power(self):
         """ Test power command """
         # Send power commands
