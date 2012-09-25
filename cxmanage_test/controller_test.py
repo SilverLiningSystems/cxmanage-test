@@ -109,7 +109,7 @@ class ControllerCommandTest(unittest.TestCase):
             delay = random.randint(1, 5)
             self.controller.command_delay = delay
             self.controller.targets = [orig_targets[0]]
-            start = time.time() 
+            start = time.time()
             self.controller.power_status()
             finish = time.time()
             self.assertLess(delay, finish - start)
@@ -248,9 +248,10 @@ class ControllerCommandTest(unittest.TestCase):
 
         # Check updated types
         for target in self.controller.targets:
-            self.assertEqual(len(target.executed), 1)
-            self.assertEqual(target.executed[0][0], "update_firmware")
-            updated_types = [x.type for x in target.executed[0][1]]
+            self.assertEqual(len(target.executed), 2)
+            self.assertEqual(target.executed[0], "check_firmware")
+            self.assertEqual(target.executed[1][0], "update_firmware")
+            updated_types = [x.type for x in target.executed[1][1]]
             for image_type in ["S2_ELF", "SOC_ELF", "CDB"]:
                 self.assertTrue(image_type in updated_types)
 
@@ -317,6 +318,9 @@ class DummyTarget:
 
     def mc_reset(self):
         self.executed.append("mc_reset")
+
+    def check_firmware(self, required_socman_version, firmware_config):
+        self.executed.append("check_firmware")
 
     def update_firmware(self, tftp, images, partition_arg):
         self.executed.append(("update_firmware", images))

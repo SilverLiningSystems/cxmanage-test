@@ -277,11 +277,8 @@ def main():
     controller = Controller(verbosity=verbosity, max_threads=args.threads,
             retries=args.retry, command_delay=args.command_delay)
 
-    # Set TFTP and add targets
+    # Set up TFTP and run
     set_tftp(controller, args)
-    add_targets(controller, args)
-
-    # Run the command
     sys.exit(args.func(controller, args))
 
 
@@ -292,7 +289,7 @@ def check_versions():
         pkg_resources.require('pyipmi>=%s' % PYIPMI_VERSION)
     except pkg_resources.DistributionNotFound:
         print 'ERROR: cxmanage requires pyipmi version %s'\
-                % required_pyipmi_version
+                % PYIPMI_VERSION
         print 'No existing version was found.'
         sys.exit(1)
     except pkg_resources.VersionConflict:
@@ -439,6 +436,7 @@ def parse_ip_range_entry(entry):
 
 def power_command(controller, args):
     """change the power state of a cluster or host"""
+    add_targets(controller, args)
 
     # power policy
     if args.power_mode == 'policy':
@@ -458,20 +456,28 @@ def power_command(controller, args):
 
 def mcreset_command(controller, args):
     """reset the management controllers of a cluster or host"""
+    add_targets(controller, args)
     return controller.mc_reset()
 
 
 def fwupdate_command(controller, args):
     """update firmware on a cluster or host"""
-    simg = None
-    if args.force_simg:
-        simg = False
-    elif args.skip_simg:
-        simg = True
-
     # Add image
-    controller.add_image(args.filename, args.image_type, simg, args.priority,
-            args.daddr, args.skip_crc32, args.version)
+    try:
+        if args.image_type == 'PACKAGE':
+            controller.add_package(args.filename, args.priority,
+                    args.skip_crc32, args.version)
+        else:
+            simg = None
+            if args.force_simg:
+                simg = False
+            elif args.skip_simg:
+                simg = True
+            controller.add_image(args.filename, args.image_type, simg,
+                    args.priority, args.daddr, args.skip_crc32, args.version)
+    except ValueError as e:
+        print "ERROR: %s" % e
+        return True
 
     # Print all_nodes warning/confirmation
     if not args.all_nodes:
@@ -490,12 +496,13 @@ def fwupdate_command(controller, args):
                 elif command in ['n', 'no']:
                     return 1
 
-    # Do firmware update
+    add_targets(controller, args)
     return controller.update_firmware(args.partition)
 
 
 def fwinfo_command(controller, args):
     """print firmware info"""
+    add_targets(controller, args)
     return controller.firmware_info()
 
 
@@ -505,26 +512,31 @@ def sensor_command(controller, args):
     if sensor_name.lower() == 'list':
         sensor_name = ''
 
+    add_targets(controller, args)
     return controller.get_sensors(sensor_name)
 
 
 def ipinfo_command(controller, args):
     """get ip info from a cluster or host"""
+    add_targets(controller, args)
     return controller.get_ipinfo()
 
 
 def macaddrs_command(controller, args):
     """get mac addresses from a cluster or host"""
+    add_targets(controller, args)
     return controller.get_macaddrs()
 
 
 def config_reset_command(controller, args):
     """reset to factory default settings"""
+    add_targets(controller, args)
     return controller.config_reset()
 
 
 def config_boot_command(controller, args):
     """set A9 boot order"""
+    add_targets(controller, args)
     if args.boot_order == 'status':
         return controller.config_boot_status()
     elif args.boot_order == 'none':
@@ -535,6 +547,7 @@ def config_boot_command(controller, args):
 
 def info_command(controller, args):
     """print info from a cluster or host"""
+    add_targets(controller, args)
     if args.info_type in [None, 'basic']:
         return controller.info_basic()
     elif args.info_type == 'ubootenv':
@@ -552,6 +565,7 @@ def ipmitool_command(controller, args):
     else:
         ipmitool_args = args.ipmitool_args
 
+    add_targets(controller, args)
     return controller.ipmitool_command(ipmitool_args)
 
 

@@ -38,6 +38,8 @@ import subprocess
 import tempfile
 import time
 
+from pkg_resources import parse_version
+
 from cxmanage import CxmanageError
 from cxmanage.image import Image
 from cxmanage.ubootenv import UbootEnv
@@ -249,6 +251,21 @@ class Target:
 
         except IpmiError as e:
             raise CxmanageError(self._parse_ipmierror(e))
+
+    def check_firmware(self, required_socman_version=None, firmware_config=None):
+        """ Check if this host is ready for an update """
+        info = self.info_basic()
+
+        if required_socman_version and parse_version(info.soc_version) < \
+                parse_version(required_socman_version):
+            raise CxmanageError("Update requires socman version %s (found %s)" %
+                    (required_socman_version, info.soc_version))
+
+        if info.version != "Unknown":
+            if firmware_config == "default" and "slot2" in info.version:
+                raise CxmanageError("Refusing to upload a \'default\' package to a \'slot2\' host")
+            if firmware_config == "slot2" and not "slot2" in info.version:
+                raise CxmanageError("Refusing to upload a \'slot2\' package to a \'default\' host")
 
     def update_firmware(self, tftp, images, partition_arg="INACTIVE"):
         """ Update firmware on this target. """

@@ -43,6 +43,8 @@ import time
 import ConfigParser
 import tarfile
 
+import pkg_resources
+
 from cxmanage.image import Image
 from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
@@ -67,6 +69,9 @@ class Controller:
         self.retries = retries
         self.target_class = target_class
         self.image_class = image_class
+        self.firmware_version = None
+        self.firmware_config = None
+        self.required_socman_version = None
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage-")
         atexit.register(self._cleanup)
 
@@ -87,53 +92,66 @@ class Controller:
 
 ###########################  Images-specific methods ##########################
 
-    def add_image(self, filename, image_type, simg=None,
-            priority=None, daddr=None, skip_crc32=False, version=None):
-        """ Add an image to our collection """
-        if image_type == "PACKAGE":
-            # Extract files and read config
+    def add_image(self, filename, image_type, simg=None, priority=None,
+            daddr=None, skip_crc32=False, version=None):
+        """ Add an image to the controller """
+        image = self.image_class(filename, image_type,
+                simg, priority, daddr, skip_crc32, version)
+        self.images.append(image)
+
+    def add_package(self, filename, priority=None, skip_crc32=False,
+            version=None):
+        """ Add images from a firmware update package """
+        # Extract files and read config
+        try:
+            tarfile.open(filename, "r").extractall(self.work_dir)
+        except (IOError, tarfile.ReadError):
+            raise ValueError("%s is not a valid tar.gz file"
+                    % os.path.basename(filename))
+        config = ConfigParser.SafeConfigParser()
+        if len(config.read(self.work_dir + "/MANIFEST")) == 0:
+            raise ValueError("%s is not a valid firmware package"
+                    % os.path.basename(filename))
+
+        if "package" in config.sections():
+            cxmanage_ver = config.get("package", "required_cxmanage_version")
             try:
-                tarfile.open(filename, "r").extractall(self.work_dir)
-            except (IOError, tarfile.ReadError):
-                raise ValueError("%s is not a valid tar.gz file"
-                        % os.path.basename(filename))
-            config = ConfigParser.SafeConfigParser()
-            if len(config.read(self.work_dir + "/MANIFEST")) == 0:
-                raise ValueError("%s is not a valid firmware package"
-                        % os.path.basename(filename))
+                pkg_resources.require("cxmanage>=%s" % cxmanage_ver)
+            except pkg_resources.VersionConflict:
+                raise ValueError("%s requires cxmanage version %s or later."
+                        % (filename, cxmanage_ver))
 
-            # Add all images from package
-            for section in config.sections():
-                filename = "%s/%s" % (self.work_dir, section)
-                image_type = config.get(section, "type").upper()
-                image_simg = simg
-                image_priority = priority
-                image_daddr = daddr
-                image_skip_crc32 = skip_crc32
-                image_version = version
+            self.firmware_version = config.get("package", "firmware_version")
+            self.firmware_config = config.get("package", "firmware_config")
+            self.required_socman_version = config.get("package",
+                    "required_socman_version")
 
-                # Read image options from config
-                if simg == None and config.has_option(section, "simg"):
-                    image_simg = config.getboolean(section, "simg")
-                if priority == None and config.has_option(section, "priority"):
-                    image_priority = config.getint(section, "priority")
-                if daddr == None and config.has_option(section, "daddr"):
-                    image_daddr = int(config.get(section, "daddr"), 16)
-                if (skip_crc32 == False and
-                        config.has_option(section, "skip_crc32")):
-                    image_skip_crc32 = config.getboolean(section, "skip_crc32")
-                if version == None and config.has_option(section, "versionstr"):
-                    image_version = config.get(section, "versionstr")
+        # Add all images from package
+        image_sections = [x for x in config.sections() if x != "package"]
+        for section in image_sections:
+            filename = "%s/%s" % (self.work_dir, section)
+            image_type = config.get(section, "type").upper()
+            image_simg = None
+            image_daddr = None
+            image_priority = priority
+            image_skip_crc32 = skip_crc32
+            image_version = version
 
-                image = self.image_class(filename, image_type, image_simg,
-                        image_priority, image_daddr, image_skip_crc32,
-                        image_version)
-                self.images.append(image)
+            # Read image options from config
+            if config.has_option(section, "simg"):
+                image_simg = config.getboolean(section, "simg")
+            if priority == None and config.has_option(section, "priority"):
+                image_priority = config.getint(section, "priority")
+            if config.has_option(section, "daddr"):
+                image_daddr = int(config.get(section, "daddr"), 16)
+            if (skip_crc32 == False and
+                    config.has_option(section, "skip_crc32")):
+                image_skip_crc32 = config.getboolean(section, "skip_crc32")
+            if version == None and config.has_option(section, "versionstr"):
+                image_version = config.get(section, "versionstr")
 
-        else:
-            image = self.image_class(filename, image_type,
-                    simg, priority, daddr, skip_crc32, version)
-            self.images.append(image)
+            self.add_image(filename, image_type, image_simg, image_priority,
+                    image_daddr, image_skip_crc32, image_version)
 
     def save_package(self, filename):
         """ Save all images as a firmware package """
@@ -307,6 +325,15 @@ class Controller:
 
     def update_firmware(self, partition_arg="INACTIVE"):
         """ Send firmware update commands to all targets """
+        if self.verbosity >= 1:
+            print "Checking hosts..."
+
+        results, errors = self._run_command(False, "check_firmware",
+                self.required_socman_version, self.firmware_config)
+        if errors:
+            print "ERROR: Firmware update aborted."
+            return True
+
         if self.verbosity >= 1:
             print "Updating firmware..."
 

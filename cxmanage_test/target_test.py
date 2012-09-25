@@ -36,6 +36,7 @@ import unittest
 
 from pyipmi.bmc import LanBMC
 
+from cxmanage import CxmanageError
 from cxmanage.simg import create_simg
 from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
@@ -118,6 +119,25 @@ class TargetTest(unittest.TestCase):
             self.assertTrue(result[0].sensor_reading.endswith("Watts"))
             self.assertEqual(result[1].sensor_name, "Board Temp")
             self.assertTrue(result[1].sensor_reading.endswith("degrees C"))
+
+    def test_check_firmware(self):
+        """ Test target.check_firmware method """
+        for target in self.targets:
+            target.check_firmware()
+
+            # should fail if we specify a socman version
+            try:
+                target.check_firmware(required_socman_version="0.0.1")
+                self.fail()
+            except CxmanageError:
+                pass
+
+            # should fail if we try to upload a slot2
+            try:
+                target.check_firmware(firmware_config="slot2")
+                self.fail()
+            except CxmanageError:
+                pass
 
     def test_update_firmware(self):
         """ Test target.update_firmware method """
