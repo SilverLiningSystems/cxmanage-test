@@ -267,7 +267,8 @@ class Target:
             if firmware_config == "slot2" and not "slot2" in info.version:
                 raise CxmanageError("Refusing to upload a \'slot2\' package to a \'default\' host")
 
-    def update_firmware(self, tftp, images, partition_arg="INACTIVE"):
+    def update_firmware(self, tftp, images, partition_arg="INACTIVE",
+            firmware_version=None):
         """ Update firmware on this target. """
         fwinfo = self.get_firmware_info()
 
@@ -320,6 +321,9 @@ class Target:
                 # Update the image
                 for partition in partitions:
                     self._upload_image(tftp, image, partition, priority)
+
+        if firmware_version:
+            self.bmc.set_firmware_version(firmware_version)
 
     def config_reset(self, tftp):
         """ Reset configuration to factory default """

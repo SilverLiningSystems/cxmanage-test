@@ -338,7 +338,7 @@ class Controller:
             print "Updating firmware..."
 
         results, errors = self._run_command(True, "update_firmware", self.tftp,
-                self.images, partition_arg)
+                self.images, partition_arg, self.firmware_version)
 
         if self.verbosity >= 1 and len(errors) == 0:
             print "Command completed successfully.\n"

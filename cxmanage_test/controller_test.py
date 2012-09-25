@@ -322,7 +322,7 @@ class DummyTarget:
     def check_firmware(self, required_socman_version, firmware_config):
         self.executed.append("check_firmware")
 
-    def update_firmware(self, tftp, images, partition_arg):
+    def update_firmware(self, tftp, images, partition_arg, firmware_version):
         self.executed.append(("update_firmware", images))
         time.sleep(random.randint(0, 2))
 

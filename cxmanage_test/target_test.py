@@ -151,7 +151,7 @@ class TargetTest(unittest.TestCase):
         ]
 
         for target in self.targets:
-            target.update_firmware(self.tftp, images)
+            target.update_firmware(self.tftp, images, firmware_version="0.0.1")
 
             partitions = target.bmc.partitions
             unchanged_partitions = [partitions[x] for x in [0, 1, 4]]
@@ -174,6 +174,9 @@ class TargetTest(unittest.TestCase):
             self.assertEqual(ubootenv_partition.retrieves, 1)
             self.assertEqual(ubootenv_partition.checks, 1)
             self.assertEqual(ubootenv_partition.activates, 1)
+
+            self.assertEqual(target.bmc.executed[-1],
+                    ("set_firmware_version", "0.0.1"))
 
     def test_config_reset(self):
         """ Test target.config_reset method """
@@ -383,6 +386,9 @@ class DummyBMC(LanBMC):
     def activate_firmware(self, partition):
         self.executed.append(("activate_firmware", partition))
         self.partitions[partition].activates += 1
+
+    def set_firmware_version(self, version):
+        self.executed.append(("set_firmware_version", version))
 
     def sdr_list(self):
         """ Get sensor info from the node. """
