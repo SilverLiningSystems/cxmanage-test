@@ -44,7 +44,7 @@ class Command:
 
     ############################ Public methods ###############################
 
-    def __init__(self, targets, name, args, delay=0, num_threads=1):
+    def __init__(self, targets, name, args, delay=0, max_threads=1):
         self.results = {}
         self.errors = {}
 
@@ -53,6 +53,8 @@ class Command:
         self._name = name
         self._args = args
         self._delay = delay
+
+        num_threads = min(max_threads, len(self._targets))
         self._workers = [CommandWorker(self) for i in range(num_threads)]
 
     def start(self):

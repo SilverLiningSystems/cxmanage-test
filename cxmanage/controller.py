@@ -38,6 +38,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import ConfigParser
 import tarfile
 
@@ -47,7 +48,6 @@ from cxmanage.command import Command
 from cxmanage.image import Image
 from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
-from cxmanage.indicator import Indicator
 from cxmanage.ubootenv import UbootEnv
 
 class Controller:
@@ -633,12 +633,14 @@ class Controller:
                 self.max_threads)
         command.start()
 
-        indicator = Indicator(targets, command.results, command.errors)
-        if self.verbosity == 1:
-            indicator.start()
-
         try:
-            command.join()
+            counter = 0
+            while command.is_alive():
+                if self.verbosity == 1:
+                    self._print_command_status(targets, command, counter)
+                    counter += 1
+                time.sleep(0.25)
+
             results = command.results
             errors = command.errors
         except KeyboardInterrupt:
@@ -650,7 +652,7 @@ class Controller:
                     errors[target.address] = "Aborted by keyboard interrupt"
 
         if self.verbosity == 1:
-            indicator.stop()
+            self._print_command_status(targets, command, counter)
             print "\n"
 
         # Handle errors
@@ -692,3 +694,13 @@ class Controller:
                     print "%s: %s" % (target.address.ljust(16),
                             errors[target.address])
             print
+
+    def _print_command_status(self, targets, command, counter):
+        """ Print the status of a command """
+        message = "\r%i successes  |  %i errors  |  %i nodes left  |  %s"
+        successes = len(command.results)
+        errors = len(command.errors)
+        nodes_left = len(targets) - successes - errors
+        dots = "".join(["." for x in range(counter % 4)]).ljust(3)
+        sys.stdout.write(message % (successes, errors, nodes_left, dots))
+        sys.stdout.flush()

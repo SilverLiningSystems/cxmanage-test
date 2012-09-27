@@ -69,7 +69,7 @@ class CommandTest(unittest.TestCase):
     def test_command(self):
         """ Test the command spawner """
         command = Command(self.targets, "action", ("a", "b", "c"),
-                num_threads=32)
+                max_threads=32)
         command.start()
         command.join()
 
@@ -85,10 +85,10 @@ class CommandTest(unittest.TestCase):
         """ Test the command delay argument """
         delay = 1
         expected_duration = 4
-        num_threads = NUM_NODES / expected_duration
+        max_threads = NUM_NODES / expected_duration
 
         command = Command(self.targets, "action", ("a", "b", "c"),
-                delay=delay, num_threads=num_threads)
+                delay=delay, max_threads=max_threads)
 
         start_time = time.time()
         command.start()
