@@ -38,13 +38,12 @@ import os
 import shutil
 import sys
 import tempfile
-import threading
-import time
 import ConfigParser
 import tarfile
 
 import pkg_resources
 
+from cxmanage.command import Command
 from cxmanage.image import Image
 from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
@@ -630,59 +629,26 @@ class Controller:
 
         Returns (results, errors) which map addresses to their results """
 
-        threads = set()
+        command = Command(targets, name, args, self.command_delay,
+                self.max_threads)
+        command.start()
 
-        results = {}
-        errors = {}
-
-        # Start indicator
-        indicator = Indicator(targets, results, errors)
+        indicator = Indicator(targets, command.results, command.errors)
         if self.verbosity == 1:
             indicator.start()
 
         try:
-            for target in targets:
-                # Wait while we have too many running threads
-                while len(threads) >= self.max_threads:
-                    time.sleep(0.001)
-                    for thread in threads:
-                        if not thread.is_alive():
-                            threads.remove(thread)
-                            if thread.error == None:
-                                results[thread.target.address] = thread.result
-                            else:
-                                errors[thread.target.address] = thread.error
-                            break
-
-                # Start the new thread
-                thread = ControllerCommandThread(target, name, args, delay=self.command_delay)
-                thread.start()
-                threads.add(thread)
-
-            # Join with any remaining threads
-            while len(threads) > 0:
-                time.sleep(0.001)
-                for thread in threads:
-                    if not thread.is_alive():
-                        threads.remove(thread)
-                        if thread.error == None:
-                            results[thread.target.address] = thread.result
-                        else:
-                            errors[thread.target.address] = thread.error
-                        break
+            command.join()
+            results = command.results
+            errors = command.errors
         except KeyboardInterrupt:
             retries = 0
-            for thread in threads:
-                if not thread.is_alive():
-                    if thread.error == None:
-                        results[thread.target.address] = thread.result
-                    else:
-                        errors[thread.target.address] = thread.error
+            results = command.results.copy()
+            errors = command.errors.copy()
             for target in targets:
-                if not (target.address in errors or target.address in results):
+                if not (target.address in results or target.address in errors):
                     errors[target.address] = "Aborted by keyboard interrupt"
 
-        # Stop indicator
         if self.verbosity == 1:
             indicator.stop()
             print "\n"
@@ -726,26 +692,3 @@ class Controller:
                     print "%s: %s" % (target.address.ljust(16),
                             errors[target.address])
             print
-
-
-class ControllerCommandThread(threading.Thread):
-    """ Thread for executing a command on a target """
-
-    def __init__(self, target, name, args, delay=0):
-        threading.Thread.__init__(self)
-        self.daemon = True
-
-        self.target = target
-        self.function = getattr(target, name)
-        self.args = args
-        self.delay = delay
-        self.result = None
-        self.error = None
-
-
-    def run(self):
-        try:
-            time.sleep(self.delay)
-            self.result = self.function(*self.args)
-        except Exception as e:
-            self.error = e
