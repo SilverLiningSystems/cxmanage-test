@@ -529,6 +529,16 @@ class Controller:
             print "Getting info..."
         results, errors = self._run_command(False, "info_basic")
 
+        components = [
+            ("soc_version", "Socman version"),
+            ("cdb_version", "CDB version"),
+            ("stage2_version", "Stage2boot version"),
+            ("bootlog_version", "Bootlog version"),
+            ("a9boot_version", "A9boot version"),
+            ("uboot_version", "Uboot version"),
+            ("ubootenv_version", "Ubootenv version")
+        ]
+
         # Print results
         if len(results) > 0:
             for target in self.targets:
@@ -536,12 +546,11 @@ class Controller:
                     result = results[target.address]
                     print "[ Info from %s ]" % target.address
                     print result.header
-                    print "Firmware version : %s" % result.version
-                    print "Socman version   : %s" % result.soc_version
-                    if hasattr(result, "a9boot_version"):
-                        print "A9Boot version   : %s" % result.a9boot_version
-                    if hasattr(result, "uboot_version"):
-                        print "U-Boot version   : %s" % result.uboot_version
+                    print "Firmware version   : %s" % result.version
+                    for var, string in components:
+                        if hasattr(result, var):
+                            version = getattr(result, var)
+                            print "%s: %s" % (string.ljust(19), version)
                     print
 
         if self.verbosity >= 1 and len(errors) > 0:

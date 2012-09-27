@@ -373,17 +373,22 @@ class Target:
 
         fwinfo = self.get_firmware_info()
 
-        try:
-            a9boot_partition = self._get_partition(fwinfo, "A9_EXEC", "ACTIVE")
-            setattr(result, "a9boot_version", a9boot_partition.version)
-        except CxmanageError:
-            pass
+        components = [
+            ("soc_version", "SOC_ELF"),
+            ("cdb_version", "CDB"),
+            ("stage2_version", "S2_ELF"),
+            ("bootlog_version", "BOOT_LOG"),
+            ("a9boot_version", "A9_EXEC"),
+            ("uboot_version", "A9_UBOOT"),
+            ("ubootenv_version", "UBOOTENV")
+        ]
 
-        try:
-            uboot_partition = self._get_partition(fwinfo, "A9_UBOOT", "ACTIVE")
-            setattr(result, "uboot_version", uboot_partition.version)
-        except CxmanageError:
-            pass
+        for var, ptype in components:
+            try:
+                partition = self._get_partition(fwinfo, ptype, "ACTIVE")
+                setattr(result, var, partition.version)
+            except CxmanageError:
+                pass
 
         return result
 
