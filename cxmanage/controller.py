@@ -645,11 +645,8 @@ class Controller:
                                 errors[thread.target.address] = thread.error
                             break
 
-                #delay some if requested
-                time.sleep(self.command_delay)
-
                 # Start the new thread
-                thread = ControllerCommandThread(target, name, args)
+                thread = ControllerCommandThread(target, name, args, delay=self.command_delay)
                 thread.start()
                 threads.add(thread)
 
@@ -725,18 +722,21 @@ class Controller:
 class ControllerCommandThread(threading.Thread):
     """ Thread for executing a command on a target """
 
-    def __init__(self, target, name, args):
+    def __init__(self, target, name, args, delay=0):
         threading.Thread.__init__(self)
         self.daemon = True
 
         self.target = target
         self.function = getattr(target, name)
         self.args = args
+        self.delay = delay
         self.result = None
         self.error = None
 
+
     def run(self):
         try:
+            time.sleep(self.delay)
             self.result = self.function(*self.args)
         except Exception as e:
             self.error = e
