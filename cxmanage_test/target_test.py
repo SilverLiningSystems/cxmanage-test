@@ -443,6 +443,7 @@ class FWInfoEntry:
         self.daddr = "%8x" % daddr
         self.in_use = {None: "Unknown", True: "1", False: "0"}[in_use]
         self.flags = "fffffffd"
+        self.version = "v0.0.0"
 
 class DummyUbootEnv(UbootEnv):
     def get_boot_order(self):

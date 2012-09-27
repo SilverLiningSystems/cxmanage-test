@@ -32,6 +32,7 @@
 import struct
 
 from cxmanage import CxmanageError
+from cxmanage.simg import has_simg, get_simg_contents
 from cxmanage.crc32 import get_crc32
 
 ENVIRONMENT_SIZE = 8192
@@ -44,6 +45,9 @@ class UbootEnv:
         self.variables = {}
 
         if contents != None:
+            if has_simg(contents):
+                contents = get_simg_contents(contents)
+
             contents = contents.rstrip("%c%c" % (chr(0), chr(255)))[4:]
             lines = contents.split(chr(0))
             for line in lines:

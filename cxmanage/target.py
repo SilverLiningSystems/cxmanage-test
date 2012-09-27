@@ -228,6 +228,7 @@ class Target:
             if len(fwinfo) == 0:
                 raise CxmanageError("Failed to retrieve firmware info")
 
+            # TODO: remove this later
             # For compatibility with old ipmitool versions, make sure
             # we have a "priority" field. It used to be called "version"
             for entry in fwinfo:
@@ -278,7 +279,7 @@ class Target:
         for partition in fwinfo:
             # Make sure this partition is one of the types we're updating
             # and that the partition is flagged as "active"
-            if (partition.type.split()[1][1:-1] in image_types and
+            if (partition.type.split()[1].strip("()") in image_types and
                     int(partition.flags, 16) & 2 == 0):
                 priority = max(priority, int(partition.priority, 16) + 1)
         if priority > 0xFFFF:
@@ -291,22 +292,28 @@ class Target:
                 factory_part = self._get_partition(fwinfo, image.type,
                         "SECOND")
 
-                # Update running ubootenv
-                old_ubootenv = self._download_ubootenv(tftp, running_part)
-                if "bootcmd_default" in old_ubootenv.variables:
-                    bootcmd = old_ubootenv.variables["bootcmd_default"]
-                    contents = open(image.filename).read()
-                    if image.simg:
-                        contents = contents[28:]
-                    ubootenv = self.ubootenv_class(contents)
-                    ubootenv.variables["bootcmd_default"] = bootcmd
-                    self._upload_ubootenv(tftp, ubootenv,
-                            running_part, priority)
-                else:
-                    self._upload_image(tftp, image, running_part, priority)
-
                 # Update factory ubootenv
                 self._upload_image(tftp, image, factory_part, priority)
+
+                # Update running ubootenv
+                old_ubootenv_image = self._download_image(tftp, running_part)
+                old_ubootenv = self.ubootenv_class(open(
+                        old_ubootenv_image.filename).read())
+                if "bootcmd_default" in old_ubootenv.variables:
+                    ubootenv = self.ubootenv_class(open(image.filename).read())
+                    ubootenv.variables["bootcmd_default"] = \
+                            old_ubootenv.variables["bootcmd_default"]
+
+                    filename = tempfile.mkstemp(prefix="%s/env_" %
+                            self.work_dir)[1]
+                    open(filename, "w").write(ubootenv.get_contents())
+                    ubootenv_image = Image(filename, image.type, False,
+                            image.priority, image.daddr, image.skip_crc32,
+                            image.version)
+                    self._upload_image(tftp, ubootenv_image, running_part,
+                            priority)
+                else:
+                    self._upload_image(tftp, image, running_part, priority)
 
             else:
                 # Get the partitions
@@ -353,17 +360,20 @@ class Target:
         active_part = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
 
         # Download active ubootenv, modify, then upload to first partition
-        ubootenv = self._download_ubootenv(tftp, active_part)
+        image = self._download_image(tftp, active_part)
+        ubootenv = self.ubootenv_class(open(image.filename).read())
         ubootenv.set_boot_order(boot_args)
         priority = max(int(x.priority, 16) for x in [first_part, active_part])
-        self._upload_ubootenv(tftp, ubootenv, first_part, priority)
+
+        filename = tempfile.mkstemp(prefix="%s/env_" % self.work_dir)[1]
+        open(filename, "w").write(ubootenv.get_contents())
+        ubootenv_image = Image(filename, image.type, False, image.priority,
+                image.daddr, image.skip_crc32, image.version)
+        self._upload_image(tftp, ubootenv_image, first_part, priority)
 
     def get_boot_order(self, tftp):
         """ Get boot order """
-        fwinfo = self.get_firmware_info()
-        active_part = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
-        ubootenv = self._download_ubootenv(tftp, active_part)
-        return ubootenv.get_boot_order()
+        return self.get_ubootenv(tftp).get_boot_order()
 
     def info_basic(self):
         """ Get basic SoC info from this target """
@@ -410,7 +420,8 @@ class Target:
         if self.verbosity >= 2:
             print "Running %s" % " ".join(command)
 
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         return (stdout + stderr).strip()
 
@@ -418,8 +429,8 @@ class Target:
         """ Get the active u-boot environment """
         fwinfo = self.get_firmware_info()
         partition = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
-
-        return self._download_ubootenv(tftp, partition)
+        image = self._download_image(tftp, partition)
+        return self.ubootenv_class(open(image.filename).read())
 
     def _get_partition(self, fwinfo, image_type, partition_arg):
         """ Get a partition for this image type based on the argument """
@@ -508,7 +519,7 @@ class Target:
     def _download_image(self, tftp, partition):
         """ Download an image from the target.
 
-        Returns the filename. """
+        Returns an image. """
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
@@ -534,22 +545,8 @@ class Target:
 
         tftp.get_file(basename, filename)
 
-        return Image(filename, image_type)
-
-    def _upload_ubootenv(self, tftp, ubootenv, partition, priority=None):
-        """ Upload a uboot environment to the target """
-        filename = tempfile.mkstemp(prefix="%s/env_" % self.work_dir)[1]
-        open(filename, "w").write(ubootenv.get_contents())
-        image = Image(filename, "UBOOTENV")
-        self._upload_image(tftp, image, partition, priority)
-
-    def _download_ubootenv(self, tftp, partition):
-        """ Download a uboot environment from the target """
-        image = self._download_image(tftp, partition)
-
-        # Open the file
-        simg = open(image.filename).read()
-        return self.ubootenv_class(simg[28:])
+        return Image(filename, image_type, daddr=int(partition.daddr, 16),
+                version=partition.version)
 
     def _wait_for_transfer(self, handle):
         """ Wait for a firmware transfer to finish"""
