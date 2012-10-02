@@ -572,7 +572,10 @@ class Target:
 
     def _parse_ipmierror(self, e):
         """ Parse a meaningful message from an IpmiError """
-        error = str(e).lstrip().splitlines()[0].rstrip()
-        if error.startswith("Error: "):
-            error = error[7:]
-        return "IPMItool error (%s)" % error
+        try:
+            error = str(e).lstrip().splitlines()[0].rstrip()
+            if error.startswith("Error: "):
+                error = error[7:]
+            return "IPMItool error (%s)" % error
+        except IndexError:
+            return "IPMItool error"
