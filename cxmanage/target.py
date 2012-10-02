@@ -390,7 +390,8 @@ class Target:
             ("bootlog_version", "BOOT_LOG"),
             ("a9boot_version", "A9_EXEC"),
             ("uboot_version", "A9_UBOOT"),
-            ("ubootenv_version", "UBOOTENV")
+            ("ubootenv_version", "UBOOTENV"),
+            ("dtb_version", "DTB")
         ]
 
         for var, ptype in components:

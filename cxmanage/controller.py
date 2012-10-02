@@ -543,7 +543,8 @@ class Controller:
             ("bootlog_version", "Bootlog version"),
             ("a9boot_version", "A9boot version"),
             ("uboot_version", "Uboot version"),
-            ("ubootenv_version", "Ubootenv version")
+            ("ubootenv_version", "Ubootenv version"),
+            ("dtb_version", "DTB version")
         ]
 
         # Print results
