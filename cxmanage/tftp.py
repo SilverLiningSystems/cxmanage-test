@@ -45,36 +45,50 @@ from cxmanage import CxmanageError
 from tftpy import TftpClient, TftpServer, setLogLevel
 from tftpy.TftpShared import TftpException
 
-class InternalTftp(threading.Thread):
+class InternalTftp:
     """ Internal TFTP server """
 
     def __init__(self, address=None, port=0, verbosity=1):
-        threading.Thread.__init__(self)
-        self.daemon = True
-
-        self.address = address
-        self.port = port
-
         self.tftp_dir = tempfile.mkdtemp(prefix="cxmanage-tftp-")
-        atexit.register(self._cleanup)
 
-        self.server = TftpServer(self.tftp_dir)
+        pipe = os.pipe()
+        pid = os.fork()
+        if not pid:
+            server = TftpServer(self.tftp_dir)
 
-        self.start()
-        atexit.register(self._cleanup)
+            # Spawn a thread that sends the port number through the pipe
+            class PortThread(threading.Thread):
+                def run(self):
+                    # Need to wait for the server to open its socket
+                    while not server.sock:
+                        pass
+                    with os.fdopen(pipe[1], "w") as f:
+                        f.write("%i\n" % server.sock.getsockname()[1])
+            thread = PortThread()
+            thread.start()
 
-        if verbosity <= 1:
-            setLogLevel(logging.CRITICAL)
+            try:
+                if verbosity <= 1:
+                    setLogLevel(logging.CRITICAL)
+                server.listen(address, port)
+            except KeyboardInterrupt:
+                pass
 
-    def run(self):
-        """ Run the server, ignoring any exceptions """
-        try:
-            self.server.listen(self.address, self.port)
-        except:
-            pass
+            os._exit(0)
 
-    def _cleanup(self):
-        """ Clean up our resources on exit """
+        atexit.register(self.kill)
+
+        self.server = pid
+        self.address = address
+        with os.fdopen(pipe[0]) as f:
+            self.port = int(f.readline())
+
+    def kill(self):
+        """ Kill the server and clean up its files """
+        if self.server:
+            os.kill(self.server, 15)
+            self.server = None
+
         if os.path.exists(self.tftp_dir):
             shutil.rmtree(self.tftp_dir)
 
@@ -96,14 +110,7 @@ class InternalTftp(threading.Thread):
 
     def get_port(self):
         """ Return the listening port of this server """
-        if self.port == 0:
-            while self.server.sock == None:
-                pass
-            port = self.server.sock.getsockname()[1]
-        else:
-            port = self.port
-
-        return port
+        return self.port
 
     def get_file(self, tftppath, localpath):
         """ Download a file from the tftp server """

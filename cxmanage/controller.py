@@ -83,10 +83,18 @@ class Controller:
 
     def set_internal_tftp_server(self, address=None, port=0):
         """ Set up a TFTP server to be hosted locally """
+        try:
+            self.tftp.kill()
+        except AttributeError:
+            pass
         self.tftp = InternalTftp(address, port, self.verbosity)
 
     def set_external_tftp_server(self, address, port=69):
         """ Set up a remote TFTP server """
+        try:
+            self.tftp.kill()
+        except AttributeError:
+            pass
         self.tftp = ExternalTftp(address, port, self.verbosity)
 
 ###########################  Images-specific methods ##########################
