@@ -34,9 +34,10 @@
 """Command line tool for creating a Calxeda firmware package"""
 
 import argparse
+import os
 import sys
 
-from cxmanage.controller import Controller
+from cxmanage.firmware_package import FirmwarePackage
 
 def build_parser():
     """setup the argparse parser"""
@@ -108,21 +109,30 @@ def main():
     args = parser.parse_args()
     validate_args(args)
 
-    controller = Controller()
+    sys.exit(args.func(args))
 
-    sys.exit(args.func(controller, args))
-
-def info_command(controller, args):
+def info_command(args):
     """ Get package info """
-    controller.add_package(args.package)
-    controller.print_images()
+    package = FirmwarePackage(args.package)
+    for image in package.images:
+        print "[%s]" % os.path.basename(image.filename)
+        print "Type       : %s" % image.type
+        if image.simg != None:
+            print "Simg       : %s" % image.simg
+        if image.daddr != None:
+            print "Daddr      : %x" % image.daddr
+        if image.version != None:
+            print "Version    : %s" % image.version
+        if image.skip_crc32 != False:
+            print "Skip CRC32 : True"
+        print
 
-def add_command(controller, args):
+def add_command(args):
     """ Create or add to a firmware package """
-    try:
-        controller.add_package(args.package)
-    except ValueError as e:
-        pass
+    if os.path.exists(args.package):
+        package = FirmwarePackage(args.package)
+    else:
+        package = FirmwarePackage()
 
     simg = None
     if args.force_simg:
@@ -130,6 +140,9 @@ def add_command(controller, args):
     elif args.skip_simg:
         simg = True
 
+    image = Image(args.filename, args.image_type, simg, args.priority,
+            args.daddr, args.skip_crc32, args.version)
+    package.images.append(image)
     controller.add_image(args.filename, args.image_type, simg, args.priority,
             args.daddr, args.skip_crc32, args.version)
 

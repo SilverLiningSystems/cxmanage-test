@@ -41,6 +41,7 @@ from cxmanage.simg import create_simg
 from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
 from cxmanage.ubootenv import UbootEnv
+from cxmanage.firmware_package import FirmwarePackage
 
 from cxmanage_test import TestImage, TestSensor
 
@@ -133,18 +134,26 @@ class TargetTest(unittest.TestCase):
             ]
 
             # should pass
-            target.check_firmware(images)
+            package = FirmwarePackage()
+            package.images = images
+            target.check_firmware(package)
 
             # should fail if we specify a socman version
             try:
-                target.check_firmware(images, required_socman_version="0.0.1")
+                package = FirmwarePackage()
+                package.images = images
+                package.required_socman_version = "0.0.1"
+                target.check_firmware(package)
                 self.fail()
             except CxmanageError:
                 pass
 
             # should fail if we try to upload a slot2
             try:
-                target.check_firmware(images, firmware_config="slot2")
+                package = FirmwarePackage()
+                package.images = images
+                package.config = "slot2"
+                target.check_firmware(package)
                 self.fail()
             except CxmanageError:
                 pass
@@ -154,14 +163,16 @@ class TargetTest(unittest.TestCase):
         filename = "%s/%s" % (self.work_dir, "image.bin")
         open(filename, "w").write("")
 
-        images = [
+        package = FirmwarePackage()
+        package.images = [
             TestImage(filename, "SOC_ELF"),
             TestImage(filename, "CDB"),
             TestImage(filename, "UBOOTENV")
         ]
+        package.version = "0.0.1"
 
         for target in self.targets:
-            target.update_firmware(self.tftp, images, firmware_version="0.0.1")
+            target.update_firmware(self.tftp, package)
 
             partitions = target.bmc.partitions
             unchanged_partitions = [partitions[x] for x in [0, 1, 4]]

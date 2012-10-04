@@ -33,21 +33,14 @@
 In this case, the controller understands the model's container structure
 and the objects it contains: tftp, images, and targets. """
 
-import atexit
-import os
-import shutil
 import sys
-import tempfile
 import time
-import ConfigParser
-import tarfile
-
-import pkg_resources
 
 from cxmanage.command import Command
-from cxmanage.image import Image
-from cxmanage.target import Target
 from cxmanage.tftp import InternalTftp, ExternalTftp
+from cxmanage.target import Target
+from cxmanage.image import Image
+from cxmanage.firmware_package import FirmwarePackage
 from cxmanage.ubootenv import UbootEnv
 
 class Controller:
@@ -55,8 +48,7 @@ class Controller:
     cxmanage. Scripts or UIs can build on top of this to provide an user
     interface. """
 
-    def __init__(self, verbosity=0, max_threads=1, image_class=Image,
-            target_class=Target, retries=None, command_delay=0):
+    def __init__(self, verbosity=0, max_threads=1, target_class=Target, retries=None, command_delay=0):
         if retries == None:
             retries = "prompt"
         self.tftp = None
@@ -67,17 +59,6 @@ class Controller:
         self.command_delay = command_delay
         self.retries = retries
         self.target_class = target_class
-        self.image_class = image_class
-        self.firmware_version = None
-        self.firmware_config = None
-        self.required_socman_version = None
-        self.work_dir = tempfile.mkdtemp(prefix="cxmanage-")
-        atexit.register(self._cleanup)
-
-    def _cleanup(self):
-        """ Clean up working directory and tftp server """
-        if os.path.exists(self.work_dir):
-            shutil.rmtree(self.work_dir)
 
 ###########################  TFTP-specific methods ###########################
 
@@ -97,118 +78,19 @@ class Controller:
             pass
         self.tftp = ExternalTftp(address, port, self.verbosity)
 
-###########################  Images-specific methods ##########################
+############################ Firmware methods #################################
 
-    def add_image(self, filename, image_type, simg=None, priority=None,
-            daddr=None, skip_crc32=False, version=None):
+    def get_firmware_package(self, filename, image_type, simg=None, daddr=None,
+            skip_crc32=False, version=None):
         """ Add an image to the controller """
-        image = self.image_class(filename, image_type,
-                simg, priority, daddr, skip_crc32, version)
-        self.images.append(image)
-
-    def add_package(self, filename, priority=None, skip_crc32=False,
-            version=None):
-        """ Add images from a firmware update package """
-        # Extract files and read config
-        try:
-            tarfile.open(filename, "r").extractall(self.work_dir)
-        except (IOError, tarfile.ReadError):
-            raise ValueError("%s is not a valid tar.gz file"
-                    % os.path.basename(filename))
-        config = ConfigParser.SafeConfigParser()
-        if len(config.read(self.work_dir + "/MANIFEST")) == 0:
-            raise ValueError("%s is not a valid firmware package"
-                    % os.path.basename(filename))
-
-        if "package" in config.sections():
-            cxmanage_ver = config.get("package", "required_cxmanage_version")
-            try:
-                pkg_resources.require("cxmanage>=%s" % cxmanage_ver)
-            except pkg_resources.VersionConflict:
-                raise ValueError("%s requires cxmanage version %s or later."
-                        % (filename, cxmanage_ver))
-
-            self.firmware_version = config.get("package", "firmware_version")
-            self.firmware_config = config.get("package", "firmware_config")
-            self.required_socman_version = config.get("package",
-                    "required_socman_version")
-
-        # Add all images from package
-        image_sections = [x for x in config.sections() if x != "package"]
-        for section in image_sections:
-            filename = "%s/%s" % (self.work_dir, section)
-            image_type = config.get(section, "type").upper()
-            image_simg = None
-            image_daddr = None
-            image_priority = priority
-            image_skip_crc32 = skip_crc32
-            image_version = version
-
-            # Read image options from config
-            if config.has_option(section, "simg"):
-                image_simg = config.getboolean(section, "simg")
-            if priority == None and config.has_option(section, "priority"):
-                image_priority = config.getint(section, "priority")
-            if config.has_option(section, "daddr"):
-                image_daddr = int(config.get(section, "daddr"), 16)
-            if (skip_crc32 == False and
-                    config.has_option(section, "skip_crc32")):
-                image_skip_crc32 = config.getboolean(section, "skip_crc32")
-            if version == None and config.has_option(section, "versionstr"):
-                image_version = config.get(section, "versionstr")
-
-            self.add_image(filename, image_type, image_simg, image_priority,
-                    image_daddr, image_skip_crc32, image_version)
-
-    def save_package(self, filename):
-        """ Save all images as a firmware package """
-        # Create the manifest
-        config = ConfigParser.SafeConfigParser()
-        for image in self.images:
-            section = os.path.basename(image.filename)
-            config.add_section(section)
-            config.set(section, "type", image.type)
-            config.set(section, "simg", str(image.simg))
-            if image.priority != None:
-                config.set(section, "priority", str(image.priority))
-            if image.daddr != None:
-                config.set(section, "daddr", "%x" % image.daddr)
-            if image.skip_crc32:
-                config.set(section, "skip_crc32", str(image.skip_crc32))
-            if image.version != None:
-                config.set(section, "versionstr", image.version)
-        manifest = open("%s/MANIFEST" % self.work_dir, "w")
-        config.write(manifest)
-        manifest.close()
-
-        # Create the tar.gz package
-        if filename.endswith("gz"):
-            tar = tarfile.open(filename, "w:gz")
-        elif filename.endswith("bz2"):
-            tar = tarfile.open(filename, "w:bz2")
+        if image_type == "PACKAGE":
+            package = FirmwarePackage(filename)
         else:
-            tar = tarfile.open(filename, "w")
-        tar.add("%s/MANIFEST" % self.work_dir, "MANIFEST")
-        for image in self.images:
-            tar.add(image.filename, os.path.basename(image.filename))
-        tar.close()
-
-    def print_images(self):
-        """ Print image info """
-        for image in self.images:
-            print "File: %s" % os.path.basename(image.filename)
-            print "Type: %s" % image.type
-            print "SIMG: %s" % image.simg
-            if image.priority != None:
-                print "Priority: %i" % image.priority
-            if image.daddr != None:
-                print "Daddr: %x" % image.daddr
-            if image.skip_crc32:
-                print "Skip CRC32: %s" % image.skip_crc32
-            if image.version != None:
-                print "Version: %s" % image.version
-            print
-
+            package = FirmwarePackage()
+            image = Image(filename, image_type, simg, daddr,
+                    skip_crc32, version)
+            package.images.append(image)
+        return package
 
 ###########################  Targets-specific methods #########################
 
@@ -330,14 +212,14 @@ class Controller:
             print "Command completed successfully.\n"
         return len(errors) > 0
 
-    def update_firmware(self, partition_arg="INACTIVE"):
+    def update_firmware(self, package, partition_arg="INACTIVE",
+            priority=None):
         """ Send firmware update commands to all targets """
         if self.verbosity >= 1:
             print "Checking hosts..."
 
-        results, errors = self._run_command(False, "check_firmware",
-                self.images, partition_arg, self.required_socman_version,
-                self.firmware_config)
+        results, errors = self._run_command(False, "check_firmware", package,
+                partition_arg, priority)
         if errors:
             print "ERROR: Firmware update aborted."
             return True
@@ -346,7 +228,7 @@ class Controller:
             print "Updating firmware..."
 
         results, errors = self._run_command(True, "update_firmware", self.tftp,
-                self.images, partition_arg, self.firmware_version)
+                package, partition_arg, priority)
 
         if self.verbosity >= 1 and len(errors) == 0:
             print "Command completed successfully.\n"

@@ -40,7 +40,7 @@ import socket
 import tempfile
 import threading
 
-from cxmanage import CxmanageError
+from cxmanage import CxmanageError, WORK_DIR
 
 from tftpy import TftpClient, TftpServer, setLogLevel
 from tftpy.TftpShared import TftpException
@@ -49,7 +49,7 @@ class InternalTftp:
     """ Internal TFTP server """
 
     def __init__(self, address=None, port=0, verbosity=1):
-        self.tftp_dir = tempfile.mkdtemp(prefix="cxmanage-tftp-")
+        self.tftp_dir = tempfile.mkdtemp(dir=WORK_DIR)
 
         pipe = os.pipe()
         pid = os.fork()
@@ -84,13 +84,10 @@ class InternalTftp:
             self.port = int(f.readline())
 
     def kill(self):
-        """ Kill the server and clean up its files """
+        """ Kill the server """
         if self.server:
             os.kill(self.server, 15)
             self.server = None
-
-        if os.path.exists(self.tftp_dir):
-            shutil.rmtree(self.tftp_dir)
 
     def get_address(self, relative_host=None):
         """ Return the address of this server.

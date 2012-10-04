@@ -33,6 +33,7 @@ import random
 import time
 import unittest
 
+from cxmanage.firmware_package import FirmwarePackage
 from cxmanage.controller import Controller
 from cxmanage.ubootenv import UbootEnv
 from cxmanage_test import TestSensor
@@ -45,8 +46,7 @@ class ControllerTest(unittest.TestCase):
 
     def setUp(self):
         # Set up the controller
-        self.controller = Controller(max_threads=32,
-                image_class=DummyImage, target_class=DummyTarget)
+        self.controller = Controller(max_threads=32, target_class=DummyTarget)
 
     def test_add_targets(self):
         """ Test adding targets"""
@@ -73,32 +73,11 @@ class ControllerTest(unittest.TestCase):
             self.assertTrue(any([address == x.address
                     for x in self.controller.targets]))
 
-    def test_add_images(self):
-        """ Test adding images """
-        # Add images
-        self.assertEqual(len(self.controller.images), 0)
-        self.controller.add_image("stage2boot.bin", "S2_ELF")
-        self.controller.add_image("socmanager.elf", "SOC_ELF")
-        self.controller.add_image("factory.cdb", "CDB")
-
-        # Examine images
-        self.assertEqual(len(self.controller.images), 3)
-        s2_image = self.controller.images[0]
-        soc_image = self.controller.images[1]
-        cdb_image = self.controller.images[2]
-        self.assertEqual(s2_image.filename, "stage2boot.bin")
-        self.assertEqual(s2_image.type, "S2_ELF")
-        self.assertEqual(soc_image.filename, "socmanager.elf")
-        self.assertEqual(soc_image.type, "SOC_ELF")
-        self.assertEqual(cdb_image.filename, "factory.cdb")
-        self.assertEqual(cdb_image.type, "CDB")
-
 class ControllerCommandTest(unittest.TestCase):
     """ Test the various controller commands """
     def setUp(self):
         # Set up the controller and add targets
-        self.controller = Controller(max_threads=32,
-                image_class=DummyImage, target_class=DummyTarget)
+        self.controller = Controller(max_threads=32, target_class=DummyTarget)
         self.controller.add_fabrics([ADDRESSES[0]], "admin", "admin")
 
     def test_command_delay(self):
@@ -238,22 +217,21 @@ class ControllerCommandTest(unittest.TestCase):
 
     def test_update_firmware(self):
         """ Test fwupdate command """
+        package = FirmwarePackage()
         # Add images
+        """
         self.controller.add_image("stage2boot.bin", "S2_ELF")
         self.controller.add_image("socmanager.elf", "SOC_ELF")
-        self.controller.add_image("factory.cdb", "CDB")
+        self.controller.add_image("factory.cdb", "CDB")"""
 
         # Perform firmware update
-        self.assertFalse(self.controller.update_firmware())
+        self.assertFalse(self.controller.update_firmware(package))
 
         # Check updated types
         for target in self.controller.targets:
             self.assertEqual(len(target.executed), 2)
-            self.assertEqual(target.executed[0], "check_firmware")
-            self.assertEqual(target.executed[1][0], "update_firmware")
-            updated_types = [x.type for x in target.executed[1][1]]
-            for image_type in ["S2_ELF", "SOC_ELF", "CDB"]:
-                self.assertTrue(image_type in updated_types)
+            self.assertEqual(target.executed[0], ("check_firmware", package))
+            self.assertEqual(target.executed[1], ("update_firmware", package))
 
     def test_info_basic(self):
         """ Test info basic command """
@@ -319,12 +297,12 @@ class DummyTarget:
     def mc_reset(self):
         self.executed.append("mc_reset")
 
-    def check_firmware(self, images, partition_arg="INACTIVE",
-            required_socman_version=None, firmware_config=None):
-        self.executed.append("check_firmware")
+    def check_firmware(self, package, partition_arg="INACTIVE", priority=None):
+        self.executed.append(("check_firmware", package))
 
-    def update_firmware(self, tftp, images, partition_arg, firmware_version):
-        self.executed.append(("update_firmware", images))
+    def update_firmware(self, tftp, package, partition_arg="INACTIVE",
+            priority=None):
+        self.executed.append(("update_firmware", package))
         time.sleep(random.randint(0, 2))
 
     def get_sensors(self, name=""):

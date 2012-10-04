@@ -31,16 +31,14 @@
 
 """ Target objects used by the cxmanage controller """
 
-import atexit
 import os
-import shutil
 import subprocess
 import tempfile
 import time
 
 from pkg_resources import parse_version
 
-from cxmanage import CxmanageError
+from cxmanage import CxmanageError, WORK_DIR
 from cxmanage.image import Image
 from cxmanage.ubootenv import UbootEnv
 from cxmanage.infodump import get_info_dump
@@ -62,17 +60,11 @@ class Target:
         self.ubootenv_class = ubootenv_class
         self.image_class = image_class
 
-        self.work_dir = tempfile.mkdtemp(prefix="cxmanage-target-")
-        atexit.register(self._cleanup)
+        self.work_dir = tempfile.mkdtemp(dir=WORK_DIR)
 
         verbose = verbosity >= 2
         self.bmc = make_bmc(bmc_class, hostname=address,
                 username=username, password=password, verbose=verbose)
-
-    def _cleanup(self):
-        """ Clean up temporary files """
-        if os.path.exists(self.work_dir):
-            shutil.rmtree(self.work_dir)
 
     def get_ipinfo(self, tftp):
         """ Download IP info from this target """
@@ -259,61 +251,61 @@ class Target:
         except IpmiError as e:
             raise CxmanageError(self._parse_ipmierror(e))
 
-    def check_firmware(self, images, partition_arg="INACTIVE",
-            required_socman_version=None, firmware_config=None):
+    def check_firmware(self, package, partition_arg="INACTIVE", priority=None):
         """ Check if this host is ready for an update """
         info = self.info_basic()
         fwinfo = self.get_firmware_info()
 
         # Check socman version
-        if required_socman_version and parse_version(info.soc_version) < \
-                parse_version(required_socman_version):
+        if package.required_socman_version and parse_version(info.soc_version) < \
+                parse_version(package.required_socman_version):
             raise CxmanageError("Update requires socman version %s (found %s)" %
-                    (required_socman_version, info.soc_version))
+                    (package.required_socman_version, info.soc_version))
 
         # Check firmware config
         if info.version != "Unknown":
-            if firmware_config == "default" and "slot2" in info.version:
+            if package.config == "default" and "slot2" in info.version:
                 raise CxmanageError("Refusing to upload a \'default\' package to a \'slot2\' host")
-            if firmware_config == "slot2" and not "slot2" in info.version:
+            if package.config == "slot2" and not "slot2" in info.version:
                 raise CxmanageError("Refusing to upload a \'slot2\' package to a \'default\' host")
 
         # Check that the priority can be bumped
-        priority = 0
-        image_types = [x.type for x in images]
-        for partition in fwinfo:
-            if (partition.type.split()[1].strip("()") in image_types and
-                    int(partition.flags, 16) & 2 == 0):
-                priority = max(priority, int(partition.priority, 16) + 1)
-        if priority > 0xFFFF:
-            raise CxmanageError("Unable to increment SIMG priority, too high")
+        if priority == None:
+            image_types = [x.type for x in package.images]
+            for partition in fwinfo:
+                if (partition.type.split()[1].strip("()") in image_types and
+                        int(partition.flags, 16) & 2 == 0):
+                    priority = max(priority, int(partition.priority, 16) + 1)
+            if priority > 0xFFFF:
+                raise CxmanageError("Unable to increment SIMG priority, too high")
 
         # Check partitions
-        for image in images:
+        for image in package.images:
             if image.type == "UBOOTENV" or partition_arg == "BOTH":
                 self._get_partition(fwinfo, image.type, "FIRST")
                 self._get_partition(fwinfo, image.type, "SECOND")
             else:
                 self._get_partition(fwinfo, image.type, partition_arg)
 
-    def update_firmware(self, tftp, images, partition_arg="INACTIVE",
-            firmware_version=None):
+    def update_firmware(self, tftp, package, partition_arg="INACTIVE",
+            priority=None):
         """ Update firmware on this target. """
         fwinfo = self.get_firmware_info()
 
         # Get the new priority
-        priority = 0
-        image_types = [x.type for x in images]
-        for partition in fwinfo:
-            # Make sure this partition is one of the types we're updating
-            # and that the partition is flagged as "active"
-            if (partition.type.split()[1].strip("()") in image_types and
-                    int(partition.flags, 16) & 2 == 0):
-                priority = max(priority, int(partition.priority, 16) + 1)
-        if priority > 0xFFFF:
-            raise CxmanageError("Unable to increment SIMG priority, too high")
+        if priority == None:
+            image_types = [x.type for x in package.images]
+            for partition in fwinfo:
+                # Make sure this partition is one of the types we're updating
+                # and that the partition is flagged as "active"
+                if (partition.type.split()[1].strip("()") in image_types and
+                        int(partition.flags, 16) & 2 == 0):
+                    priority = max(priority, int(partition.priority, 16) + 1)
+            if priority > 0xFFFF:
+                raise CxmanageError(
+                        "Unable to increment SIMG priority, too high")
 
-        for image in images:
+        for image in package.images:
             if image.type == "UBOOTENV":
                 # Get partitions
                 running_part = self._get_partition(fwinfo, image.type, "FIRST")
@@ -336,8 +328,8 @@ class Target:
                             self.work_dir)[1]
                     open(filename, "w").write(ubootenv.get_contents())
                     ubootenv_image = self.image_class(filename, image.type,
-                            False, image.priority, image.daddr,
-                            image.skip_crc32, image.version)
+                            False, image.daddr, image.skip_crc32,
+                            image.version)
                     self._upload_image(tftp, ubootenv_image, running_part,
                             priority)
                 else:
@@ -357,8 +349,8 @@ class Target:
                 for partition in partitions:
                     self._upload_image(tftp, image, partition, priority)
 
-        if firmware_version:
-            self.bmc.set_firmware_version(firmware_version)
+        if package.version:
+            self.bmc.set_firmware_version(package.version)
 
     def config_reset(self, tftp):
         """ Reset configuration to factory default """
@@ -396,7 +388,7 @@ class Target:
         filename = tempfile.mkstemp(prefix="%s/env_" % self.work_dir)[1]
         open(filename, "w").write(ubootenv.get_contents())
         ubootenv_image = self.image_class(filename, image.type, False,
-                image.priority, image.daddr, image.skip_crc32, image.version)
+                image.daddr, image.skip_crc32, image.version)
         self._upload_image(tftp, ubootenv_image, first_part, priority)
 
     def get_boot_order(self, tftp):
@@ -431,7 +423,8 @@ class Target:
 
         try:
             card = self.bmc.get_info_card()
-            setattr(result, "card", "%s X%02i" % (card.type, int(card.revision)))
+            setattr(result, "card", "%s X%02i" %
+                    (card.type, int(card.revision)))
         except IpmiError:
             # Should raise a cxmanage error, but we want to allow the command
             # to continue gracefully if socman is out of date.

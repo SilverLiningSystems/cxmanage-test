@@ -464,17 +464,15 @@ def fwupdate_command(controller, args):
     """update firmware on a cluster or host"""
     # Add image
     try:
-        if args.image_type == 'PACKAGE':
-            controller.add_package(args.filename, args.priority,
-                    args.skip_crc32, args.version)
-        else:
-            simg = None
-            if args.force_simg:
-                simg = False
-            elif args.skip_simg:
-                simg = True
-            controller.add_image(args.filename, args.image_type, simg,
-                    args.priority, args.daddr, args.skip_crc32, args.version)
+        simg = None
+        if args.force_simg:
+            simg = False
+        elif args.skip_simg:
+            simg = True
+
+        package = controller.get_firmware_package(args.filename,
+                args.image_type, simg, args.daddr, args.skip_crc32,
+                args.version)
     except ValueError as e:
         print "ERROR: %s" % e
         return True
@@ -497,7 +495,7 @@ def fwupdate_command(controller, args):
                     return 1
 
     add_targets(controller, args)
-    return controller.update_firmware(args.partition)
+    return controller.update_firmware(package, args.partition, args.priority)
 
 
 def fwinfo_command(controller, args):

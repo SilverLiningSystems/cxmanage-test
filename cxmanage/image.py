@@ -28,7 +28,6 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-
 """ Image objects used by the cxmanage controller """
 
 import os
@@ -42,11 +41,10 @@ class Image:
     """ An image consists of an image type, a filename, and any info needed
     to build an SIMG out of it. """
 
-    def __init__(self, filename, image_type, simg=None,
-            priority=None, daddr=None, skip_crc32=False, version=None):
+    def __init__(self, filename, image_type, simg=None, daddr=None,
+            skip_crc32=False, version=None):
         self.filename = filename
         self.type = image_type
-        self.priority = priority
         self.daddr = daddr
         self.skip_crc32 = skip_crc32
         self.version = version
@@ -72,9 +70,7 @@ class Image:
         if not self.simg:
             contents = open(filename).read()
 
-            # Figure out priority and daddr
-            if self.priority != None:
-                priority = self.priority
+            # Figure out daddr
             if self.daddr != None:
                 daddr = self.daddr
 

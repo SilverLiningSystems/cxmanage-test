@@ -28,6 +28,15 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+import atexit
+import shutil
+import tempfile
+
+WORK_DIR = tempfile.mkdtemp(prefix="cxmanage-")
+
+def cleanup():
+    shutil.rmtree(WORK_DIR)
+atexit.register(cleanup)
 
 class CxmanageError(Exception):
     """ Generic cxmanage error"""
