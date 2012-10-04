@@ -53,12 +53,14 @@ class Target:
     an username, and a password. """
 
     def __init__(self, address, username="admin", password="admin",
-            verbosity=0, bmc_class=LanBMC, ubootenv_class=UbootEnv):
+            verbosity=0, bmc_class=LanBMC, ubootenv_class=UbootEnv,
+            image_class=Image):
         self.address = address
         self.username = username
         self.password = password
         self.verbosity = verbosity
         self.ubootenv_class = ubootenv_class
+        self.image_class = image_class
 
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage-target-")
         atexit.register(self._cleanup)
@@ -311,9 +313,9 @@ class Target:
                     filename = tempfile.mkstemp(prefix="%s/env_" %
                             self.work_dir)[1]
                     open(filename, "w").write(ubootenv.get_contents())
-                    ubootenv_image = Image(filename, image.type, False,
-                            image.priority, image.daddr, image.skip_crc32,
-                            image.version)
+                    ubootenv_image = self.image_class(filename, image.type,
+                            False, image.priority, image.daddr,
+                            image.skip_crc32, image.version)
                     self._upload_image(tftp, ubootenv_image, running_part,
                             priority)
                 else:
@@ -371,8 +373,8 @@ class Target:
 
         filename = tempfile.mkstemp(prefix="%s/env_" % self.work_dir)[1]
         open(filename, "w").write(ubootenv.get_contents())
-        ubootenv_image = Image(filename, image.type, False, image.priority,
-                image.daddr, image.skip_crc32, image.version)
+        ubootenv_image = self.image_class(filename, image.type, False,
+                image.priority, image.daddr, image.skip_crc32, image.version)
         self._upload_image(tftp, ubootenv_image, first_part, priority)
 
     def get_boot_order(self, tftp):
@@ -451,7 +453,8 @@ class Target:
         partitions = [x for x in fwinfo if
                 x.type.split()[1][1:-1] == image_type]
         if len(partitions) < 1:
-            raise CxmanageError("No partitions found on host")
+            raise CxmanageError("No partition of type %s found on host"
+                    % image_type)
 
         if partition_arg == "FIRST":
             return partitions[0]
@@ -558,8 +561,8 @@ class Target:
 
         tftp.get_file(basename, filename)
 
-        return Image(filename, image_type, daddr=int(partition.daddr, 16),
-                version=partition.version)
+        return self.image_class(filename, image_type,
+                daddr=int(partition.daddr, 16), version=partition.version)
 
     def _wait_for_transfer(self, handle):
         """ Wait for a firmware transfer to finish"""

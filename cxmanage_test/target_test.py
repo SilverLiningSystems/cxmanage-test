@@ -54,7 +54,8 @@ class TargetTest(unittest.TestCase):
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 
         self.targets = [Target(x, verbosity=0, bmc_class=DummyBMC,
-                ubootenv_class=DummyUbootEnv) for x in ADDRESSES]
+                ubootenv_class=DummyUbootEnv, image_class=TestImage)
+                for x in ADDRESSES]
 
         # Set up an internal server
         self.tftp = InternalTftp()
