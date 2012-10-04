@@ -114,13 +114,13 @@ def main():
 
 def info_command(controller, args):
     """ Get package info """
-    controller.add_image(args.package, 'PACKAGE')
+    controller.add_package(args.package)
     controller.print_images()
 
 def add_command(controller, args):
     """ Create or add to a firmware package """
     try:
-        controller.add_image(args.package, 'PACKAGE')
+        controller.add_package(args.package)
     except ValueError as e:
         pass
 

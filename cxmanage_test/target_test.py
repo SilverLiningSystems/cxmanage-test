@@ -255,7 +255,7 @@ class TargetTest(unittest.TestCase):
             result = target.info_basic()
 
             self.assertEqual(target.bmc.executed, ["info_basic",
-                    "get_firmware_info"])
+                    "get_firmware_info", "info_card"])
             for attr in ["header", "version", "build_number", "timestamp",
                     "soc_version"]:
                 self.assertTrue(hasattr(result, attr))
@@ -414,6 +414,15 @@ class DummyBMC(LanBMC):
                 self.soc_version = "0.0.0"
                 self.build_number = "00000000"
                 self.timestamp = "0"
+        return Result()
+
+    def get_info_card(self):
+        self.executed.append("info_card")
+
+        class Result:
+            def __init__(self):
+                self.type = "TestBoard"
+                self.revision = "0"
         return Result()
 
 class Partition:

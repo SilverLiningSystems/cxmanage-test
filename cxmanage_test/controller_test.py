@@ -352,6 +352,7 @@ class DummyTarget:
         class Result:
             def __init__(self):
                 self.header = "Calxeda SoC (0x0096CD)"
+                self.card = "TestBoard X00"
                 self.version = "v0.0.0"
                 self.build_number = "00000000"
                 self.timestamp = "0"

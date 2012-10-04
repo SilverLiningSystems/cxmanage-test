@@ -42,7 +42,7 @@ import pkg_resources
 
 from cxmanage.controller import Controller
 
-PYIPMI_VERSION = '0.5.0'
+PYIPMI_VERSION = '0.5.1'
 
 # Load plugins
 PREFIX = 'cxmanage_plugin'

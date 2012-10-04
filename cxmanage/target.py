@@ -401,6 +401,14 @@ class Target:
             except CxmanageError:
                 pass
 
+        try:
+            card = self.bmc.get_info_card()
+            setattr(result, "card", "%s X%02i" % (card.type, int(card.revision)))
+        except IpmiError:
+            # Should raise a cxmanage error, but we want to allow the command
+            # to continue gracefully if socman is out of date.
+            setattr(result, "card", "Unknown")
+
         return result
 
     def info_dump(self, tftp):

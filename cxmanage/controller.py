@@ -554,6 +554,7 @@ class Controller:
                     result = results[target.address]
                     print "[ Info from %s ]" % target.address
                     print result.header
+                    print "Hardware version   : %s" % result.card
                     print "Firmware version   : %s" % result.version
                     for var, string in components:
                         if hasattr(result, var):
