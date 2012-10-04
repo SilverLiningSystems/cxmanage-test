@@ -259,20 +259,42 @@ class Target:
         except IpmiError as e:
             raise CxmanageError(self._parse_ipmierror(e))
 
-    def check_firmware(self, required_socman_version=None, firmware_config=None):
+    def check_firmware(self, images, partition_arg="INACTIVE",
+            required_socman_version=None, firmware_config=None):
         """ Check if this host is ready for an update """
         info = self.info_basic()
+        fwinfo = self.get_firmware_info()
 
+        # Check socman version
         if required_socman_version and parse_version(info.soc_version) < \
                 parse_version(required_socman_version):
             raise CxmanageError("Update requires socman version %s (found %s)" %
                     (required_socman_version, info.soc_version))
 
+        # Check firmware config
         if info.version != "Unknown":
             if firmware_config == "default" and "slot2" in info.version:
                 raise CxmanageError("Refusing to upload a \'default\' package to a \'slot2\' host")
             if firmware_config == "slot2" and not "slot2" in info.version:
                 raise CxmanageError("Refusing to upload a \'slot2\' package to a \'default\' host")
+
+        # Check that the priority can be bumped
+        priority = 0
+        image_types = [x.type for x in images]
+        for partition in fwinfo:
+            if (partition.type.split()[1].strip("()") in image_types and
+                    int(partition.flags, 16) & 2 == 0):
+                priority = max(priority, int(partition.priority, 16) + 1)
+        if priority > 0xFFFF:
+            raise CxmanageError("Unable to increment SIMG priority, too high")
+
+        # Check partitions
+        for image in images:
+            if image.type == "UBOOTENV" or partition_arg == "BOTH":
+                self._get_partition(fwinfo, image.type, "FIRST")
+                self._get_partition(fwinfo, image.type, "SECOND")
+            else:
+                self._get_partition(fwinfo, image.type, partition_arg)
 
     def update_firmware(self, tftp, images, partition_arg="INACTIVE",
             firmware_version=None):

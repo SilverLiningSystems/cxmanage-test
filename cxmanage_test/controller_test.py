@@ -319,7 +319,8 @@ class DummyTarget:
     def mc_reset(self):
         self.executed.append("mc_reset")
 
-    def check_firmware(self, required_socman_version, firmware_config):
+    def check_firmware(self, images, partition_arg="INACTIVE",
+            required_socman_version=None, firmware_config=None):
         self.executed.append("check_firmware")
 
     def update_firmware(self, tftp, images, partition_arg, firmware_version):

@@ -336,7 +336,8 @@ class Controller:
             print "Checking hosts..."
 
         results, errors = self._run_command(False, "check_firmware",
-                self.required_socman_version, self.firmware_config)
+                self.images, partition_arg, self.required_socman_version,
+                self.firmware_config)
         if errors:
             print "ERROR: Firmware update aborted."
             return True

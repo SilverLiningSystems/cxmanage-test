@@ -124,18 +124,27 @@ class TargetTest(unittest.TestCase):
     def test_check_firmware(self):
         """ Test target.check_firmware method """
         for target in self.targets:
-            target.check_firmware()
+            filename = "%s/%s" % (self.work_dir, "image.bin")
+            open(filename, "w").write("")
+            images = [
+                TestImage(filename, "SOC_ELF"),
+                TestImage(filename, "CDB"),
+                TestImage(filename, "UBOOTENV")
+            ]
+
+            # should pass
+            target.check_firmware(images)
 
             # should fail if we specify a socman version
             try:
-                target.check_firmware(required_socman_version="0.0.1")
+                target.check_firmware(images, required_socman_version="0.0.1")
                 self.fail()
             except CxmanageError:
                 pass
 
             # should fail if we try to upload a slot2
             try:
-                target.check_firmware(firmware_config="slot2")
+                target.check_firmware(images, firmware_config="slot2")
                 self.fail()
             except CxmanageError:
                 pass
