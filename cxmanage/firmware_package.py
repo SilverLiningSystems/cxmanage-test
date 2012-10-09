@@ -68,10 +68,13 @@ class FirmwarePackage:
                             "%s requires cxmanage version %s or later."
                             % (filename, cxmanage_ver))
 
-                self.version = config.get("package", "firmware_version")
-                self.config = config.get("package", "firmware_config")
-                self.required_socman_version = config.get("package",
-                        "required_socman_version")
+                if config.has_option("package", "required_socman_version"):
+                    self.required_socman_version = config.get("package",
+                            "required_socman_version")
+                if config.has_option("package", "firmware_version"):
+                    self.version = config.get("package", "firmware_version")
+                if config.has_option("package", "firmware_config"):
+                    self.config = config.get("package", "firmware_config")
 
             # Add all images from package
             image_sections = [x for x in config.sections() if x != "package"]
