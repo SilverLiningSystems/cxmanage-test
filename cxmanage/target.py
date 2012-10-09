@@ -227,13 +227,6 @@ class Target:
                 if entry.version == "":
                     entry.version = "Unknown"
 
-                # TODO: remove this later
-                # For compatibility with old ipmitool versions, make sure
-                # we have a "priority" field. It used to be called "version"
-                if not hasattr(entry, "priority"):
-                    entry.priority = entry.version
-                    entry.version = "Unknown"
-
             # TODO: remove this later
             # Flag CDB as "in use" based on socman info
             for a in range(1, len(fwinfo)):
