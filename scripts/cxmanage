@@ -58,6 +58,8 @@ def build_parser():
             description='Calxeda Server Management Utility')
 
     #global arguments
+    p['parser'].add_argument('-V', action='store_true',
+            help='Show version information')
     p['parser'].add_argument('-u', '--user', default='admin',
             help='Username for login')
     p['parser'].add_argument('-p', '--password', default='admin',
@@ -254,6 +256,10 @@ def validate_args(args):
 
 def main():
     """Get args and go"""
+    if '-V' in sys.argv:
+        print_version()
+        sys.exit(0)
+
     # Parse arguments
     parser = build_parser()
     args = parser.parse_args()
@@ -281,6 +287,12 @@ def main():
     # Set up TFTP and run
     set_tftp(controller, args)
     sys.exit(args.func(controller, args))
+
+
+def print_version():
+    """ Print the current version of cxmanage """
+    version = pkg_resources.require('cxmanage')[0].version
+    print "cxmanage version %s" % version
 
 
 def check_versions():
