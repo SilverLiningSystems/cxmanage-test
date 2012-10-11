@@ -31,6 +31,7 @@
 
 """ Various objects used by tests """
 
+import os
 import random
 import tempfile
 
@@ -40,8 +41,9 @@ def random_file(work_dir, size):
     """ Create a random file """
     contents = "".join([chr(random.randint(0, 255))
         for a in range(size)])
-    filename = tempfile.mkstemp(prefix="%s/" % work_dir)[1]
-    open(filename, "w").write(contents)
+    fd, filename = tempfile.mkstemp(dir=work_dir)
+    with os.fdopen(fd, "w") as f:
+        f.write(contents)
     return filename
 
 class TestImage(Image):

@@ -60,8 +60,6 @@ class Target:
         self.ubootenv_class = ubootenv_class
         self.image_class = image_class
 
-        self.work_dir = tempfile.mkdtemp(dir=WORK_DIR)
-
         verbose = verbosity >= 2
         self.bmc = make_bmc(bmc_class, hostname=address,
                 username=username, password=password, verbose=verbose)
@@ -71,7 +69,8 @@ class Target:
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
-        filename = tempfile.mkstemp(prefix="%s/ip_" % self.work_dir)[1]
+        fd, filename = tempfile.mkstemp(dir=WORK_DIR)
+        os.close(fd)
         basename = os.path.basename(filename)
 
         # Send ipinfo command
@@ -118,7 +117,8 @@ class Target:
         tftp_address = "%s:%s" % (tftp.get_address(self.address),
                 tftp.get_port())
 
-        filename = tempfile.mkstemp(prefix="%s/mac_" % self.work_dir)[1]
+        fd, filename = tempfile.mkstemp(dir=WORK_DIR)
+        os.close(fd)
         basename = os.path.basename(filename)
 
         # Send ipinfo command
@@ -320,9 +320,9 @@ class Target:
                     ubootenv.variables["bootcmd_default"] = \
                             old_ubootenv.variables["bootcmd_default"]
 
-                    filename = tempfile.mkstemp(prefix="%s/env_" %
-                            self.work_dir)[1]
-                    open(filename, "w").write(ubootenv.get_contents())
+                    fd, filename = tempfile.mkstemp(dir=WORK_DIR)
+                    with os.fdopen(fd, "w") as f:
+                        f.write(ubootenv.get_contents())
                     ubootenv_image = self.image_class(filename, image.type,
                             False, image.daddr, image.skip_crc32,
                             image.version)
@@ -381,8 +381,9 @@ class Target:
         ubootenv.set_boot_order(boot_args)
         priority = max(int(x.priority, 16) for x in [first_part, active_part])
 
-        filename = tempfile.mkstemp(prefix="%s/env_" % self.work_dir)[1]
-        open(filename, "w").write(ubootenv.get_contents())
+        fd, filename = tempfile.mkstemp(dir=WORK_DIR)
+        with os.fdopen(fd, "w") as f:
+            f.write(ubootenv.get_contents())
         ubootenv_image = self.image_class(filename, image.type, False,
                 image.daddr, image.skip_crc32, image.version)
         self._upload_image(tftp, ubootenv_image, first_part, priority)
@@ -517,7 +518,7 @@ class Target:
                     image.type, partition_id)
 
         # Upload image to tftp server
-        filename = image.upload(self.work_dir, tftp, priority, daddr)
+        filename = image.upload(tftp, priority, daddr)
 
         errors = 0
         while True:
@@ -551,7 +552,8 @@ class Target:
                 tftp.get_port())
 
         # Download the image
-        filename = tempfile.mkstemp(prefix="%s/img_" % self.work_dir)[1]
+        fd, filename = tempfile.mkstemp(dir=WORK_DIR)
+        os.close(fd)
         basename = os.path.basename(filename)
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]

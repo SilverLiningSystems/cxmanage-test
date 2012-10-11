@@ -55,7 +55,6 @@ class ImageTest(unittest.TestCase):
 
     def test_upload(self):
         """ Test image creation and upload """
-
         imglen = 1024
         priority = 1
         daddr = 12345
@@ -66,8 +65,7 @@ class ImageTest(unittest.TestCase):
         image = TestImage(filename, "RAW")
 
         # Upload image and delete file
-        image_filename = image.upload(self.work_dir,
-                self.tftp, priority, daddr)
+        image_filename = image.upload(self.tftp, priority, daddr)
         os.remove(filename)
 
         # Download image
@@ -81,3 +79,13 @@ class ImageTest(unittest.TestCase):
         self.assertEqual(header.imglen, imglen)
         self.assertEqual(header.daddr, daddr)
         self.assertEqual(simg[header.imgoff:], contents)
+
+    def test_multiple_uploads(self):
+        """ Test to make sure FDs are being closed """
+        # Create image
+        filename = random_file(self.work_dir, 1024)
+        contents = open(filename).read()
+        image = TestImage(filename, "RAW")
+
+        for x in xrange(2048):
+            image.upload(self.tftp, 0, 0)

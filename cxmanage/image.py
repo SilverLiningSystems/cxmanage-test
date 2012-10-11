@@ -34,7 +34,7 @@ import os
 import subprocess
 import tempfile
 
-from cxmanage import CxmanageError
+from cxmanage import CxmanageError, WORK_DIR
 from cxmanage.simg import create_simg, has_simg, valid_simg, get_simg_contents
 
 class Image:
@@ -62,7 +62,7 @@ class Image:
             raise CxmanageError("%s is not a valid %s image" %
                     (os.path.basename(filename), image_type))
 
-    def upload(self, work_dir, tftp, priority, daddr):
+    def upload(self, tftp, priority, daddr):
         """ Create and upload an SIMG file """
         filename = self.filename
 
@@ -79,8 +79,9 @@ class Image:
             simg = create_simg(contents, priority=priority, daddr=daddr,
                     skip_crc32=self.skip_crc32, align=align,
                     version=self.version)
-            filename = tempfile.mkstemp(".simg", work_dir + "/")[1]
-            open(filename, "w").write(simg)
+            fd, filename = tempfile.mkstemp(dir=WORK_DIR)
+            with os.fdopen(fd, "w") as f:
+                f.write(simg)
 
         # Make sure the simg was built correctly
         if not valid_simg(open(filename).read()):
