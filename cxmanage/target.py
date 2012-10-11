@@ -526,16 +526,15 @@ class Target:
                 # Update the firmware
                 result = self.bmc.update_firmware(filename,
                         partition_id, image.type, tftp_address)
-                if hasattr(result, "fw_error") and result.fw_error != None:
-                    raise CxmanageError(result.fw_error)
+                if not hasattr(result, "tftp_handle_id"):
+                    raise CxmanageError("Failed to start firmware upload")
                 self._wait_for_transfer(result.tftp_handle_id)
 
                 # Verify crc and activate
                 result = self.bmc.check_firmware(partition_id)
-                if hasattr(result, "crc32") and result.error == None:
-                    self.bmc.activate_firmware(partition_id)
-                else:
+                if not hasattr(result, "crc32") or result.error != None:
                     raise CxmanageError("Node reported crc32 check failure")
+                self.bmc.activate_firmware(partition_id)
 
                 break
 
@@ -563,8 +562,8 @@ class Target:
             try:
                 result = self.bmc.retrieve_firmware(basename, partition_id,
                         image_type, tftp_address)
-                if hasattr(result, "fw_error") and result.fw_error != None:
-                    raise CxmanageError(result.fw_error)
+                if not hasattr(result, "tftp_handle_id"):
+                    raise CxmanageError("Failed to start firmware download")
                 self._wait_for_transfer(result.tftp_handle_id)
                 break
             except CxmanageError as e:
@@ -583,7 +582,7 @@ class Target:
 
         result = self.bmc.get_firmware_status(handle)
         if not hasattr(result, "status"):
-            raise CxmanageError("Unable to retrieve transfer info")
+            raise CxmanageError("Failed to retrieve transfer info")
 
         while result.status == "In progress":
             if time.time() >= deadline:
@@ -593,7 +592,7 @@ class Target:
 
             result = self.bmc.get_firmware_status(handle)
             if not hasattr(result, "status"):
-                raise CxmanageError("Unable to retrieve transfer info")
+                raise CxmanageError("Failed to retrieve transfer info")
 
         if result.status != "Complete":
             raise CxmanageError("Node reported transfer failure")
