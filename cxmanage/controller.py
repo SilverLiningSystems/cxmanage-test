@@ -420,7 +420,7 @@ class Controller:
         results, errors = self._run_command(False, "info_basic")
 
         components = [
-            ("soc_version", "Socman version"),
+            ("soc_version", "ECME version"),
             ("cdb_version", "CDB version"),
             ("stage2_version", "Stage2boot version"),
             ("bootlog_version", "Bootlog version"),
@@ -436,7 +436,6 @@ class Controller:
                 if target.address in results:
                     result = results[target.address]
                     print "[ Info from %s ]" % target.address
-                    print result.header
                     print "Hardware version   : %s" % result.card
                     print "Firmware version   : %s" % result.version
                     for var, string in components:
