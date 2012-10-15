@@ -250,13 +250,13 @@ class Target:
         fwinfo = self.get_firmware_info()
 
         # Check socman version
-        if package.required_socman_version:
-            soc_version = info.soc_version.lstrip("v")
-            required_version = package.required_socman_version.lstrip("v")
-            if package.required_socman_version and parse_version(soc_version) \
-                    < parse_version(required_version):
-                raise CxmanageError("Update requires socman version %s (found %s)"
-                        % (required_version, soc_version))
+        # if package.required_socman_version:
+        #    soc_version = info.soc_version.lstrip("v")
+        #    required_version = package.required_socman_version.lstrip("v")
+        #    if package.required_socman_version and parse_version(soc_version) \
+        #            < parse_version(required_version):
+        #        raise CxmanageError("Update requires socman version %s (found %s)"
+        #                % (required_version, soc_version))
 
         # Check firmware config
         if info.version != "Unknown" and len(info.version) < 32:
