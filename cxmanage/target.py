@@ -398,10 +398,10 @@ class Target:
         if hasattr(result, "error"):
             raise CxmanageError(result.error)
 
-        fwinfo = self.get_firmware_info()
+        result.soc_version = "v%s" % result.soc_version
 
+        fwinfo = self.get_firmware_info()
         components = [
-            ("soc_version", "SOC_ELF"),
             ("cdb_version", "CDB"),
             ("stage2_version", "S2_ELF"),
             ("bootlog_version", "BOOT_LOG"),
@@ -410,7 +410,6 @@ class Target:
             ("ubootenv_version", "UBOOTENV"),
             ("dtb_version", "DTB")
         ]
-
         for var, ptype in components:
             try:
                 partition = self._get_partition(fwinfo, ptype, "ACTIVE")
