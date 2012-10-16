@@ -213,16 +213,17 @@ class Controller:
         return len(errors) > 0
 
     def update_firmware(self, package, partition_arg="INACTIVE",
-            priority=None):
+            priority=None, force=False):
         """ Send firmware update commands to all targets """
-        if self.verbosity >= 1:
-            print "Checking hosts..."
+        if not force:
+            if self.verbosity >= 1:
+                print "Checking hosts..."
 
-        results, errors = self._run_command(False, "check_firmware", package,
-                partition_arg, priority)
-        if errors:
-            print "ERROR: Firmware update aborted."
-            return True
+            results, errors = self._run_command(False, "check_firmware", package,
+                    partition_arg, priority)
+            if errors:
+                print "ERROR: Firmware update aborted."
+                return True
 
         if self.verbosity >= 1:
             print "Updating firmware..."

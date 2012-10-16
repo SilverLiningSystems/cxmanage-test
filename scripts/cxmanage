@@ -71,8 +71,8 @@ def build_parser():
     p['parser'].add_argument('--command_delay', type=float,
             metavar='SECONDS', default=0.0,
             help='Per thread time to delay between issuing commands')
-    p['parser'].add_argument('--force-yes', action='store_true',
-            help='Don\'t stop at confirmation dialogue')
+    p['parser'].add_argument('--force', action='store_true',
+            help='Force the command to run')
     p['parser'].add_argument('--retry', help='Retry command on multiple times',
             type=int, default=None, metavar='COUNT')
     p['parser'].add_argument('--ipmipath', help='Path to ipmitool command',
@@ -493,7 +493,7 @@ def fwupdate_command(controller, args):
     # Print all_nodes warning/confirmation
     if not args.all_nodes:
         sys.stdout.write('WARNING: Updating firmware without --all-nodes is dangerous.')
-        if args.force_yes:
+        if args.force:
             sys.stdout.write('\n\n')
             sys.stdout.flush()
         else:
@@ -508,7 +508,8 @@ def fwupdate_command(controller, args):
                     return 1
 
     add_targets(controller, args)
-    return controller.update_firmware(package, args.partition, args.priority)
+    return controller.update_firmware(package, args.partition, args.priority,
+            args.force)
 
 
 def fwinfo_command(controller, args):

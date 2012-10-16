@@ -218,20 +218,20 @@ class ControllerCommandTest(unittest.TestCase):
     def test_update_firmware(self):
         """ Test fwupdate command """
         package = FirmwarePackage()
-        # Add images
-        """
-        self.controller.add_image("stage2boot.bin", "S2_ELF")
-        self.controller.add_image("socmanager.elf", "SOC_ELF")
-        self.controller.add_image("factory.cdb", "CDB")"""
-
-        # Perform firmware update
         self.assertFalse(self.controller.update_firmware(package))
 
-        # Check updated types
         for target in self.controller.targets:
             self.assertEqual(len(target.executed), 2)
             self.assertEqual(target.executed[0], ("check_firmware", package))
             self.assertEqual(target.executed[1], ("update_firmware", package))
+
+    def test_update_firmware_force(self):
+        """ Test fwupdate force option """
+        package = FirmwarePackage()
+        self.assertFalse(self.controller.update_firmware(package, force=True))
+
+        for target in self.controller.targets:
+            self.assertEqual(target.executed, [("update_firmware", package)])
 
     def test_info_basic(self):
         """ Test info basic command """
