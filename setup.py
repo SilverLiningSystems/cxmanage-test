@@ -33,7 +33,7 @@ from setuptools import setup
 
 setup(
     name='cxmanage',
-    version='0.6.0',
+    version='0.6.1',
     packages=['cxmanage'],
     scripts=['scripts/cxmanage', 'scripts/cxpackage'],
     package_data={'cxmanage': ['data/cids', 'data/registers']},
