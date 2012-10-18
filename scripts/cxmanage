@@ -58,7 +58,7 @@ def build_parser():
             description='Calxeda Server Management Utility')
 
     #global arguments
-    p['parser'].add_argument('-V', action='store_true',
+    p['parser'].add_argument('-V', '--version', action='store_true',
             help='Show version information')
     p['parser'].add_argument('-u', '--user', default='admin',
             help='Username for login')
@@ -256,35 +256,33 @@ def validate_args(args):
 
 def main():
     """Get args and go"""
-    if '-V' in sys.argv:
-        print_version()
-        sys.exit(0)
+    # Have to handle the global -V and --version options before we parse the
+    # arguments properly, since cxmanage normally requires a command to run.
+    for arg in sys.argv[1:]:
+        if arg in ['-V', '--version']:
+            print_version()
+            sys.exit(0)
+        elif arg[0] != '-':
+            break
 
-    # Parse arguments
     parser = build_parser()
     args = parser.parse_args()
     validate_args(args)
-
-    # Set ipmitool path
     if args.ipmipath:
         if os.path.isdir(args.ipmipath):
             args.ipmipath = args.ipmipath.rstrip('/') + '/ipmitool'
         os.environ['IPMITOOL_PATH'] = args.ipmipath
 
-    # Check versions
     check_versions()
 
-    # Make the controller
     verbosity = 1
     if args.verbose:
         verbosity = 2
     elif args.quiet:
         verbosity = 0
-
     controller = Controller(verbosity=verbosity, max_threads=args.threads,
             retries=args.retry, command_delay=args.command_delay)
 
-    # Set up TFTP and run
     set_tftp(controller, args)
     sys.exit(args.func(controller, args))
 
