@@ -36,7 +36,7 @@ and the objects it contains: tftp, images, and targets. """
 import sys
 import time
 
-from cxmanage.command import Command
+from cxmanage.command import Command, CommandFailedError
 from cxmanage.tftp import InternalTftp, ExternalTftp
 from cxmanage.target import Target
 from cxmanage.image import Image
@@ -521,6 +521,8 @@ class Controller:
         """ Run a multi-threaded command on the specified targets.
 
         Returns (results, errors) which map addresses to their results """
+        results = {}
+        errors = {}
 
         command = Command(targets, name, args, self.command_delay,
                 self.max_threads)
@@ -534,12 +536,18 @@ class Controller:
                     counter += 1
                 time.sleep(0.25)
 
-            results = command.results
-            errors = command.errors
+            try:
+                results = command.get_results()
+            except CommandFailedError as e:
+                results = e.results
+                errors = e.errors
         except KeyboardInterrupt:
             retries = 0
-            results = command.results.copy()
-            errors = command.errors.copy()
+            try:
+                results = command.get_results()
+            except CommandFailedError as e:
+                results = e.results
+                errors = e.errors
             for target in targets:
                 if not (target.address in results or target.address in errors):
                     errors[target.address] = "Aborted by keyboard interrupt"
@@ -590,10 +598,9 @@ class Controller:
 
     def _print_command_status(self, targets, command, counter):
         """ Print the status of a command """
+        status = command.get_status()
         message = "\r%i successes  |  %i errors  |  %i nodes left  |  %s"
-        successes = len(command.results)
-        errors = len(command.errors)
-        nodes_left = len(targets) - successes - errors
         dots = "".join(["." for x in range(counter % 4)]).ljust(3)
-        sys.stdout.write(message % (successes, errors, nodes_left, dots))
+        sys.stdout.write(message % (status.successes, status.errors,
+                status.nodes_left, dots))
         sys.stdout.flush()

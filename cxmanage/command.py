@@ -31,30 +31,46 @@
 from time import sleep
 from threading import Thread, Lock
 
+
+class CommandFailedError(Exception):
+    """ Error that indicates a command has failed """
+    def __init__(self, results, errors):
+        self.results = results
+        self.errors = errors
+
+
+class CommandStatus:
+    """ Container for command status """
+    def __init__(self, successes, errors, nodes_left):
+        self.successes = successes
+        self.errors = errors
+        self.nodes_left = nodes_left
+
+
 class Command:
-    """ A command object that runs a given method across multiple targets.
+    """ A command object that runs a given method across multiple nodes.
 
     It's designed to have an interface similar to that of a thread, with
     methods such as start(), join(), is_alive(), etc.
 
     The command object is not itself a thread, but it does contain multiple
     worker threads. The function is executed in parallel across all of the
-    targets, so make sure the targets don't depend on eachother in any way. """
+    nodes, so make sure the nodes don't depend on eachother in any way. """
 
 
     ############################ Public methods ###############################
 
-    def __init__(self, targets, name, args, delay=0, max_threads=1):
-        self.results = {}
-        self.errors = {}
-
+    def __init__(self, nodes, name, args, delay=0, max_threads=1):
         self._lock = Lock()
-        self._targets = targets[:]
+
+        self._node_iterator = iter(nodes)
+        self._node_count = len(nodes)
+
         self._name = name
         self._args = args
         self._delay = delay
 
-        num_threads = min(max_threads, len(self._targets))
+        num_threads = min(max_threads, self._node_count)
         self._workers = [CommandWorker(self) for i in range(num_threads)]
 
     def start(self):
@@ -71,59 +87,70 @@ class Command:
         """ Return true if the command is still running """
         return any([x.is_alive() for x in self._workers])
 
+    def get_results(self):
+        """ Get the results of this command.
+
+        Returns a { ip_address : result } dictionary of results.
+
+        Raises a CommandFailedError if there were any errors. """
+        results = {}
+        errors = {}
+        for worker in self._workers:
+            results.update(worker.results)
+            errors.update(worker.errors)
+
+        if errors:
+            raise CommandFailedError(results, errors)
+        return results
+
+    def get_status(self):
+        """ Get the status of this command.
+
+        Returns a CommandStatus object. """
+        successes, errors = 0
+        for worker in self._workers:
+            successes += len(worker.results)
+            errors += len(worker.errors)
+        nodes_left = self._node_count - successes - errors
+        return CommandStatus(successes, errors, nodes_left)
 
     ################## Private methods for CommandWorkers #####################
 
-    def _get_next_target(self):
-        """ Get the next target to operate on. """
+    def _get_next_node(self):
+        """ Get the next node to operate on. """
         self._lock.acquire()
-
-        # TODO: make this more efficient. We probably don't want to be slicing
-        # the array every single time.
-        if self._targets:
-            target = self._targets[0]
-            self._targets = self._targets[1:]
-        else:
-            target = None
-
-        self._lock.release()
-        return target
-
-    def _set_result(self, address, result):
-        """ Set the result for a given address """
-        self._lock.acquire()
-        self.results[address] = result
-        self._lock.release()
-
-    def _set_error(self, address, error):
-        """ Set an error for the given address """
-        self._lock.acquire()
-        self.errors[address] = error
-        self._lock.release()
+        try:
+            return self._node_iterator.next()
+        finally:
+            self._lock.release()
 
 
 class CommandWorker(Thread):
     """ A worker thread for a command.
 
-    Once started, the worker will obtain targets from the pool and run the
-    named method on them. The thread terminates once there are no targets
-    remaining in the pool. """
+    Once started, the worker will obtain nodes from the pool and run the
+    named method on them. The thread terminates once there are no nodes
+    remaining. """
 
     def __init__(self, command):
         Thread.__init__(self)
         self.daemon = True
         self.command = command
+        self.results = {}
+        self.errors = {}
 
     def run(self):
-        """ Run the named method on some targets, then terminate """
-
-        target = self.command._get_next_target()
-        while target != None:
-            try:
-                sleep(self.command._delay)
-                method = getattr(target, self.command._name)
-                result = method(*self.command._args)
-                self.command._set_result(target.address, result)
-            except Exception as e:
-                self.command._set_error(target.address, e)
-            target = self.command._get_next_target()
+        """ Run the named method on some nodes, store the results/errors, then
+        terminate. """
+        try:
+            while True:
+                node = self.command._get_next_node()
+                try:
+                    sleep(self.command._delay)
+                    method = getattr(node, self.command._name)
+                    result = method(*self.command._args)
+                    self.results[node.address] = result
+                except Exception as e:
+                    self.errors[node.address] = e
+        except StopIteration:
+            pass

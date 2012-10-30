@@ -32,7 +32,7 @@ import unittest
 import random
 import time
 
-from cxmanage.command import Command, CommandWorker
+from cxmanage.command import Command, CommandWorker, CommandFailedError
 
 NUM_NODES = 128
 ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]
@@ -54,17 +54,15 @@ class CommandTest(unittest.TestCase):
         worker.start()
         worker.join()
 
-        self.assertEqual(len(command.results), len(self.good_targets))
-        self.assertEqual(len(command.errors), len(self.bad_targets))
+        self.assertEqual(len(worker.results), len(self.good_targets))
+        self.assertEqual(len(worker.errors), len(self.bad_targets))
 
         for target in self.good_targets:
             self.assertEqual(target.executed, [("action", ("a", "b", "c"))])
-            self.assertTrue((target.address, "action_result")
-                    in command.results)
+            self.assertEqual(worker.results[target.address], "action_result")
         for target in self.bad_targets:
             self.assertEqual(target.executed, [("action", ("a", "b", "c"))])
-            self.assertTrue((target.address, "action_error")
-                    in command.errors)
+            self.assertEqual(str(worker.errors[target.address]), "action_error")
 
     def test_command(self):
         """ Test the command spawner """
@@ -73,13 +71,19 @@ class CommandTest(unittest.TestCase):
         command.start()
         command.join()
 
+        try:
+            command.get_results()
+            self.fail()
+        except CommandFailedError as e:
+            results = e.results
+            errors = e.errors
+
         for target in self.good_targets:
             self.assertEqual(target.executed, [("action", ("a", "b", "c"))])
-            self.assertEqual(command.results[target.address], "action_result")
+            self.assertEqual(results[target.address], "action_result")
         for target in self.bad_targets:
             self.assertEqual(target.executed, [("action", ("a", "b", "c"))])
-            self.assertEqual(str(command.errors[target.address]),
-                    "action_error")
+            self.assertEqual(str(errors[target.address]), "action_error")
 
     def test_command_delay(self):
         """ Test the command delay argument """
@@ -114,20 +118,10 @@ class DummyCommand:
         self.results = []
         self.errors = []
 
-        self._targets = targets
+        self._iterator = iter(targets)
         self._name = "action"
         self._args = ("a", "b", "c")
         self._delay = 0
 
-    def _get_next_target(self):
-        if not self._targets:
-            return None
-        target = self._targets[0]
-        self._targets = self._targets[1:]
-        return target
-
-    def _set_result(self, address, result):
-        self.results.append((address, result))
-
-    def _set_error(self, address, error):
-        self.errors.append((address, str(error)))
+    def _get_next_node(self):
+        return self._iterator.next()
