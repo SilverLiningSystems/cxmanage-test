@@ -37,10 +37,10 @@ import sys
 import time
 import traceback
 
+from cxmanage.command import Command, CommandFailedError
 from cxmanage.tftp import InternalTftp, ExternalTftp
 from cxmanage.image import Image
 from cxmanage.node import Node
-from cxmanage.command import Command
 from cxmanage.ubootenv import UbootEnv
 from cxmanage.firmware_package import FirmwarePackage
 
@@ -582,14 +582,10 @@ class NodeManager(object):
         """ Run a multi-threaded command on the specified targets.
 
         Returns (results, errors) which map addresses to their results """
-        if (self.verbose >= 1):
-            print 'targets = %s' % [t.address for t in targets]
-            print 'retries = %s' % retries
-            print 'name    = %s' % name
-            print 'args    = %s' % str(args)
-            
-        command = Command(targets, name, args, self.delay,
-                self.max_threads)
+        results = {}
+        errors = {}
+        command = Command(targets, name, args, self.command_delay,
+                          self.max_threads)
         command.start()
 
         try:
@@ -600,12 +596,18 @@ class NodeManager(object):
                     counter += 1
                 time.sleep(0.25)
 
-            results = command.results
-            errors = command.errors
+            try:
+                results = command.get_results()
+            except CommandFailedError as e:
+                results = e.results
+                errors = e.errors
         except KeyboardInterrupt:
             retries = 0
-            results = command.results.copy()
-            errors = command.errors.copy()
+            try:
+                results = command.get_results()
+            except CommandFailedError as e:
+                results = e.results
+                errors = e.errors
             for target in targets:
                 if not (target.address in results or target.address in errors):
                     errors[target.address] = "Aborted by keyboard interrupt"
@@ -656,10 +658,9 @@ class NodeManager(object):
 
     def _print_command_status(self, targets, command, counter):
         """ Print the status of a command """
+        status = command.get_status()
         message = "\r%i successes  |  %i errors  |  %i nodes left  |  %s"
-        successes = len(command.results)
-        errors = len(command.errors)
-        nodes_left = len(targets) - successes - errors
         dots = "".join(["." for x in range(counter % 4)]).ljust(3)
-        sys.stdout.write(message % (successes, errors, nodes_left, dots))
+        sys.stdout.write(message % (status.successes, status.errors,
+                status.nodes_left, dots))
         sys.stdout.flush()
