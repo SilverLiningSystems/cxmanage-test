@@ -33,8 +33,8 @@ import os
 import ConfigParser
 import pkg_resources
 
-from cxmanage import WORK_DIR
-from cxmanage.image import Image
+from cxmanage_api import WORK_DIR
+from cxmanage_api.image import Image
 
 class FirmwarePackage:
     """ A firmware update package containing multiple images and version info

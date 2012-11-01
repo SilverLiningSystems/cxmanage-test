@@ -34,8 +34,8 @@ import shutil
 import tempfile
 import unittest
 
-from cxmanage.simg import get_simg_header
-from cxmanage.tftp import InternalTftp
+from cxmanage_api.simg import get_simg_header
+from cxmanage_api.tftp import InternalTftp
 
 from cxmanage_test import random_file, TestImage
 

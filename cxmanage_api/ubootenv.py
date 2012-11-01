@@ -31,9 +31,9 @@
 
 import struct
 
-from cxmanage import CxmanageError
-from cxmanage.simg import has_simg, get_simg_contents
-from cxmanage.crc32 import get_crc32
+from cxmanage_api import CxmanageError
+from cxmanage_api.simg import has_simg, get_simg_contents
+from cxmanage_api.crc32 import get_crc32
 
 ENVIRONMENT_SIZE = 8192
 

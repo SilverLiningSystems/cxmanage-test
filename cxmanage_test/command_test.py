@@ -32,7 +32,7 @@ import unittest
 import random
 import time
 
-from cxmanage.command import Command, CommandWorker, CommandFailedError
+from cxmanage_api.command import Command, CommandWorker, CommandFailedError
 
 NUM_NODES = 128
 ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]

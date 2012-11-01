@@ -32,12 +32,13 @@ import atexit
 import shutil
 import tempfile
 
-#WORK_DIR = tempfile.mkdtemp(prefix="cxmanage-")
+WORK_DIR = tempfile.mkdtemp(prefix="cxmanage-")
 
 def cleanup():
     shutil.rmtree(WORK_DIR)
 atexit.register(cleanup)
 
-#class CxmanageError(Exception):
-#    """ Generic cxmanage error"""
-#    pass
+# We want to remove this, but wait until no classes are using it.
+class CxmanageError(Exception):
+    """ Generic cxmanage error"""
+    pass

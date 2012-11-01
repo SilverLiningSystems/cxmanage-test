@@ -34,8 +34,8 @@ import os
 import subprocess
 import tempfile
 
-from cxmanage import CxmanageError, WORK_DIR
-from cxmanage.simg import create_simg, has_simg, valid_simg, get_simg_contents
+from cxmanage_api import CxmanageError, WORK_DIR
+from cxmanage_api.simg import create_simg, has_simg, valid_simg, get_simg_contents
 
 class Image:
     """ An image consists of an image type, a filename, and any info needed

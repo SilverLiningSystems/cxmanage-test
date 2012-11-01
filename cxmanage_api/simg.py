@@ -33,7 +33,7 @@
 
 import struct
 
-from cxmanage.crc32 import get_crc32
+from cxmanage_api.crc32 import get_crc32
 
 HEADER_LENGTH = 60
 MIN_HEADER_LENGTH = 28

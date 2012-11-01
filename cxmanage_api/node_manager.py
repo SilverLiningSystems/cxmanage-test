@@ -198,6 +198,7 @@ class NodeManager(object):
         """ Start a command on the given targets """
         command = Command(nodes, name, args, self.command_delay,
                 self.max_threads)
+        command.start()
         if asynchronous:
             return command
         else:

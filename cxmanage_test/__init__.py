@@ -35,7 +35,7 @@ import os
 import random
 import tempfile
 
-from cxmanage.image import Image
+from cxmanage_api.image import Image
 
 def random_file(work_dir, size):
     """ Create a random file """

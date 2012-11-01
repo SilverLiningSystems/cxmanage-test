@@ -34,7 +34,7 @@ import shutil
 import tempfile
 import unittest
 
-from cxmanage.tftp import InternalTftp, ExternalTftp
+from cxmanage_api.tftp import InternalTftp, ExternalTftp
 
 from cxmanage_test import random_file
 
