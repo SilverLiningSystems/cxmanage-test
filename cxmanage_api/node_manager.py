@@ -28,86 +28,59 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-
-""" The controller object mediates between a UI and the application model.
-In this case, the controller understands the model's container structure
-and the objects it contains: tftp, images, and targets. """
-
-import sys
-import time
 import traceback
 
-from cxmanage.command import Command, CommandFailedError
-from cxmanage.tftp import InternalTftp, ExternalTftp
-from cxmanage.image import Image
-from cxmanage.node import Node
-from cxmanage.ubootenv import UbootEnv
-from cxmanage.firmware_package import FirmwarePackage
+from cxmanage_api.command import Command
+from cxmanage_api.tftp import InternalTftp, ExternalTftp
+from cxmanage_api.node import Node
 
 
 class NodeManager(object):
-    """ The Fabric class provides management of multiple nodes. 
-    Fabrics have the ability to send commands to:
+    """ The NodeManager class provides management of multiple nodes.
+    NodeManagers have the ability to send commands to:
         -> Any particular node.
         -> All nodes.
-        -> Fabric Management commands to node 0.
-    
-    To create a Fabric object, only a single node (ideally node 0) is needed.
-    The rest of the fabric topology will be derived via node 0.
-    
+
+    To create a NodeManager object, only a single node (ideally node 0) is needed.
+    The rest of the fabric can optionally be derived via node 0.
+
     Note:
-        * Constructing Fabric objects without a valid node 0 will mean that all
+        * Constructing NodeManager objects without a valid node 0 will mean that all
           Fabric Management commands will NOT work.
     """
 
-    def __init__(self, nodes=[], max_threads=1, delay=0, verbose=False, 
-                  tftp_server=None):
-        """Default constructor for the Controller class.
-        
-        If given a dictionary of nodes (i.e. your topology is defined), we will
-        assume you know what you are doing, and constructed it with purpose.
-        Otherwise, if only given a node 0 ip address, the node topology will
-        be derived.
-        
-        @param nodes: Dictionary of nodes in your fabric, or node 0 ip.
-        @type nodes: list or string
+    def __init__(self, max_threads=1, command_delay=0, verbose=False):
+        """Default constructor for the NodeManager class.
+
         @param max_threads: Maximum number of threads to run at a time.
         @type max_threads: integer
-        @param retries: The number of times to re
         """
-        if (type(nodes) is str):
-            #
-            # Caller is giving us an management ip address ... try make node 0?
-            #
-            self.nodes = Node(nodes)
-            
-        
-        self.delay = delay
-        self.verbose = verbose
+        self.nodes = []
+        self.tftp = InternalTftp()
         self.max_threads = max_threads
-        
+        self.command_delay = command_delay
+        self.verbose = verbose
+
 ###########################  TFTP-specific methods ###########################
 
-    def set_internal_tftp_server(self, address, port=0):
+    def set_internal_tftp_server(self, ip_address, port=0):
         """ Set up a TFTP server to be hosted locally.
-        
-        @param address: The address of the internal tftp server.
-        @type address: string
+
+        @param ip_address: The address of the internal tftp server.
+        @type ip_address: string
         @param port: The port of the internal tftp server.
         @type port: integer
         """
         try:
             self.tftp.kill()
-            
         except AttributeError:
-            if (self.verbose):
+            if self.verbose:
                 traceback.format_exc()
-            pass
-        self.tftp = InternalTftp(address, port, self.verbose)
+        self.tftp = InternalTftp(ip_address, port, self.verbose)
 
-    def set_external_tftp_server(self, address, port=69):
-        """ Set up a remote TFTP server 
-        
+    def set_external_tftp_server(self, ip_address, port=69):
+        """ Set up a remote TFTP server
+
         @param address: The address of the external tftp server.
         @type address: string
         @param port: The port of the external tftp server.
@@ -115,552 +88,118 @@ class NodeManager(object):
         """
         try:
             self.tftp.kill()
-            
         except AttributeError:
-            if (self.verbose):
+            if self.verbose:
                 traceback.format_exc()
-            pass
-        self.tftp = ExternalTftp(address, port, self.verbose)
-
-############################ Firmware methods #################################
-
-    def create_firmware_package(self, filename, image_type, simg=None, 
-                                   daddr=None, skip_crc32=False, version=None):
-        """Creates a firmware package with the image as built.
-        
-        @param filename: The filename of the package to create.
-        @type filename: string
-        @param image_type: The type of image to create.
-        @type image_type: string
-        @param simg: The SIMG to use for adding SINGHeader.
-        @type simg: string
-        @param daddr: SIMGHeader DADDR value.
-        @type daddr: integer
-        @param skip_crc32: Flag for calculating 32bit CRC.
-        @type skip_crc32: boolean
-        @param version: Version string for the fw package.
-        @type version: string
-        
-        @return: The 
-        """
-        if image_type == "PACKAGE":
-            package = FirmwarePackage(filename=filename)
-        else:
-            package = FirmwarePackage()
-            image = Image(filename, image_type, simg, daddr,
-                    skip_crc32, version)
-            package.images.append(image)
-        return package
+        self.tftp = ExternalTftp(ip_address, port, self.verbose)
 
 ###########################  Targets-specific methods #########################
 
-    def add_target(self, address, username, password):
-        """ Add a target to the controller """
-        for target in self.targets:
-            if target.address == address:
+    def add_node(self, address, username, password):
+        """ Add a node to the nodemanager """
+        for node in self.nodes:
+            if node.address == address:
                 return
 
-        target = self.target_class(address, username, password, self.verbose)
-        self.targets.append(target)
+        node = Node(address, username, password, self.verbose)
+        self.nodes.append(node)
 
-    def add_fabrics(self, addresses, username, password):
-        """ Add all targets reported by each fabric """
-        targets = [self.target_class(x, username, password, self.verbose)
-                for x in addresses]
+#########################    Command methods    #########################
 
-        # Get IP info
-        if self.verbose >= 1:
-            print "Getting IP addresses..."
-        retries = self.retries
-        if retries == "prompt":
-            retries = 0
-        results, errors = self._run_command_on_targets(targets, retries,
-                "get_ipinfo", self.tftp)
+    def get_ipinfo(self, asynchronous=False):
+        """ Get IP info from all nodes """
+        # TODO: add max_wait_time? Wait 'til we see how Node turns out.
+        return self._run_command(self.nodes, asynchronous, "get_ipinfo",
+                self.tftp)
 
-        # Add all resulting targets
-        for target in targets:
-            if target.address in results:
-                for ipinfo in results[target.address]:
-                    self.add_target(ipinfo[1], username, password)
+    def get_macaddrs(self, asynchronous=False):
+        """ Get MAC addresses from all nodes """
+        # TODO: add max_wait_time? Wait 'til we see how Node turns out.
+        return self._run_command(self.nodes, asynchronous, "get_macaddrs",
+                self.tftp)
 
-        # Print results and errors
-        if self.verbose >= 1 and len(self.targets) > 0:
-            print "Discovered the following IP addresses:"
-            for target in self.targets:
-                print target.address
-            print
+    def get_power(self, asynchronous=False):
+        """ Get the power status of all nodes """
+        return self._run_command(self.nodes, asynchronous, "get_power")
 
-        return len(errors) > 0
+    def set_power(self, mode, asynchronous=False):
+        """ Set the power on all nodes """
+        return self._run_command(self.nodes, asynchronous, "set_power", mode)
 
-#########################    Execution methods    #########################
+    def get_power_policy(self, asynchronous=False):
+        """ Get the power policy from all nodes """
+        return self._run_command(self.nodes, asynchronous, "get_power_policy")
 
-    def power(self, mode):
-        """ Send the given power command to all targets """
-        if self.verbose >= 1:
-            print "Sending power %s command..." % mode
+    def set_power_policy(self, state, asynchronous=False):
+        """ Set the power policy on all nodes """
+        return self._run_command(self.nodes, asynchronous, "set_power_policy",
+                state)
 
-        results, errors = self._run_command(True, "set_power", mode)
+    def mc_reset(self, asynchronous=False):
+        """ Reset the management controller on all nodes """
+        return self._run_command(self.nodes, asynchronous, "mc_reset")
 
-        if self.verbose >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        return len(errors) > 0
+    def get_sensors(self, name="", asynchronous=False):
+        """ Get sensors from all nodes """
+        return self._run_command(self.nodes, asynchronous, "get_sensors", name)
 
+    def get_firmware_info(self, asynchronous=False):
+        """ Get firmware info from all nodes """
+        return self._run_command(self.nodes, asynchronous, "get_firmware_info")
 
-    def power_status(self):
-        """ Retrieve power status from all targets in group """
-
-        if self.verbose >= 1:
-            print "Getting power status..."
-        results, errors = self._run_command(False, "get_power")
-
-        # Print results
-        if len(results) > 0:
-            print "Power status"
-            for target in self.targets:
-                if target.address in results:
-                    if results[target.address]:
-                        result = "on"
-                    else:
-                        result = "off"
-                    print "%s: %s" % (target.address.ljust(16), result)
-            print
-
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
-
-        return len(errors) > 0
-
-    def power_policy(self, mode):
-        """ Set the power policy for all targets """
-        if self.verbose >= 1:
-            print "Setting power policy to %s..." % mode
-
-        results, errors = self._run_command(True, "set_power_policy", mode)
-
-        if self.verbose >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        return len(errors) > 0
-
-    def power_policy_status(self):
-        """ Get power policy status for all targets """
-        if self.verbose >= 1:
-            print "Getting power policy status..."
-        results, errors = self._run_command(False, "get_power_policy")
-
-        # Print results
-        if len(results) > 0:
-            print "Power policy status"
-            for target in self.targets:
-                if target.address in results:
-                    print "%s: %s" % (target.address.ljust(16),
-                            results[target.address])
-            print
-
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
-
-        return len(errors) > 0
-
-    def mc_reset(self):
-        """ Send an MC reset command to all targets """
-        if self.verbose >= 1:
-            print "Sending MC reset command..."
-
-        results, errors = self._run_command(True, "mc_reset")
-
-        if self.verbose >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        return len(errors) > 0
-
-    def update_firmware(self, package, partition_arg="INACTIVE",
-            priority=None, force=False):
-        """ Send firmware update commands to all targets """
-        if not force:
-            if self.verbose >= 1:
-                print "Checking hosts..."
-
-            results, errors = self._run_command(False, "check_firmware", package,
-                    partition_arg, priority)
-            if errors:
-                print "ERROR: Firmware update aborted."
-                return True
-
-        if self.verbose >= 1:
-            print "Updating firmware..."
-
-        results, errors = self._run_command(True, "update_firmware", self.tftp,
+    def check_firmware(self, package, partition_arg="INACTIVE", priority=None,
+            asynchronous=False):
+        """ Check the firmware on all nodes """
+        return self._run_command(self.nodes, asynchronous, "check_firmware",
                 package, partition_arg, priority)
 
-        if self.verbose >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        return len(errors) > 0
+    def update_firmware(self, package, partition_arg="INACTIVE", priority=None,
+            asynchronous=False):
+        """ Update the firmware on all nodes """
+        return self._run_command(self.nodes, asynchronous, "update_firmware",
+                self.tftp, package, partition_arg, priority)
 
-    def firmware_info(self):
-        """ Print firmware info for all targets """
-        if self.verbose >= 1:
-            print "Getting firmware info..."
-        results, errors = self._run_command(False, "get_firmware_info")
+    def config_reset(self, asynchronous=False):
+        """ Reset the configuration on all nodes """
+        return self._run_command(self.nodes, asynchronous, "config_reset",
+                self.tftp)
 
-        for target in self.targets:
-            if target.address in results:
-                print "[ Firmware info for %s ]" % target.address
+    def set_boot_order(self, boot_args, asynchronous=False):
+        """ Set the boot order on all nodes """
+        return self._run_command(self.nodes, asynchronous, "set_boot_order",
+                self.tftp, boot_args)
 
-                for partition in results[target.address]:
-                    print "Partition          : %s" % partition.partition
-                    print "Type               : %s" % partition.type
-                    print "Offset             : %s" % partition.offset
-                    print "Size               : %s" % partition.size
-                    print "Priority           : %s" % partition.priority
-                    print "Daddr              : %s" % partition.daddr
-                    print "Flags              : %s" % partition.flags
-                    print "Version            : %s" % partition.version
-                    print "In Use             : %s" % partition.in_use
-                    print
+    def get_boot_order(self, asynchronous=False):
+        """ Get the boot order from all nodes """
+        return self._run_command(self.nodes, asynchronous, "get_boot_order",
+                self.tftp)
 
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
+    # TODO: should this be called get_versions?
+    def info_basic(self, asynchronous=False):
+        """ Get version info from all nodes """
+        return self._run_command(self.nodes, asynchronous, "info_basic")
 
-        return len(errors) > 0
+    def info_dump(self, asynchronous=False):
+        """ Dump info from all nodes """
+        return self._run_command(self.nodes, asynchronous, "info_dump",
+                self.tftp)
 
-    def get_sensors(self, name=""):
-        """ Get sensor readings from all targets """
-        if self.verbose >= 1:
-            print "Getting sensor readings..."
-        results, errors = self._run_command(False, "get_sensors", name)
+    def get_ubootenv(self, asynchronous=False):
+        """ Get the u-boot environment from all nodes """
+        return self._run_command(self.nodes, asynchronous, "get_ubootenv",
+                self.tftp)
 
-        if len(results) > 0:
-            # Get sensor names
-            sensor_names = []
-            for address in results:
-                for sensor in results[address]:
-                    sensor_name = sensor.sensor_name
-                    if not sensor_name in sensor_names:
-                        sensor_names.append(sensor_name)
-
-            # Print all sensors
-            for sensor_name in sensor_names:
-                print sensor_name
-
-                count = 0
-                average = 0.0
-                for target in self.targets:
-                    address = target.address
-                    if address in results:
-                        try:
-                            sensor = [x for x in results[address]
-                                    if x.sensor_name == sensor_name][0]
-                            reading = sensor.sensor_reading.replace(
-                                    "(+/- 0) ", "")
-
-                            # Add to average and print
-                            try:
-                                value = float(reading.split()[0])
-                                if average != None:
-                                    count += 1
-                                    average += value
-                                    suffix = reading.lstrip("%f " % value)
-                                print "%s: %.2f %s" % (address.ljust(16),
-                                        value, suffix)
-                            except ValueError:
-                                average = None
-                                print "%s: %s" % (address.ljust(16), reading)
-
-                        except IndexError:
-                            pass
-
-                # Print average
-                if count > 1 and average != None:
-                    average /= count
-                    print "%s: %.2f %s" % ("Average".ljust(16),
-                            average, suffix)
-
-                print
-
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
-
-        return len(errors) > 0
-
-    def get_ipinfo(self):
-        """ Get IP info from all targets """
-        if self.verbose >= 1:
-            print "Getting IP info..."
-        results, errors = self._run_command(False, "get_ipinfo", self.tftp)
-
-        # Print results
-        if (verbosity >= 1):
-            if len(results) > 0:
-                for target in self.targets:
-                    if target.address in results:
-                        print "IP info from %s" % target.address
-                        ipinfo = results[target.address]
-                        for entry in ipinfo:
-                            print "Node %i: %s" % entry
-                        #print
-            if (len(errors) > 0):
-                print "Some errors occured during the command.\n"
-                
-        #return len(errors) > 0
-        return ((len(errors) > 0), results)
-
-    def get_macaddrs(self):
-        """ Get mac addresses from all targets """
-        if self.verbose >= 1:
-            print "Getting MAC addresses..."
-        results, errors = self._run_command(False, "get_macaddrs", self.tftp)
-
-        # Print results
-        if len(results) > 0:
-            for target in self.targets:
-                if target.address in results:
-                    print "MAC addresses from %s" % target.address
-                    macaddrs = results[target.address]
-                    for entry in macaddrs:
-                        print "Node %i, Port %i: %s" % entry
-                    print
-
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
-
-        return len(errors) > 0
-
-    def config_reset(self):
-        """ Send config reset command to all targets """
-        if self.verbose >= 1:
-            print "Sending config reset command..."
-
-        results, errors = self._run_command(True, "config_reset", self.tftp)
-
-        if self.verbose >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        return len(errors) > 0
-
-    def config_boot(self, boot_args):
-        """ Send config boot command to all targets """
-
-        # Make sure boot_args are valid
-        try:
-            UbootEnv().set_boot_order(boot_args)
-        except ValueError as e:
-            print e
-            return True
-
-        if self.verbose >= 1:
-            print "Setting boot order..."
-
-        results, errors = self._run_command(True, "set_boot_order", self.tftp,
-                boot_args)
-
-        if self.verbose >= 1 and len(errors) == 0:
-            print "Command completed successfully.\n"
-        return len(errors) > 0
-
-    def config_boot_status(self):
-        """ Get boot order from all targets """
-        if self.verbose >= 1:
-            print "Getting boot orders..."
-        results, errors = self._run_command(False, "get_boot_order", self.tftp)
-
-        # Print results
-        if len(results) > 0:
-            print "Boot order"
-            for target in self.targets:
-                if target.address in results:
-                    print "%s: %s" % (target.address.ljust(16),
-                            ",".join(results[target.address]))
-            print
-
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
-
-        return len(errors) > 0
-
-    def info_basic(self):
-        """ Get basic SoC info from all targets """
-        if self.verbose >= 1:
-            print "Getting info..."
-        results, errors = self._run_command(False, "info_basic")
-
-        components = [
-            ("soc_version", "ECME version"),
-            ("cdb_version", "CDB version"),
-            ("stage2_version", "Stage2boot version"),
-            ("bootlog_version", "Bootlog version"),
-            ("a9boot_version", "A9boot version"),
-            ("uboot_version", "Uboot version"),
-            ("ubootenv_version", "Ubootenv version"),
-            ("dtb_version", "DTB version")
-        ]
-
-        # Print results
-        if len(results) > 0:
-            for target in self.targets:
-                if target.address in results:
-                    result = results[target.address]
-                    print "[ Info from %s ]" % target.address
-                    print "Hardware version   : %s" % result.card
-                    print "Firmware version   : %s" % result.version
-                    for var, string in components:
-                        if hasattr(result, var):
-                            version = getattr(result, var)
-                            print "%s: %s" % (string.ljust(19), version)
-                    print
-
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
-
-        return len(errors) > 0
-
-    def info_ubootenv(self):
-        """ Print u-boot environment for all targets """
-        if self.verbose >= 1:
-            print "Getting u-boot environments..."
-        results, errors = self._run_command(False, "get_ubootenv", self.tftp)
-
-        # Print results
-        if len(results) > 0:
-            for target in self.targets:
-                if target.address in results:
-                    ubootenv = results[target.address]
-                    print "[ U-Boot Environment from %s ]" % target.address
-                    for variable in ubootenv.variables:
-                        print "%s=%s" % (variable, ubootenv.variables[variable])
-                    print
-
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
-
-        return len(errors) > 0
-
-    def info_dump(self):
-        """ Dump info from all targets """
-        if self.verbose >= 1:
-            print "Getting all info..."
-        results, errors = self._run_command(False, "info_dump", self.tftp)
-
-        # Print results
-        if len(results) > 0:
-            for target in self.targets:
-                if target.address in results:
-                    print "[ Info dump from %s ]" % target.address
-                    print results[target.address]
-                    print
-
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
-
-        return len(errors) > 0
-
-    def ipmitool_command(self, ipmitool_args):
-        """ Run an arbitrary ipmitool command on all targets """
-        if self.verbose >= 1:
-            print "Running IPMItool command..."
-        results, errors = self._run_command(True, "ipmitool_command",
+    def ipmitool_command(self, ipmitool_args, asynchronous=False):
+        """ Run an arbitrary IPMItool command on all nodes """
+        return self._run_command(self.nodes, asynchronous, "ipmitool_command",
                 ipmitool_args)
 
-        # Print results
-        if len(results) > 0:
-            for target in self.targets:
-                if target.address in results and results[target.address] != "":
-                    print "[ IPMItool output from %s ]" % target.address
-                    print results[target.address]
-                    print
-
-        if self.verbose >= 1 and len(errors) > 0:
-            print "Some errors occured during the command.\n"
-
-        return len(errors) > 0
-
-    def _run_command(self, retry_prompt, name, *args):
-        """ Run a command on all targets """
-        retries = self.retries
-        if retries == "prompt" and not retry_prompt:
-            retries = 0
-        return self._run_command_on_targets(self.targets, retries, name, *args)
-
-    def _run_command_on_targets(self, targets, retries, name, *args):
-        """ Run a multi-threaded command on the specified targets.
-
-        Returns (results, errors) which map addresses to their results """
-        results = {}
-        errors = {}
-        command = Command(targets, name, args, self.command_delay,
-                          self.max_threads)
-        command.start()
-
-        try:
-            counter = 0
-            while command.is_alive():
-                if self.verbose == 1:
-                    self._print_command_status(targets, command, counter)
-                    counter += 1
-                time.sleep(0.25)
-
-            try:
-                results = command.get_results()
-            except CommandFailedError as e:
-                results = e.results
-                errors = e.errors
-        except KeyboardInterrupt:
-            retries = 0
-            try:
-                results = command.get_results()
-            except CommandFailedError as e:
-                results = e.results
-                errors = e.errors
-            for target in targets:
-                if not (target.address in results or target.address in errors):
-                    errors[target.address] = "Aborted by keyboard interrupt"
-
-        if (self.verbose):
-            self._print_command_status(targets, command, counter)
-            print "\n"
-
-        # Handle errors
-        should_retry = False
-        if len(errors) > 0:
-            self._print_errors(targets, errors)
-            if retries == "prompt":
-                sys.stdout.write("Retry command on failed hosts? (y/n): ")
-                sys.stdout.flush()
-                while True:
-                    command = raw_input().strip().lower()
-                    if command in ['y', 'yes']:
-                        should_retry = True
-                        break
-                    elif command in ['n', 'no']:
-                        print
-                        break
-            elif retries >= 1:
-                should_retry = True
-                if retries == 1:
-                    print "Retrying command 1 more time..."
-                elif retries > 1:
-                    print "Retrying command %i more times..." % retries
-                retries -= 1
-        if should_retry:
-            targets = [x for x in targets if x.address in errors]
-            new_results, errors = self._run_command_on_targets(targets,
-                    retries, name, *args)
-            results.update(new_results)
-
-        return results, errors
-
-    def _print_errors(self, targets, errors):
-        """ Print errors if they occured """
-        if len(errors) > 0:
-            print "Command failed on these hosts"
-            for target in targets:
-                if target.address in errors:
-                    print "%s: %s" % (target.address.ljust(16),
-                            errors[target.address])
-            print
-
-    def _print_command_status(self, targets, command, counter):
-        """ Print the status of a command """
-        status = command.get_status()
-        message = "\r%i successes  |  %i errors  |  %i nodes left  |  %s"
-        dots = "".join(["." for x in range(counter % 4)]).ljust(3)
-        sys.stdout.write(message % (status.successes, status.errors,
-                status.nodes_left, dots))
-        sys.stdout.flush()
+    def _run_command(self, nodes, asynchronous, name, *args):
+        """ Start a command on the given targets """
+        command = Command(nodes, name, args, self.command_delay,
+                self.max_threads)
+        if asynchronous:
+            return command
+        else:
+            command.join()
+            return command.get_results()
