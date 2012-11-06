@@ -50,7 +50,7 @@ from pyipmi.bmc import LanBMC
 from pkg_resources import parse_version
 from tftpy.TftpShared import TftpException
 
-from cx_exceptions import NoIpInfoError, TimeoutError, NoMacAddressError 
+from cx_exceptions import NoIpInfoError, TimeoutError, NoMacAddressError
 from cx_exceptions import NoSensorError, NoFirmwareInfoError, SocmanVersionError
 from cx_exceptions import FirmwareConfigError, PriorityIncrementError
 from cx_exceptions import NoPartitionError, TransferFailure, ImageSizeError
@@ -62,10 +62,10 @@ class Node(object):
     Python -> Calxeda ECMEs.
     """
 
-    def __init__(self, ip_address, username="admin", password="admin", 
+    def __init__(self, ip_address, username="admin", password="admin",
                   verbose=False):
         """Default constructor for the Node class.
-        
+
         :param ip_address: The ip_address of the Node.
         :type ip_address: string
         :param username: The login username credential. [Default admin]
@@ -81,8 +81,8 @@ class Node(object):
         self.verbose = verbose
         self.my_tftp_address = None
         self.my_tftp_file = None
-        
-        self.bmc = make_bmc(LanBMC, hostname=ip_address, username=username, 
+
+        self.bmc = make_bmc(LanBMC, hostname=ip_address, username=username,
                             password=password, verbose=verbose)
         #
         # Current TFTP information for this instance
@@ -93,173 +93,18 @@ class Node(object):
 #        self.tftp_basename = None
         #atexit.register(self._cleanup)
 
-    
-    def get_ipinfo(self, tftp, max_wait_time=10):
-        """Get ipv4 information for this node.
-        
-        :param tftp: TFTP Server to facilitate cmd/response.
-        :type tftp: tftp.InternalTftpServer or tftp.ExternalTftpServer
-        :param max_wait_time: The maximum amount of seconds to wait for a tftp
-                              file to appear.
-        :type max_wait_time: integer
-        
-        :raises NoIpInfoError: When no results are read back in the tftp file
-                               for the ipinfo command.
-        
-        :return: The ipv4 info for this node.
-        :rtype: string
-        """
-        self._tftp_init(tftp)
-        #
-        # Send ipinfo command ...
-        #
-        try:
-            result = self.bmc.get_fabric_ipinfo(filename=os.path.basename(
-                                                         self.my_tftp_file), 
-                                                tftp_addr=self.my_tftp_address)
+    def get_macaddrs(self):
+        """ Return a list of mac addresses for this node """
+        result = []
+        i = 0
 
-        except IpmiError as error:
-            # Re-raise a meaningful IpmiError
-            raise IpmiError(self._parse_ipmierror(error))
-        
-        # @todo: These calls to hasattr() may go away if a command raises 
-        # an exception on error?
-        if hasattr(result, 'error'):
-            raise Exception(result.error)
+        macaddr = self.bmc.get_fabric_macaddr(iface=i)
+        while macaddr:
+            result.append(macaddr)
+            i += 1
+            macaddr = self.bmc.get_fabric_macaddr(iface=i)
 
-        #
-        # Wait for file for up to 10 seconds ...
-        #
-        idx = 0
-        for idx in range(max_wait_time):
-            try:
-                time.sleep(1)
-                #tftp.get_file(self.tftp_basename, self.tftp_file_name)
-                tftp.get_file(tftp.tftp_dir, self.my_tftp_file)
-                if os.path.getsize(self.my_tftp_file) > 0:
-                    break
-            
-            # Catch both exceptions, because External raises TftpException, 
-            # where Internal give IOError ...
-            except (TftpException, IOError) as error:
-                if (idx == max_wait_time):
-                    # The file never showed up after max_wait_time seconds
-                    traceback.format_exc()
-                    raise
-                if (self.verbose):
-                    print ('Attempt %d of %d getting file: %s' % 
-                          (idx, max_wait_time, self.my_tftp_file))
-        #
-        # Ensure file is present
-        #
-        try:
-            with open(self.my_tftp_file) as a_file:
-                a_file.close()
-        
-        except IOError:
-            if (self.verbose):
-                traceback.format_exc()
-            raise
-        #
-        # Parse addresses from ipinfo file
-        #
-        results = []
-        for line in open(self.my_tftp_file):
-            if line.startswith('Node'):
-                elements = line.split()
-                node = int(elements[1].rstrip(':'))
-                address = elements[2]
-                if address != '0.0.0.0':
-                    results.append((node, address))
-        
-        results.sort()
-        if len(results) == 0:
-            raise NoIpInfoError('Failed to retrieve IP info.')
-        else:
-            return [ip for node, ip in results if (ip == self.ip_address)][0]
-
-    def get_macaddrs(self, tftp, max_wait_time=10):
-        """ Download mac addresses from this target 
-        
-        :param tftp: TFTP Server to facilitate cmd/response.
-        :type tftp: tftp.InternalTftpServer or tftp.ExternalTftpServer
-        :param max_wait_time: The maximum amount of seconds to wait for a tftp
-                              file to appear.
-        :type max_wait_time: integer
-        
-        :raises NoMacAddressError: When no results are read back in the tftp 
-                                   file for the ipinfo command.
-        
-        :return: The ipv4 info for this node.
-        :rtype: string
-        """
-        self._tftp_init(tftp)
-        # Send ipinfo command
-        try:
-            result = self.bmc.get_fabric_macaddresses(filename=os.path.basename
-                                                     (self.my_tftp_file), 
-                                                     tftp_addr=
-                                                     self.my_tftp_address)
-        
-        except IpmiError as error:
-            raise IpmiError(self._parse_ipmierror(error))
-        
-        if hasattr(result, "error"):
-            raise Exception(result.error)
-
-        #
-        # Wait for file for up to 10 seconds ...
-        #
-        idx = 0
-        for idx in range(max_wait_time):
-            try:
-                time.sleep(1)
-                #tftp.get_file(self.tftp_basename, self.tftp_file_name)
-                tftp.get_file(tftp.tftp_dir, self.my_tftp_file)
-                if os.path.getsize(self.my_tftp_file) > 0:
-                    break
-            
-            # Catch both exceptions, because External raises TftpException, 
-            # where Internal give IOError ...
-            except (TftpException, IOError) as error:
-                if (idx == max_wait_time):
-                    # The file never showed up after max_wait_time seconds
-                    traceback.format_exc()
-                    raise
-                if (self.verbose):
-                    print ('Attempt %d of %d getting file: %s' % 
-                          (idx, max_wait_time, self.my_tftp_file))
-        #
-        # Ensure file is present
-        #
-        try:
-            with open(self.my_tftp_file) as a_file:
-                a_file.close()
-        
-        except IOError:
-            if (self.verbose):
-                traceback.format_exc()
-            raise
-
-        # Parse addresses from macaddrs file
-        results = []
-        for line in open(self.my_tftp_file):
-            if line.startswith("Node"):
-                elements = line.split()
-                node = int(elements[1].rstrip(","))
-                port = int(elements[3].rstrip(":"))
-                address = elements[4]
-                results.append((node, port, address))
-        
-        results.sort()
-        if len(results) == 0:
-            raise NoMacAddressError('Failed to retrieve MacAddress info.')
-        else:
-            for node, mac_num, mac_addr in results:
-                print 'node     = %s' % node 
-                print 'mac_num  = %s' % mac_num
-                print 'mac_addr = %s' %  mac_addr
-                
+        return result
 
     def get_power(self):
         """ Return power status reported by IPMI """
@@ -293,7 +138,7 @@ class Node(object):
         """ Send an IPMI MC reset command to the target """
         try:
             result = self.bmc.mc_reset("cold")
-            # @todo: These calls to hasattr() may go away if a command raises 
+            # @todo: These calls to hasattr() may go away if a command raises
             # an exception on error?
             if hasattr(result, "error"):
                 raise Exception(result.error)
@@ -428,7 +273,7 @@ class Node(object):
                     fd, filename = tempfile.mkstemp(dir=TFTP_DIR)
                     with os.fdopen(fd, "w") as f:
                         f.write(ubootenv.get_contents())
-                    ubootenv_image = Image(filename, image.type, False, 
+                    ubootenv_image = Image(filename, image.type, False,
                                            image.daddr, image.skip_crc32,
                                            image.version)
                     self._upload_image(tftp, ubootenv_image, running_part,
@@ -500,7 +345,7 @@ class Node(object):
     def info_basic(self):
         """ Get basic SoC info from this target """
         result = self.bmc.get_info_basic()
-        # @todo: These calls to hasattr() may go away if a command raises 
+        # @todo: These calls to hasattr() may go away if a command raises
         # an exception on error?
         if hasattr(result, "error"):
             raise Exception(result.error)
@@ -521,7 +366,7 @@ class Node(object):
             try:
                 partition = self._get_partition(fwinfo, ptype, "ACTIVE")
                 setattr(result, var, partition.version)
-            
+
             except NoPartitionError:
                 pass
 
@@ -644,7 +489,7 @@ class Node(object):
                 self.bmc.activate_firmware(partition_id)
 
                 break
-            
+
             except Exception:
                 if (self.verbose):
                     traceback.format_exc()
@@ -672,7 +517,7 @@ class Node(object):
                     raise AttributeError("Failed to start firmware download")
                 self._wait_for_transfer(result.tftp_handle_id)
                 break
-            
+
             except Exception:
                 if (self.verbose):
                     traceback.format_exc()
@@ -680,14 +525,14 @@ class Node(object):
 
         tftp.get_file(basename, filename)
 
-        return Image(filename, image_type, daddr=int(partition.daddr, 16), 
+        return Image(filename, image_type, daddr=int(partition.daddr, 16),
                      version=partition.version)
 
     def _wait_for_transfer(self, handle):
         """Wait for a firmware transfer to finish.
-        
+
         :param handle: Handle to send commands over.
-        :type handle: 
+        :type handle:
         """
         deadline = time.time() + 180
 
@@ -715,26 +560,26 @@ class Node(object):
             if error.startswith('Error: '):
                 error = error[7:]
             return 'IPMItool ERROR: %s' % error
-        
+
         except IndexError:
             return 'IPMITool encountered an error.'
 
     def _tftp_init(self, tftp):
         """Sets the current tftp server/client information for this class.
         Creates the temporary FILE for communication.
-        
+
         :param tftp: TFTP server(or client) to connect to.
         :type tftp: tftp.InternalTftp or tftp.ExternalTftp
         """
         self.my_tftp_address = '%s:%s' % (tftp.get_address(
-                                          relative_host=self.ip_address), 
+                                          relative_host=self.ip_address),
                                           tftp.get_port())
         f_hndl, self.my_tftp_file = tempfile.mkstemp(dir=tftp.tftp_dir)
         os.close(f_hndl)
-    
+
     def _cleanup(self):
         """Removes the TFTP temporary FILE."""
         if (self.tftp_server):
             shutil.rmtree(self.tftp_server.tftp_dir)
-        
+
 # End of file: node.py

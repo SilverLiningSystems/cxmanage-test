@@ -42,7 +42,7 @@ import pkg_resources
 
 from cxmanage.controller import Controller
 
-PYIPMI_VERSION = '0.5.1'
+PYIPMI_VERSION = '0.5.2'
 IPMITOOL_VERSION = '1.8.11.0-cx2'
 
 # Load plugins
