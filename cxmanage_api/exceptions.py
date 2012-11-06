@@ -4,7 +4,7 @@
 class TimeoutError(Exception):
     """Raised when a timeout has been reached."""
     
-    def __inti__(self, msg):
+    def __init__(self, msg):
         """Default constructor for the TimoutError class.
         
         :param msg: Exceptions message and details to return to the user.
@@ -21,8 +21,12 @@ class TimeoutError(Exception):
 class NoPartitionError(Exception):
     """Raised when a partition is not found."""
     
-    def _init__(self, msg):
-        """Default constructor for the NoPartitionError class."""
+    def __init__(self, msg):
+        """Default constructor for the NoPartitionError class.
+        
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
         super(NoPartitionError, self).__init__()
         self.msg = msg
         
@@ -30,6 +34,147 @@ class NoPartitionError(Exception):
         """String representation of this Exception class."""
         return self.msg
     
-     
+
+class NoIpInfoError(Exception):
+    """Raised when the Ip Info cannot be retrieved from a node."""
+    
+    def __init__(self, msg):
+        """Default constructor for the NoIpInfo class.
+                
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
+        super(NoIpInfoError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+    
+
+class NoMacAddressError(Exception):
+    """Raised when the mac adresses cannot be retrieved from a node."""
+    
+    def __init__(self, msg):
+        """Default constructor for the NoAddressError class.
+                
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
+        super(NoMacAddressError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+
+
+class NoSensorError(Exception):
+    """Raised when a sensor or sensors are not found."""
+    
+    def __init__(self, msg):
+        """Default constructor for the NoSensorError class."""
+        super(NoSensorError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+    
+    
+class NoFirmwareInfoError(Exception):
+    """Raised when the firmware info cannot be obtained from a node."""
+    
+    def __init__(self, msg):
+        """Default constructor for the NoFirmwareInfoError class."""
+        super(NoFirmwareInfoError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+
+
+class SocmanVersionError(Exception):
+    """Raised when there is an error with the users socman version."""
+    
+    def __init__(self, msg):
+        """Default constructor for the SocmanVersionError class."""
+        super(SocmanVersionError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+    
+    
+class FirmwareConfigError(Exception):
+    """Raised when there are slot/firmware version inconsistencies."""
+    
+    def __init__(self, msg):
+        """Default constructor for the FirmwareConfigError class.
+                
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
+        super(FirmwareConfigError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+    
+    
+class PriorityIncrementError(Exception):
+    """Raised when the Priority on a SIMG image cannot be altered."""
+    
+    def __init__(self, msg):
+        """Default constructor for the PriorityIncrementError class.
+                
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
+        super(PriorityIncrementError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+    
+        
+class ImageSizeError(Exception):
+    """Raised when the actual size of the image is not what is expected."""
+    
+    def __init__(self, msg):
+        """Default constructor for the ImageSizeError class.
+                
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
+        super(ImageSizeError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+
+
+class TransferFailure(Exception):
+    """Raised when the transfer of a file has failed."""
+    
+    def __init__(self, msg):
+        """Default constructor for the TransferFailure class.
+                
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
+        super(TransferFailure, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+
+        
 # End of file: exceptions.py
  

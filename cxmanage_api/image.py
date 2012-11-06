@@ -34,8 +34,8 @@ import os
 import subprocess
 import tempfile
 
-from cxmanage_api import CxmanageError, WORK_DIR
-from cxmanage_api.simg import create_simg, has_simg, valid_simg, get_simg_contents
+from cxmanage_api.simg import create_simg, has_simg 
+from cxmanage_api.simg import valid_simg, get_simg_contents
 
 class Image:
     """ An image consists of an image type, a filename, and any info needed
@@ -79,7 +79,7 @@ class Image:
             simg = create_simg(contents, priority=priority, daddr=daddr,
                     skip_crc32=self.skip_crc32, align=align,
                     version=self.version)
-            fd, filename = tempfile.mkstemp(dir=WORK_DIR)
+            fd, filename = tempfile.mkstemp(dir=tempfile.mkdtemp(prefix='_cxnode_'))
             with os.fdopen(fd, "w") as f:
                 f.write(simg)
 

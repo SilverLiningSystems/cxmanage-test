@@ -37,13 +37,13 @@ import tempfile
 
 from cxmanage_api.image import Image
 
-def random_file(work_dir, size):
+def random_file(size):
     """ Create a random file """
-    contents = "".join([chr(random.randint(0, 255))
-        for a in range(size)])
-    fd, filename = tempfile.mkstemp(dir=work_dir)
+    contents = "".join([chr(random.randint(0, 255)) for a in range(size)])
+    fd, filename = tempfile.mkstemp(dir=tempfile.mkdtemp(prefix='cxmanage_test_random_'))
     with os.fdopen(fd, "w") as f:
         f.write(contents)
+        f.close()
     return filename
 
 class TestImage(Image):

@@ -33,7 +33,7 @@ import os
 import ConfigParser
 import pkg_resources
 
-from cxmanage_api import WORK_DIR
+from cxmanage_api.node import TFTP_DIR
 from cxmanage_api.image import Image
 
 class FirmwarePackage:

@@ -31,7 +31,6 @@
 
 import struct
 
-from cxmanage_api import CxmanageError
 from cxmanage_api.simg import has_simg, get_simg_contents
 from cxmanage_api.crc32 import get_crc32
 

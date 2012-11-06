@@ -27,16 +27,16 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-
-import atexit
-import shutil
-import tempfile
+#
+#import atexit
+#import shutil
+#import tempfile
 
 WORK_DIR = tempfile.mkdtemp(prefix="cxmanage-")
 
-def cleanup():
-    shutil.rmtree(WORK_DIR)
-atexit.register(cleanup)
+#def cleanup():
+#    shutil.rmtree(WORK_DIR)
+#atexit.register(cleanup)
 
 # We want to remove this, but wait until no classes are using it.
 class CxmanageError(Exception):
