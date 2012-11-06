@@ -730,13 +730,7 @@ class Node(object):
                                           relative_host=self.ip_address), 
                                           tftp.get_port())
         f_hndl, self.my_tftp_file = tempfile.mkstemp(dir=tftp.tftp_dir)
-        #self.my_tftp_file = os.path.basename(self.my_tftp_file)
         os.close(f_hndl)
-#        self.tftp_address = '%s:%s' % (tftp.get_address(
-#                                       relative_host=self.ip_address), 
-#                                       tftp.get_port())
-
-        #self.tftp_basename = os.path.basename(self.tftp_file_name)
     
     def _cleanup(self):
         """Removes the TFTP temporary FILE."""
