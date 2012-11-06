@@ -28,11 +28,18 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-import traceback
+import os
+import tempfile
+import time
+
+from pyipmi import make_bmc, IpmiError
+from pyipmi.bmc import LanBMC
+from tftpy.TftpShared import TftpException
 
 from cxmanage_api.command import Command
-from cxmanage_api.tftp import InternalTftp, ExternalTftp
+from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.node import Node
+from cxmanage_api.cx_exceptions import NoIpInfoError
 
 
 class NodeManager(object):
@@ -49,154 +56,153 @@ class NodeManager(object):
           Fabric Management commands will NOT work.
     """
 
-    def __init__(self, max_threads=1, command_delay=0, verbose=False):
+    def __init__(self, ip_address=None, username="admin", password="admin",
+            tftp=None, max_threads=1, command_delay=0, verbose=False):
         """Default constructor for the NodeManager class.
 
         @param max_threads: Maximum number of threads to run at a time.
         @type max_threads: integer
         """
-        self.nodes = []
-        self.tftp = InternalTftp()
+        self.nodes = {}
+        self.tftp = tftp
         self.max_threads = max_threads
         self.command_delay = command_delay
         self.verbose = verbose
 
-###########################  TFTP-specific methods ###########################
+        if not self.tftp:
+            self.tftp = InternalTftp()
 
-    def set_internal_tftp_server(self, ip_address, port=0):
-        """ Set up a TFTP server to be hosted locally.
+        if ip_address:
+            self.set_nodes(ip_address, username, password)
 
-        @param ip_address: The address of the internal tftp server.
-        @type ip_address: string
-        @param port: The port of the internal tftp server.
-        @type port: integer
-        """
-        try:
-            self.tftp.kill()
-        except AttributeError:
-            if self.verbose:
-                traceback.format_exc()
-        self.tftp = InternalTftp(ip_address, port, self.verbose)
+    def set_nodes(self, ip_address, username="admin", password="admin"):
+        """ Set the nodes of this fabric by pulling IP info from a BMC """
+        self.nodes = {}
 
-    def set_external_tftp_server(self, ip_address, port=69):
-        """ Set up a remote TFTP server
+        bmc = make_bmc(LanBMC, hostname=ip_address, username=username,
+                            password=password, verbose=self.verbose)
 
-        @param address: The address of the external tftp server.
-        @type address: string
-        @param port: The port of the external tftp server.
-        @type port: integer
-        """
-        try:
-            self.tftp.kill()
-        except AttributeError:
-            if self.verbose:
-                traceback.format_exc()
-        self.tftp = ExternalTftp(ip_address, port, self.verbose)
+        tftp_address = "%s:%s" % (self.tftp.get_address(ip_address),
+                self.tftp.get_port())
 
-###########################  Targets-specific methods #########################
+        # TODO: delete this file when we're done.
+        fd, filename = tempfile.mkstemp()
+        os.close(fd)
+        basename = os.path.basename(filename)
 
-    def add_node(self, address, username, password):
-        """ Add a node to the nodemanager """
-        for node in self.nodes:
-            if node.address == address:
-                return
+        result = bmc.get_fabric_ipinfo(basename, tftp_address)
+        if hasattr(result, "error"):
+            raise IpmiError(result.error)
 
-        node = Node(address, username, password, self.verbose)
-        self.nodes.append(node)
+        # Wait for file
+        for a in range(10):
+            try:
+                time.sleep(1)
+                self.tftp.get_file(src=basename, dest=filename)
+                if os.path.getsize(filename) > 0:
+                    break
+            except (TftpException, IOError):
+                pass
+
+        # Ensure file is present
+        if not os.path.exists(filename):
+            raise IOError("Failed to retrieve IP info")
+
+        # Parse addresses from ipinfo file
+        for line in open(filename):
+            if line.startswith("Node"):
+                elements = line.split()
+                node_id = int(elements[1].rstrip(":"))
+                node_address = elements[2]
+                if node_address != "0.0.0.0":
+                    node = Node(ip_address=node_address, username=username,
+                            password=password, verbose=self.verbose)
+                    self.nodes[node_id] = node
+
+        # Make sure we found something
+        if not self.nodes:
+            raise NoIpInfoError("Failed to retrieve IP info")
 
 #########################    Command methods    #########################
 
-    def get_ipinfo(self, asynchronous=False):
-        """ Get IP info from all nodes """
-        # TODO: add max_wait_time? Wait 'til we see how Node turns out.
-        return self._run_command(self.nodes, asynchronous, "get_ipinfo",
-                self.tftp)
-
     def get_macaddrs(self, asynchronous=False):
         """ Get MAC addresses from all nodes """
-        # TODO: add max_wait_time? Wait 'til we see how Node turns out.
-        return self._run_command(self.nodes, asynchronous, "get_macaddrs",
-                self.tftp)
+        return self._run_command(asynchronous, "get_macaddrs")
 
     def get_power(self, asynchronous=False):
         """ Get the power status of all nodes """
-        return self._run_command(self.nodes, asynchronous, "get_power")
+        return self._run_command(asynchronous, "get_power")
 
     def set_power(self, mode, asynchronous=False):
         """ Set the power on all nodes """
-        return self._run_command(self.nodes, asynchronous, "set_power", mode)
+        return self._run_command(asynchronous, "set_power", mode)
 
     def get_power_policy(self, asynchronous=False):
         """ Get the power policy from all nodes """
-        return self._run_command(self.nodes, asynchronous, "get_power_policy")
+        return self._run_command(asynchronous, "get_power_policy")
 
     def set_power_policy(self, state, asynchronous=False):
         """ Set the power policy on all nodes """
-        return self._run_command(self.nodes, asynchronous, "set_power_policy",
-                state)
+        return self._run_command(asynchronous, "set_power_policy", state)
 
     def mc_reset(self, asynchronous=False):
         """ Reset the management controller on all nodes """
-        return self._run_command(self.nodes, asynchronous, "mc_reset")
+        return self._run_command(asynchronous, "mc_reset")
 
     def get_sensors(self, name="", asynchronous=False):
         """ Get sensors from all nodes """
-        return self._run_command(self.nodes, asynchronous, "get_sensors", name)
+        return self._run_command(asynchronous, "get_sensors", name)
 
     def get_firmware_info(self, asynchronous=False):
         """ Get firmware info from all nodes """
-        return self._run_command(self.nodes, asynchronous, "get_firmware_info")
+        return self._run_command(asynchronous, "get_firmware_info")
 
     def check_firmware(self, package, partition_arg="INACTIVE", priority=None,
             asynchronous=False):
         """ Check the firmware on all nodes """
-        return self._run_command(self.nodes, asynchronous, "check_firmware",
-                package, partition_arg, priority)
+        return self._run_command(asynchronous, "check_firmware", package,
+                partition_arg, priority)
 
     def update_firmware(self, package, partition_arg="INACTIVE", priority=None,
             asynchronous=False):
         """ Update the firmware on all nodes """
-        return self._run_command(self.nodes, asynchronous, "update_firmware",
-                self.tftp, package, partition_arg, priority)
+        return self._run_command(asynchronous, "update_firmware", self.tftp,
+                package, partition_arg, priority)
 
     def config_reset(self, asynchronous=False):
         """ Reset the configuration on all nodes """
-        return self._run_command(self.nodes, asynchronous, "config_reset",
-                self.tftp)
+        return self._run_command(asynchronous, "config_reset", self.tftp)
 
     def set_boot_order(self, boot_args, asynchronous=False):
         """ Set the boot order on all nodes """
-        return self._run_command(self.nodes, asynchronous, "set_boot_order",
-                self.tftp, boot_args)
+        return self._run_command(asynchronous, "set_boot_order", self.tftp,
+                boot_args)
 
     def get_boot_order(self, asynchronous=False):
         """ Get the boot order from all nodes """
-        return self._run_command(self.nodes, asynchronous, "get_boot_order",
-                self.tftp)
+        return self._run_command(asynchronous, "get_boot_order", self.tftp)
 
     # TODO: should this be called get_versions?
     def info_basic(self, asynchronous=False):
         """ Get version info from all nodes """
-        return self._run_command(self.nodes, asynchronous, "info_basic")
+        return self._run_command(asynchronous, "info_basic")
 
     def info_dump(self, asynchronous=False):
         """ Dump info from all nodes """
-        return self._run_command(self.nodes, asynchronous, "info_dump",
-                self.tftp)
+        return self._run_command(asynchronous, "info_dump", self.tftp)
 
     def get_ubootenv(self, asynchronous=False):
         """ Get the u-boot environment from all nodes """
-        return self._run_command(self.nodes, asynchronous, "get_ubootenv",
-                self.tftp)
+        return self._run_command(asynchronous, "get_ubootenv", self.tftp)
 
     def ipmitool_command(self, ipmitool_args, asynchronous=False):
         """ Run an arbitrary IPMItool command on all nodes """
-        return self._run_command(self.nodes, asynchronous, "ipmitool_command",
+        return self._run_command(asynchronous, "ipmitool_command",
                 ipmitool_args)
 
-    def _run_command(self, nodes, asynchronous, name, *args):
+    def _run_command(self, asynchronous, name, *args):
         """ Start a command on the given targets """
-        command = Command(nodes, name, args, self.command_delay,
+        command = Command(self.nodes.values(), name, args, self.command_delay,
                 self.max_threads)
         command.start()
         if asynchronous:
