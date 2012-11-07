@@ -27,7 +27,6 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-from pip.locations import src_prefix
 """Internal/External TFTP interfaces for command/response."""
 
 
@@ -62,7 +61,7 @@ class InternalTftp(object):
         :type verbose: boolean
         """
         if (not dir_name):
-            self.tftp_dir = tempfile.mkdtemp(prefix='cxmanage_api_')
+            self.tftp_dir = tempfile.mkdtemp(prefix='cx_internal_tftp_')
         else:
             self.tftp_dir = tempfile.mkdtemp(prefix=dir_name + '_')
         self.verbose = verbose
@@ -98,12 +97,13 @@ class InternalTftp(object):
                     traceback.format_exc()
             sys.exit(0)
         
-        atexit.register(self.kill)
         self.server = pid
         self.ip_address = ip_address
         with os.fdopen(pipe[0]) as a_fd:
             self.port = int(a_fd.readline())
-
+        atexit.register(self.kill)
+        atexit.register(self._cleanup)
+        
     def get_port(self):
         """Return the listening port of this server."""
         return self.port
@@ -145,6 +145,7 @@ class InternalTftp(object):
         :return: Whether the transfer was successful or not.
         :rtype: boolean
         """
+        src = "%s/%s" % (self.tftp_dir, src)
         if (src != dest):
             try:
                 # Ensure the file exists ...
@@ -168,19 +169,22 @@ class InternalTftp(object):
         :return: Whether the transfer was successful or not.
         :rtype: boolean
         """
+        dest = "%s/%s" % (self.tftp_dir, dest)
         if (src != dest):
             try:
                 # Ensure that the local file exists ...
                 with open(src) as a_file:
                     a_file.close()
-                    
-                tftp_path = "%s/%s" % (self.tftp_dir, dest)
                 shutil.copy(src, dest)
         
             except Exception:
                 traceback.format_exc()
                 raise
         return True
+    
+    def _cleanup(self):
+        """Removes temporary files created by this class instance."""
+        shutil.rmtree(self.tftp_dir, ignore_errors=True)
 
 
 class ExternalTftp(object):
@@ -197,7 +201,7 @@ class ExternalTftp(object):
         :type verbose: boolean
         """
         if (not dir_name):
-            self.tftp_dir = tempfile.mkdtemp(prefix='cxmanage_api_')
+            self.tftp_dir = tempfile.mkdtemp(prefix='cx_external_tftp_')
         else:
             self.tftp_dir = tempfile.mkdtemp(prefix=dir_name + '_')
         
@@ -208,6 +212,7 @@ class ExternalTftp(object):
         
         if (self.verbose):
             setLogLevel(logging.CRITICAL)
+        atexit.register(self._cleanup)
 
     def get_address(self, relative_host=None):
         """Return the ip address of the ExternalTftp server."""
@@ -243,6 +248,10 @@ class ExternalTftp(object):
             if (self.verbose):
                 traceback.format_exc()
             raise
+    
+    def _cleanup(self):
+        """Removes temporary files created by this class instance."""
+        shutil.rmtree(self.tftp_dir, ignore_errors=True)
 
 
 # End of file: ./tftp.py

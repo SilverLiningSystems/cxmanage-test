@@ -27,33 +27,30 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-
-
-"""Python implementation of a single node. A node represents a single
-Calxeda ECME (Energy CoreManagement Engine).
+"""Python implementation of a single node. 
+A node represents a single Calxeda ECME (Energy CoreManagement Engine).
 """
 
 
 import os
 import time
-import shutil
 import atexit
 import tempfile
 import traceback
 import subprocess
 
-from image import Image
 from pyipmi import make_bmc, IpmiError
 from infodump import get_info_dump
-from ubootenv import UbootEnv
-from pyipmi.bmc import LanBMC
 from pkg_resources import parse_version
 from tftpy.TftpShared import TftpException
-
 from cx_exceptions import NoIpInfoError, TimeoutError, NoMacAddressError
 from cx_exceptions import NoSensorError, NoFirmwareInfoError, SocmanVersionError
 from cx_exceptions import FirmwareConfigError, PriorityIncrementError
 from cx_exceptions import NoPartitionError, TransferFailure, ImageSizeError
+
+from image import Image as IMAGE
+from ubootenv import UbootEnv as UBOOTENV
+from pyipmi.bmc import LanBMC as BMC
 
 
 class Node(object):
@@ -63,7 +60,7 @@ class Node(object):
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
-                  verbose=False):
+                  verbose=False, bmc=BMC, image=IMAGE, ubootenv=UBOOTENV):
         """Default constructor for the Node class.
 
         :param ip_address: The ip_address of the Node.
@@ -82,16 +79,10 @@ class Node(object):
         self.my_tftp_address = None
         self.my_tftp_file = None
 
-        self.bmc = make_bmc(LanBMC, hostname=ip_address, username=username,
+        self.bmc = make_bmc(bmc, hostname=ip_address, username=username,
                             password=password, verbose=verbose)
-        #
-        # Current TFTP information for this instance
-        #
-#        self.tftp_server = None
-#        self.tftp_address = None
-#        self.tftp_file_name = None
-#        self.tftp_basename = None
-        #atexit.register(self._cleanup)
+        self.image = image
+        self.ubootenv = ubootenv
 
     def get_macaddrs(self):
         """ Return a list of mac addresses for this node """
@@ -263,17 +254,17 @@ class Node(object):
 
                 # Update running ubootenv
                 old_ubootenv_image = self._download_image(tftp, running_part)
-                old_ubootenv = UbootEnv(open(
+                old_ubootenv = self.ubootenv(open(
                                         old_ubootenv_image.filename).read())
                 if "bootcmd_default" in old_ubootenv.variables:
-                    ubootenv = UbootEnv(open(image.filename).read())
+                    ubootenv = self.ubootenv(open(image.filename).read())
                     ubootenv.variables["bootcmd_default"] = \
-                            old_ubootenv.variables["bootcmd_default"]
+                                    old_ubootenv.variables["bootcmd_default"]
 
-                    fd, filename = tempfile.mkstemp(dir=TFTP_DIR)
+                    fd, filename = tempfile.mkstemp(dir=tftp.tftp_dir)
                     with os.fdopen(fd, "w") as f:
                         f.write(ubootenv.get_contents())
-                    ubootenv_image = Image(filename, image.type, False,
+                    ubootenv_image = self.image(filename, image.type, False,
                                            image.daddr, image.skip_crc32,
                                            image.version)
                     self._upload_image(tftp, ubootenv_image, running_part,
@@ -327,15 +318,16 @@ class Node(object):
 
         # Download active ubootenv, modify, then upload to first partition
         image = self._download_image(tftp, active_part)
-        ubootenv = UbootEnv(open(image.filename).read())
+        ubootenv = self.ubootenv(open(image.filename).read())
         ubootenv.set_boot_order(boot_args)
         priority = max(int(x.priority, 16) for x in [first_part, active_part])
 
-        fd, filename = tempfile.mkstemp(dir=TFTP_DIR)
+        fd, filename = tempfile.mkstemp(dir=tftp.tftp_dir)
         with os.fdopen(fd, "w") as f:
             f.write(ubootenv.get_contents())
-        ubootenv_image = Image(filename, image.type, False,
-                image.daddr, image.skip_crc32, image.version)
+            
+        ubootenv_image = self.image(filename, image.type, False, image.daddr, 
+                                    image.skip_crc32, image.version)
         self._upload_image(tftp, ubootenv_image, first_part, priority)
 
     def get_boot_order(self, tftp):
@@ -409,7 +401,7 @@ class Node(object):
         fwinfo = self.get_firmware_info()
         partition = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
         image = self._download_image(tftp, partition)
-        return UbootEnv(open(image.filename).read())
+        return self.ubootenv(open(image.filename).read())
 
     def _get_partition(self, fwinfo, image_type, partition_arg):
         """ Get a partition for this image type based on the argument """
@@ -455,9 +447,8 @@ class Node(object):
 
     def _upload_image(self, tftp, image, partition, priority=None):
         """ Upload a single image. This includes uploading the image,
-        performing the firmware update, crc32 check, and activation."""
-        #tftp_address = "%s:%s" % (tftp.get_address(self.ip_address),
-        #        tftp.get_port())
+        performing the firmware update, crc32 check, and activation.
+        """
         self._tftp_init(tftp)
         partition_id = int(partition.partition)
         if priority == None:
@@ -476,7 +467,8 @@ class Node(object):
             try:
                 # Update the firmware
                 result = self.bmc.update_firmware(filename,
-                                        partition_id, image.type, tftp_address)
+                                        partition_id, image.type, 
+                                        self.my_tftp_address)
                 if not hasattr(result, "tftp_handle_id"):
                     raise AttributeError("Failed to start firmware upload")
                 self._wait_for_transfer(result.tftp_handle_id)
@@ -498,13 +490,16 @@ class Node(object):
     def _download_image(self, tftp, partition):
         """ Download an image from the target.
 
-        Returns an image. """
-        tftp_address = "%s:%s" % (tftp.get_address(self.ip_address),
-                tftp.get_port())
+        :param tftp: TFTP Server for send/recv commands.
+        :type tftp: InternalTftp or ExternalTftp
+        
+        :return: An image.
+        :rtype: cxmanage_api.Image 
+        """
+        self._tftp_init(tftp)
 
         # Download the image
         fd, filename = tempfile.mkstemp(dir=tftp.tftp_dir)
-        os.close(fd)
         basename = os.path.basename(filename)
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
@@ -512,9 +507,11 @@ class Node(object):
         while True:
             try:
                 result = self.bmc.retrieve_firmware(basename, partition_id,
-                        image_type, tftp_address)
+                        image_type, self.my_tftp_address)
+                
                 if not hasattr(result, "tftp_handle_id"):
                     raise AttributeError("Failed to start firmware download")
+                
                 self._wait_for_transfer(result.tftp_handle_id)
                 break
 
@@ -524,9 +521,9 @@ class Node(object):
                 raise
 
         tftp.get_file(basename, filename)
-
-        return Image(filename, image_type, daddr=int(partition.daddr, 16),
-                     version=partition.version)
+        return self.image(filename=filename, image_type=image_type, 
+                          daddr=int(partition.daddr, 16), 
+                          version=partition.version)
 
     def _wait_for_transfer(self, handle):
         """Wait for a firmware transfer to finish.
@@ -575,11 +572,6 @@ class Node(object):
                                           relative_host=self.ip_address),
                                           tftp.get_port())
         f_hndl, self.my_tftp_file = tempfile.mkstemp(dir=tftp.tftp_dir)
-        os.close(f_hndl)
 
-    def _cleanup(self):
-        """Removes the TFTP temporary FILE."""
-        if (self.tftp_server):
-            shutil.rmtree(self.tftp_server.tftp_dir)
 
 # End of file: node.py

@@ -32,7 +32,7 @@
 #import shutil
 #import tempfile
 
-WORK_DIR = tempfile.mkdtemp(prefix="cxmanage-")
+#WORK_DIR = tempfile.mkdtemp(prefix="cxmanage-")
 
 #def cleanup():
 #    shutil.rmtree(WORK_DIR)

@@ -175,6 +175,59 @@ class TransferFailure(Exception):
         """String representation of this Exception class."""
         return self.msg
 
+
+class InvalidImageError(Exception):
+    """Raised when an image is not valid. (i.e. fails verification)"""
+    
+    def __init__(self, msg):
+        """Default constructor for the InvalidImageError class.
+                
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
+        super(InvalidImageError, self).__init__()
+        self.msg = msg
         
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+    
+
+class NoBootCmdDefaultError(Exception):
+    """Raised when there is no bootcmd_default arg in the boot order."""
+    
+    def __init__(self, msg):
+        """Default constructor for the NoBootCmdDefaultError class.
+                
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
+        super(NoBootCmdDefaultError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+
+
+class UnknownBootCmdError(Exception):
+    """Raised when the boot command is not: run bootcmd_pxe, run bootcmd_sata,
+       run bootcmd_mmc, setenv bootdevice, or reset.
+    """
+    
+    def __init__(self, msg):
+        """Default constructor for the UnknownBootCmdError class.
+                
+        :param msg: Exceptions message and details to return to the user.
+        :type msg: string
+        """
+        super(UnknownBootCmdError, self).__init__()
+        self.msg = msg
+        
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+
+
 # End of file: exceptions.py
  
