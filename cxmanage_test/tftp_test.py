@@ -35,11 +35,6 @@ import shutil
 import socket
 import unittest
 
-<<<<<<< Updated upstream
-from cxmanage_api.tftp import InternalTftp, ExternalTftp
-
-=======
->>>>>>> Stashed changes
 from cxmanage_test import random_file
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 
@@ -52,7 +47,6 @@ def _get_relative_host():
     try:
         # RFC863 defines port 9 as the UDP discard port, so we use it to
         # find out our local ip to pass as a relative_host
-        sock.connect((socket.gethostname(),9))
         return sock.getsockname()[0]
         
     except socket.error:
@@ -67,42 +61,26 @@ class InternalTftpTest(unittest.TestCase):
         self.tftp2 = InternalTftp(ip_address='127.0.0.254', 
                                   dir_name='cxmanage_unit_test2')
         
-    def tearDown(self):
-        """Removes temporary files created by this test."""
-        shutil.rmtree(self.tftp1.tftp_dir)
-        shutil.rmtree(self.tftp2.tftp_dir)
-    
-    def test_put(self):
-        """Test the put_file(src, dest) function.
-        1. Takes a random local file and copies it to the InternalTftp server.
-        2. Validates that the file exists on remote server (really local tho).
-        3. Validates that the file contents are the same.
-        4. Delete the local (src) file.
-        5. Validate sure the file no longer exists.
-        """
-        src = random_file(size=1024)
-        dest = os.path.join(self.tftp1.tftp_dir, os.path.basename(src))
-        self.tftp1.put_file(src, dest)
-        self.assertTrue(os.path.exists(dest))
-        self.assertEqual(open(src).read(), open(dest).read())
-        shutil.rmtree(os.path.dirname(src))
-        self.assertFalse(os.path.exists(src))
-    
-    def test_get(self):
-        """Tests the get_file(src, dest) function.
-        1. Makes a random local file & copies it from the InternalTftp server.
-        2. Validates that the file exists locally.
-        4. Deletes the local (dest) file.
-        5. Validates that the file no longer exists. 
-        """
-        src = random_file(size=4096)
-        dest = os.path.join(self.tftp1.tftp_dir, os.path.basename(src))
-        self.tftp1.get_file(src, dest)
-        self.assertTrue(os.path.exists(dest))
-        self.assertEqual(open(src).read(), open(dest).read())
-        shutil.rmtree(os.path.dirname(src))
-        self.assertFalse(os.path.exists(src))
-    
+    def test_put_and_get(self):
+        """ Test file transfers on an internal host """
+
+        # Create file
+        filename = random_file(1024)
+        contents = open(filename).read()
+
+        # Upload and remove
+        basename = os.path.basename(filename)
+        self.tftp1.put_file(filename, basename)
+        os.remove(filename)
+        self.assertFalse(os.path.exists(filename))
+
+        # Download
+        self.tftp1.get_file(basename, filename)
+
+        # Verify match
+        self.assertEqual(open(filename).read(), contents)
+        os.remove(filename)
+            
     def test_get_port(self):
         """Tests the get_port() function."""
         self.assertEqual(self.tftp1.port, self.tftp1.get_port())
@@ -147,12 +125,6 @@ class ExternalTftpTest(unittest.TestCase):
         self.etftp = ExternalTftp(
                      self.itftp.get_address(relative_host=_get_relative_host()),
                      self.itftp.get_port())
-        
-
-    def tearDown(self):
-        """Removes temporary files created by this test set."""
-        shutil.rmtree(self.itftp.tftp_dir)
-        shutil.rmtree(self.etftp.tftp_dir)
     
     def test_put_and_get(self):
         """Test the put_file(src, dest) function. Test the get_file(src,dest)
@@ -170,6 +142,6 @@ class ExternalTftpTest(unittest.TestCase):
         self.etftp.get_file(basename, filename)
         # Verify match
         self.assertEqual(open(filename).read(), contents)        
-        
+        os.remove(filename)
         
 # End of file: ./tftp_test.py

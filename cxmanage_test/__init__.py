@@ -40,7 +40,7 @@ from cxmanage_api.image import Image
 def random_file(size):
     """ Create a random file """
     contents = "".join([chr(random.randint(0, 255)) for a in range(size)])
-    fd, filename = tempfile.mkstemp(dir=tempfile.mkdtemp(prefix='cxmanage_test_random_'))
+    fd, filename = tempfile.mkstemp(prefix='cxmanage_test_')
     with os.fdopen(fd, "w") as f:
         f.write(contents)
         f.close()
