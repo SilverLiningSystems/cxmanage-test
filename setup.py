@@ -34,9 +34,9 @@ from setuptools import setup
 setup(
     name='cxmanage',
     version='0.6.1',
-    packages=['cxmanage'],
+    packages=['cxmanage_api'],
     scripts=['scripts/cxmanage', 'scripts/cxpackage'],
-    package_data={'cxmanage': ['data/cids', 'data/registers']},
+    package_data={'cxmanage_api': ['data/cids', 'data/registers']},
     description='Calxeda Management Utility',
     # NOTE: As of right now, the pyipmi version requirement needs to be updated
     # at the top of scripts/cxmanage as well.

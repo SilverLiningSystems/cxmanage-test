@@ -75,6 +75,9 @@ class NodeManager(object):
         if ip_address:
             self.set_nodes(ip_address, username, password)
 
+    def __eq__(self, other):
+        return isinstance(other, NodeManager) and self.nodes == other.nodes
+
     def set_nodes(self, ip_address, username="admin", password="admin"):
         """ Set the nodes of this fabric by pulling IP info from a BMC """
         self.nodes = {}

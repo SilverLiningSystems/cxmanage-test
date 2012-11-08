@@ -39,8 +39,15 @@ import pkgutil
 import sys
 import subprocess
 import pkg_resources
+import time
 
-from cxmanage.controller import Controller
+from cxmanage_api.tftp import InternalTftp, ExternalTftp
+from cxmanage_api.node import Node
+from cxmanage_api.node_manager import NodeManager
+from cxmanage_api.command import Command, CommandFailedError
+from cxmanage_api.image import Image
+from cxmanage_api.firmware_package import FirmwarePackage
+from cxmanage_api.ubootenv import UbootEnv
 
 PYIPMI_VERSION = '0.5.2'
 IPMITOOL_VERSION = '1.8.11.0-cx2'
@@ -96,25 +103,37 @@ def build_parser():
     p['power_subs'] = p['power'].add_subparsers()
 
     p['power_on'] = p['power_subs'].add_parser('on', help='boot the a9')
-    p['power_on'].set_defaults(power_mode='on')
+    p['power_on'].set_defaults(power_mode='on', func=power_command)
 
     p['power_off'] = p['power_subs'].add_parser('off', help='shut the a9 off')
-    p['power_off'].set_defaults(power_mode='off')
+    p['power_off'].set_defaults(power_mode='off', func=power_command)
 
     p['power_reset'] = p['power_subs'].add_parser('reset', help='reset the a9')
-    p['power_reset'].set_defaults(power_mode='reset')
+    p['power_reset'].set_defaults(power_mode='reset', func=power_command)
 
     p['power_status'] = p['power_subs'].add_parser('status',
             help='get a9 power status')
-    p['power_status'].set_defaults(power_mode='status')
+    p['power_status'].set_defaults(func=power_status_command)
 
     p['power_policy'] = p['power_subs'].add_parser('policy',
             help='set a9 power policy')
-    p['power_policy'].add_argument('policy', help='Policy to set',
-            choices=['always-on', 'always-off', 'previous', 'status'])
-    p['power_policy'].set_defaults(power_mode='policy')
+    p['power_policy_subs'] = p['power_policy'].add_subparsers()
 
-    p['power'].set_defaults(func=power_command)
+    p['power_policy_always-on'] = p['power_policy_subs'].add_parser(
+            'always-on', help='always boot the a9 by default')
+    p['power_policy_always-on'].set_defaults(policy='always-on',
+            func=power_policy_command)
+    p['power_policy_always-off'] = p['power_policy_subs'].add_parser(
+            'always-off', help='never boot the a9 by default')
+    p['power_policy_always-off'].set_defaults(policy='always-off',
+            func=power_policy_command)
+    p['power_policy_previous'] = p['power_policy_subs'].add_parser(
+            'previous', help='return to previous power state by default')
+    p['power_policy_previous'].set_defaults(policy='previous',
+            func=power_policy_command)
+    p['power_policy_status'] = p['power_policy_subs'].add_parser(
+            'status', help='get the current power policy')
+    p['power_policy_status'].set_defaults(func=power_policy_status_command)
 
     #mcreset command
     p['mcreset'] = p['subparsers'].add_parser('mcreset',
@@ -207,7 +226,8 @@ def build_parser():
 
     p['boot'] = p['config_subs'].add_parser('boot',
             help='set A9 boot order')
-    p['boot'].add_argument('boot_order', help='boot order to use')
+    p['boot'].add_argument('boot_order', help='boot order to use', default=[],
+            type=lambda x: [] if x == 'none' else x.split(','))
     p['boot'].set_defaults(func=config_boot_command)
 
     #info command
@@ -260,33 +280,18 @@ def main():
         print_version()
         sys.exit(0)
 
-    # Parse arguments
     parser = build_parser()
     args = parser.parse_args()
     validate_args(args)
 
-    # Set ipmitool path
     if args.ipmipath:
         if os.path.isdir(args.ipmipath):
             args.ipmipath = args.ipmipath.rstrip('/') + '/ipmitool'
         os.environ['IPMITOOL_PATH'] = args.ipmipath
 
-    # Check versions
     check_versions()
 
-    # Make the controller
-    verbosity = 1
-    if args.verbose:
-        verbosity = 2
-    elif args.quiet:
-        verbosity = 0
-
-    controller = Controller(verbosity=verbosity, max_threads=args.threads,
-            retries=args.retry, command_delay=args.command_delay)
-
-    # Set up TFTP and run
-    set_tftp(controller, args)
-    sys.exit(args.func(controller, args))
+    sys.exit(args.func(args))
 
 
 def print_version():
@@ -334,53 +339,70 @@ def check_versions():
         sys.exit(1)
 
 
-def set_tftp(controller, args):
-    """Set up tftp server on controller"""
+def get_tftp(args):
+    """Get a TFTP server"""
     if args.internal_tftp:
         tftp_args = args.internal_tftp.split(':')
         if len(tftp_args) == 1:
-            tftp_address = tftp_args[0]
-            tftp_port = 0
+            ip_address = tftp_args[0]
+            port = 0
         elif len(tftp_args) == 2:
-            tftp_address = tftp_args[0]
-            tftp_port = int(tftp_args[1])
+            ip_address = tftp_args[0]
+            port = int(tftp_args[1])
         else:
             print ('ERROR: %s is not a valid argument for --internal-tftp'
                     % args.internal_tftp)
             sys.exit(1)
-        controller.set_internal_tftp_server(tftp_address, tftp_port)
+        return InternalTftp(ip_address=ip_address, port=port,
+                verbose=args.verbose)
+
     elif args.external_tftp:
         tftp_args = args.external_tftp.split(':')
         if len(tftp_args) == 1:
-            tftp_address = tftp_args[0]
-            tftp_port = 69
+            ip_address = tftp_args[0]
+            port = 69
         elif len(tftp_args) == 2:
-            tftp_address = tftp_args[0]
-            tftp_port = int(tftp_args[1])
+            ip_address = tftp_args[0]
+            port = int(tftp_args[1])
         else:
             print ('ERROR: %s is not a valid argument for --external-tftp'
                     % args.external_tftp)
             sys.exit(1)
-        controller.set_external_tftp_server(tftp_address, tftp_port)
+        return ExternalTftp(ip_address=ip_address, port=port,
+                verbose=args.verbose)
+
+    return InternalTftp()
+
+
+def get_nodes(args, tftp):
+    """Get nodes"""
+    if args.all_nodes:
+        nodes = []
+        for fabric in get_fabrics(args, tftp):
+            for node in [x[1] for x in sorted(fabric.nodes.iteritems())]:
+                if not node.ip_address in [x.ip_address for x in nodes]:
+                    nodes.append(node)
+        return nodes
     else:
-        controller.set_internal_tftp_server()
+        hosts = []
+        for entry in args.hostname.split(','):
+            hosts.extend(parse_host_entry(entry))
+        return [Node(ip_address=x, username=args.user, password=args.password)
+                for x in hosts]
 
-
-def add_targets(controller, args):
-    """add targets to controller"""
-    # Get a list of hosts
+def get_fabrics(args, tftp):
     hosts = []
     for entry in args.hostname.split(','):
         hosts.extend(parse_host_entry(entry))
 
-    # Add hosts to controller
-    if args.all_nodes:
-        if controller.add_fabrics(hosts, args.user, args.password):
-            print "ERROR: Failed to get IP addresses. Aborting.\n"
-            sys.exit(1)
-    else:
-        for host in hosts:
-            controller.add_target(host, args.user, args.password)
+    fabrics = []
+    for host in hosts:
+        # TODO: parallelize this
+        fabric = NodeManager(ip_address=host, username=args.user,
+                password=args.password, tftp=tftp)
+        if not fabric in fabrics:
+            fabrics.append(fabric)
+    return fabrics
 
 
 def parse_host_entry(entry, hostfiles=set()):
@@ -447,48 +469,122 @@ def parse_ip_range_entry(entry):
     return addresses
 
 
-def power_command(controller, args):
+def power_command(args):
     """change the power state of a cluster or host"""
-    add_targets(controller, args)
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
 
-    # power policy
-    if args.power_mode == 'policy':
-        if args.policy == 'status':
-            return controller.power_policy_status()
-        else:
-            return controller.power_policy(args.policy)
+    if not args.quiet:
+        print 'Sending power %s command...' % args.power_mode
 
-    # power status
-    elif args.power_mode == 'status':
-        return controller.power_status()
+    results, errors = _run_command(args, nodes, 'set_power', args.power_mode)
 
-    # power on/off/reset
-    else:
-        return controller.power(args.power_mode)
+    if not args.quiet and not errors:
+        print 'Command completed successfully.\n'
+
+    return len(errors) > 0
 
 
-def mcreset_command(controller, args):
+def power_status_command(args):
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print 'Getting power status...'
+    results, errors = _run_command(args, nodes, 'get_power')
+
+    # Print results
+    if results:
+        print 'Power status'
+        for node in nodes:
+            if node in results:
+                if results[node]:
+                    result = 'on'
+                else:
+                    result = 'off'
+                print '%s: %s' % (node.ip_address.ljust(16), result)
+        print
+
+    if not args.quiet and errors:
+        print 'Some errors occured during the command.\n'
+
+    return len(errors) > 0
+
+
+def power_policy_command(args):
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print 'Setting power policy to %s...' % args.policy
+
+    results, errors = _run_command(args, nodes, 'set_power_policy',
+            args.policy)
+
+    if not args.quiet and not errors:
+        print 'Command completed successfully.\n'
+
+    return len(errors) > 0
+
+
+def power_policy_status_command(args):
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print 'Getting power policy status...'
+    results, errors = _run_command(args, nodes, 'get_power_policy')
+
+    # Print results
+    if results:
+        print 'Power policy status'
+        for node in nodes:
+            if node in results:
+                print '%s: %s' % (node.ip_address.ljust(16), results[node])
+        print
+
+    if not args.quiet and errors:
+        print 'Some errors occured during the command.\n'
+
+    return len(errors) > 0
+
+
+def mcreset_command(args):
     """reset the management controllers of a cluster or host"""
-    add_targets(controller, args)
-    return controller.mc_reset()
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print 'Sending MC reset command...'
+
+    results, errors = _run_command(args, nodes, 'mc_reset')
+
+    if not args.quiet and not errors:
+        print 'Command completed successfully.\n'
+
+    return len(errors) > 0
 
 
-def fwupdate_command(controller, args):
+def fwupdate_command(args):
     """update firmware on a cluster or host"""
-    # Add image
-    try:
-        simg = None
-        if args.force_simg:
-            simg = False
-        elif args.skip_simg:
-            simg = True
+    # Get firmware package
+    if args.image_type == "PACKAGE":
+        package = FirmwarePackage(args.filename)
+    else:
+        try:
+            simg = None
+            if args.force_simg:
+                simg = False
+            elif args.skip_simg:
+                simg = True
 
-        package = controller.get_firmware_package(args.filename,
-                args.image_type, simg, args.daddr, args.skip_crc32,
-                args.version)
-    except ValueError as e:
-        print "ERROR: %s" % e
-        return True
+            image = Image(args.filename, args.image_type, simg, args.daddr,
+                    args.skip_crc32, args.version)
+            package = FirmwarePackage()
+            package.images.append(image)
+        except ValueError as e:
+            print "ERROR: %s" % e
+            return True
 
     # Print all_nodes warning/confirmation
     if not args.all_nodes:
@@ -507,78 +603,439 @@ def fwupdate_command(controller, args):
                 elif command in ['n', 'no']:
                     return 1
 
-    add_targets(controller, args)
-    return controller.update_firmware(package, args.partition, args.priority,
-            args.force)
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.force:
+        if not args.quiet:
+            print "Checking hosts..."
+
+        results, errors = _run_command(args, nodes, "check_firmware", package,
+                args.partition, args.priority)
+        if errors:
+            print "ERROR: Firmware update aborted."
+            return True
+
+    if not args.quiet:
+        print "Updating firmware..."
+
+    results, errors = _run_command(args, nodes, "update_firmware", tftp,
+            package, args.partition, args.priority)
+
+    if not args.quiet and not errors:
+        print "Command completed successfully.\n"
+
+    return len(errors) > 0
 
 
-def fwinfo_command(controller, args):
+def fwinfo_command(args):
     """print firmware info"""
-    add_targets(controller, args)
-    return controller.firmware_info()
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting firmware info..."
+
+    results, errors = _run_command(args, nodes, "get_firmware_info")
+
+    for node in nodes:
+        if node in results:
+            print "[ Firmware info for %s ]" % node.ip_address
+
+            for partition in results[node]:
+                print "Partition : %s" % partition.partition
+                print "Type      : %s" % partition.type
+                print "Offset    : %s" % partition.offset
+                print "Size      : %s" % partition.size
+                print "Priority  : %s" % partition.priority
+                print "Daddr     : %s" % partition.daddr
+                print "Flags     : %s" % partition.flags
+                print "Version   : %s" % partition.version
+                print "In Use    : %s" % partition.in_use
+                print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) > 0
 
 
-def sensor_command(controller, args):
+def sensor_command(args):
     """read sensor values from a cluster or host"""
-    sensor_name = args.sensor_name
-    if sensor_name.lower() == 'list':
-        sensor_name = ''
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
 
-    add_targets(controller, args)
-    return controller.get_sensors(sensor_name)
+    if not args.quiet:
+        print "Getting sensor readings..."
+    results, errors = _run_command(args, nodes, "get_sensors",
+            args.sensor_name)
+
+    # Get sensor names
+    sensor_names = []
+    for node in results:
+        for sensor in results[node]:
+            sensor_name = sensor.sensor_name
+            if not sensor_name in sensor_names:
+                sensor_names.append(sensor_name)
+
+    # Print all sensors
+    for sensor_name in sensor_names:
+        print sensor_name
+
+        count = 0
+        average = 0.0
+        for node in nodes:
+            if node in results:
+                try:
+                    sensor = [x for x in results[node]
+                            if x.sensor_name == sensor_name][0]
+                    reading = sensor.sensor_reading.replace(
+                            "(+/- 0) ", "")
+
+                    # Add to average and print
+                    try:
+                        value = float(reading.split()[0])
+                        if average != None:
+                            count += 1
+                            average += value
+                            suffix = reading.lstrip("%f " % value)
+                        print "%s: %.2f %s" % (node.ip_address.ljust(16),
+                                value, suffix)
+                    except ValueError:
+                        average = None
+                        print "%s: %s" % (node.ip_address.ljust(16),
+                                reading)
+
+                except IndexError:
+                    pass
+
+        # Print average
+        if count > 1 and average != None:
+            average /= count
+            print "%s: %.2f %s" % ("Average".ljust(16),
+                    average, suffix)
+
+        print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) > 0
 
 
-def ipinfo_command(controller, args):
+def ipinfo_command(args):
     """get ip info from a cluster or host"""
-    add_targets(controller, args)
-    return controller.get_ipinfo()
+    tftp = get_tftp(args)
+    fabrics = get_fabrics(args, tftp)
+
+    for fabric in fabrics:
+        print 'IP info from %s' % fabric.nodes[0].ip_address
+        for node_id in fabric.nodes:
+            print 'Node %i: %s' % (node_id, fabric.nodes[node_id].ip_address)
+        print
+
+    return 0
 
 
-def macaddrs_command(controller, args):
+def macaddrs_command(args):
     """get mac addresses from a cluster or host"""
-    add_targets(controller, args)
-    return controller.get_macaddrs()
+    # TODO: display node IDs?
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting MAC addresses..."
+    results, errors = _run_command(args, nodes, "get_macaddrs")
+
+    for node in nodes:
+        if node in results:
+            print "MAC addresses from %s" % node.ip_address
+            for i in xrange(len(results[node])):
+                print "Port %i: %s" % (i, results[node][i])
+            print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) == 0
 
 
-def config_reset_command(controller, args):
+def config_reset_command(args):
     """reset to factory default settings"""
-    add_targets(controller, args)
-    return controller.config_reset()
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Sending config reset command..."
+
+    results, errors = _run_command(args, nodes, "config_reset", tftp)
+
+    if not args.quiet and not errors:
+        print "Command completed successfully.\n"
+
+    return len(errors) > 0
 
 
-def config_boot_command(controller, args):
+def config_boot_command(args):
     """set A9 boot order"""
-    add_targets(controller, args)
-    if args.boot_order == 'status':
-        return controller.config_boot_status()
-    elif args.boot_order == 'none':
-        return controller.config_boot([])
-    else:
-        return controller.config_boot(args.boot_order.split(','))
+    if args.boot_order == ['status']:
+        return config_boot_status_command(args)
 
-
-def info_command(controller, args):
-    """print info from a cluster or host"""
-    add_targets(controller, args)
-    if args.info_type in [None, 'basic']:
-        return controller.info_basic()
-    elif args.info_type == 'ubootenv':
-        return controller.info_ubootenv()
-    elif args.info_type == 'dump':
-        return controller.info_dump()
-    else:
+    # Make sure boot_args are valid
+    try:
+        UbootEnv().set_boot_order(args.boot_order)
+    except ValueError as e:
+        print e
         return True
 
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
 
-def ipmitool_command(controller, args):
+    if not args.quiet:
+        print "Setting boot order..."
+
+    results, errors = _run_command(args, nodes, "set_boot_order", tftp,
+            args.boot_order)
+
+    if not args.quiet and not errors:
+        print "Command completed successfully.\n"
+
+    return len(errors) > 0
+
+
+def config_boot_status_command(args):
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting boot order..."
+    results, errors = _run_command(args, nodes, "get_boot_order", tftp)
+
+    # Print results
+    if results:
+        print "Boot order"
+        for node in nodes:
+            if node in results:
+                print "%s: %s" % (node.ip_address.ljust(16),
+                        ",".join(results[node]))
+        print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) > 0
+
+
+def info_command(args):
+    """print info from a cluster or host"""
+    if args.info_type in [None, 'basic']:
+        return info_basic_command(args)
+    elif args.info_type == 'ubootenv':
+        return info_ubootenv_command(args)
+    elif args.info_type == 'dump':
+        return info_dump_command(args)
+
+
+def info_basic_command(args):
+    """Print basic info"""
+    components = [
+        ("soc_version", "ECME version"),
+        ("cdb_version", "CDB version"),
+        ("stage2_version", "Stage2boot version"),
+        ("bootlog_version", "Bootlog version"),
+        ("a9boot_version", "A9boot version"),
+        ("uboot_version", "Uboot version"),
+        ("ubootenv_version", "Ubootenv version"),
+        ("dtb_version", "DTB version")
+    ]
+
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting info..."
+    results, errors = _run_command(args, nodes, "info_basic")
+
+    # Print results
+    for node in nodes:
+        if node in results:
+            result = results[node]
+            print "[ Info from %s ]" % node.ip_address
+            print "Hardware version   : %s" % result.card
+            print "Firmware version   : %s" % result.version
+            for var, string in components:
+                if hasattr(result, var):
+                    version = getattr(result, var)
+                    print "%s: %s" % (string.ljust(19), version)
+            print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) > 0
+
+
+def info_ubootenv_command(args):
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting u-boot environment..."
+    results, errors = _run_command(args, nodes, "get_ubootenv", tftp)
+
+    # Print results
+    for node in nodes:
+        if node in results:
+            ubootenv = results[node]
+            print "[ U-Boot Environment from %s ]" % node.ip_address
+            for variable in ubootenv.variables:
+                print "%s=%s" % (variable, ubootenv.variables[variable])
+            print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) > 0
+
+
+def info_dump_command(args):
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting info dump..."
+    results, errors = _run_command(args, nodes, "get_ubootenv", tftp)
+
+    # Print results
+    for node in nodes:
+        if node in results:
+            print "[ Info dump from %s ]" % node.ip_address
+            print results[node]
+            print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) > 0
+
+
+def ipmitool_command(args):
     """run arbitrary ipmitool command"""
     if args.lanplus:
         ipmitool_args = ['-I', 'lanplus'] + args.ipmitool_args
     else:
         ipmitool_args = args.ipmitool_args
 
-    add_targets(controller, args)
-    return controller.ipmitool_command(ipmitool_args)
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Running IPMItool command..."
+    results, errors = _run_command(args, nodes, "ipmitool_command",
+            ipmitool_args)
+
+    # Print results
+    for node in nodes:
+        if node in results and results[node] != "":
+            print "[ IPMItool output from %s ]" % node.ip_address
+            print results[node]
+            print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) > 0
+
+
+def _run_command(args, nodes, name, *method_args):
+    command = Command(nodes, name, method_args, args.command_delay,
+                    args.threads)
+    command.start()
+
+    results = {}
+    errors = {}
+    try:
+        counter = 0
+        while command.is_alive():
+            if not args.quiet:
+                _print_command_status(command, counter)
+                counter += 1
+            time.sleep(0.25)
+
+        try:
+            results = command.get_results()
+        except CommandFailedError as e:
+            results = e.results
+            errors = e.errors
+
+    except KeyboardInterrupt:
+        retries = 0
+        try:
+            results = command.get_results()
+        except CommandFailedError as e:
+            results = e.results
+            errors = e.errors
+        for node in nodes:
+            if not (node.ip_address in results or node.ip_address in errors):
+                errors[nodes.ip_address] = "Aborted by keyboard interrupt"
+
+    if not args.quiet:
+        _print_command_status(command, counter)
+        print "\n"
+
+    # Handle errors
+    """
+    should_retry = False
+    if errors:
+        _print_errors(nodes, errors)
+        if retries == "prompt":
+            sys.stdout.write("Retry command on failed hosts? (y/n): ")
+            sys.stdout.flush()
+            while True:
+                command = raw_input().strip().lower()
+                if command in ['y', 'yes']:
+                    should_retry = True
+                    break
+                elif command in ['n', 'no']:
+                    print
+                    break
+        elif retries >= 1:
+            should_retry = True
+            if retries == 1:
+                print "Retrying command 1 more time..."
+            elif retries > 1:
+                print "Retrying command %i more times..." % retries
+            retries -= 1
+    if should_retry:
+        targets = [x for x in targets if x.address in errors]
+        new_results, errors = self._run_command_on_targets(targets,
+                retries, name, *args)
+        results.update(new_results)"""
+
+    _print_errors(nodes, errors)
+
+    return results, errors
+
+
+def _print_errors(nodes, errors):
+    """ Print errors if they occured """
+    if errors:
+        print "Command failed on these hosts"
+        for node in nodes:
+            if node in errors:
+                print "%s: %s" % (node.ip_address.ljust(16),
+                        errors[node])
+        print
+
+
+def _print_command_status(command, counter):
+    """ Print the status of a command """
+    message = "\r%i successes  |  %i errors  |  %i nodes left  |  %s"
+    status = command.get_status()
+    dots = "".join(["." for x in range(counter % 4)]).ljust(3)
+    sys.stdout.write(message % (status.successes, status.errors,
+            status.nodes_left, dots))
+    sys.stdout.flush()
 
 
 if __name__ == '__main__':

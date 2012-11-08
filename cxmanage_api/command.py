@@ -107,7 +107,8 @@ class Command:
         """ Get the status of this command.
 
         Returns a CommandStatus object. """
-        successes, errors = 0
+        successes = 0
+        errors = 0
         for worker in self._workers:
             successes += len(worker.results)
             errors += len(worker.errors)
@@ -149,8 +150,8 @@ class CommandWorker(Thread):
                     sleep(self.command._delay)
                     method = getattr(node, self.command._name)
                     result = method(*self.command._args)
-                    self.results[node.address] = result
+                    self.results[node] = result
                 except Exception as e:
-                    self.errors[node.address] = e
+                    self.errors[node] = e
         except StopIteration:
             pass

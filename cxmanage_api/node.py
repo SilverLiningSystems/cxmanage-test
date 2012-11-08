@@ -27,7 +27,7 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-"""Python implementation of a single node. 
+"""Python implementation of a single node.
 A node represents a single Calxeda ECME (Energy CoreManagement Engine).
 """
 
@@ -83,6 +83,12 @@ class Node(object):
                             password=password, verbose=verbose)
         self.image = image
         self.ubootenv = ubootenv
+
+    def __eq__(self, other):
+        return isinstance(other, Node) and self.ip_address == other.ip_address
+
+    def __hash__(self):
+        return hash(self.ip_address)
 
     def get_macaddrs(self):
         """ Return a list of mac addresses for this node """
@@ -325,8 +331,8 @@ class Node(object):
         fd, filename = tempfile.mkstemp(dir=tftp.tftp_dir)
         with os.fdopen(fd, "w") as f:
             f.write(ubootenv.get_contents())
-            
-        ubootenv_image = self.image(filename, image.type, False, image.daddr, 
+
+        ubootenv_image = self.image(filename, image.type, False, image.daddr,
                                     image.skip_crc32, image.version)
         self._upload_image(tftp, ubootenv_image, first_part, priority)
 
@@ -467,7 +473,7 @@ class Node(object):
             try:
                 # Update the firmware
                 result = self.bmc.update_firmware(filename,
-                                        partition_id, image.type, 
+                                        partition_id, image.type,
                                         self.my_tftp_address)
                 if not hasattr(result, "tftp_handle_id"):
                     raise AttributeError("Failed to start firmware upload")
@@ -492,9 +498,9 @@ class Node(object):
 
         :param tftp: TFTP Server for send/recv commands.
         :type tftp: InternalTftp or ExternalTftp
-        
+
         :return: An image.
-        :rtype: cxmanage_api.Image 
+        :rtype: cxmanage_api.Image
         """
         self._tftp_init(tftp)
 
@@ -508,10 +514,10 @@ class Node(object):
             try:
                 result = self.bmc.retrieve_firmware(basename, partition_id,
                         image_type, self.my_tftp_address)
-                
+
                 if not hasattr(result, "tftp_handle_id"):
                     raise AttributeError("Failed to start firmware download")
-                
+
                 self._wait_for_transfer(result.tftp_handle_id)
                 break
 
@@ -521,8 +527,8 @@ class Node(object):
                 raise
 
         tftp.get_file(basename, filename)
-        return self.image(filename=filename, image_type=image_type, 
-                          daddr=int(partition.daddr, 16), 
+        return self.image(filename=filename, image_type=image_type,
+                          daddr=int(partition.daddr, 16),
                           version=partition.version)
 
     def _wait_for_transfer(self, handle):
