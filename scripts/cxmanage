@@ -173,7 +173,7 @@ def build_parser():
     p['fwupdate'].add_argument('--skip-crc32',
             help='Skip crc32 calculation for SIMG',
             default=False, action='store_true')
-    p['fwupdate'].add_argument('--version',
+    p['fwupdate'].add_argument('--version', dest='fw_version',
             help='Version for SIMG header', default=None)
     p['fwupdate'].set_defaults(func=fwupdate_command)
 
@@ -251,7 +251,7 @@ def validate_args(args):
             sys.exit('Invalid argument --daddr when supplied with --skip-simg')
         if args.skip_simg and args.skip_crc32:
             sys.exit('Invalid argument --skip-crc32 when supplied with --skip-simg')
-        if args.skip_simg and args.version:
+        if args.skip_simg and args.fw_version:
             sys.exit('Invalid argument --version when supplied with --skip-simg')
 
 def main():
@@ -483,7 +483,7 @@ def fwupdate_command(controller, args):
 
         package = controller.get_firmware_package(args.filename,
                 args.image_type, simg, args.daddr, args.skip_crc32,
-                args.version)
+                args.fw_version)
     except ValueError as e:
         print "ERROR: %s" % e
         return True
