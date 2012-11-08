@@ -46,23 +46,18 @@ class NodeManagerTest(unittest.TestCase):
         # Set up the controller and add targets
         self.node_manager = NodeManager(max_threads=32)
         self.nodes = [DummyNode(x) for x in ADDRESSES]
-        self.node_manager.nodes = self.nodes
+        self.node_manager.nodes = dict((i, self.nodes[i])
+                for i in xrange(NUM_NODES))
 
     def test_command_delay(self):
         """Test that we delay for at least command_delay"""
         delay = random.randint(1, 5)
         self.node_manager.command_delay = delay
-        self.node_manager.nodes = [self.node_manager.nodes[0]]
+        self.node_manager.nodes = {0: self.node_manager.nodes[0]}
         start = time.time()
         self.node_manager.info_basic()
         finish = time.time()
         self.assertLess(delay, finish - start)
-
-    def test_get_ipinfo(self):
-        """ Test get_ipinfo command """
-        self.node_manager.get_ipinfo()
-        for node in self.nodes:
-            self.assertEqual(node.executed, ["get_ipinfo"])
 
     def test_get_macaddrs(self):
         """ Test get_ipinfo command """
@@ -148,11 +143,7 @@ class DummyNode:
         self.address = address
         self.executed = []
 
-    def get_ipinfo(self, tftp):
-        self.executed.append("get_ipinfo")
-        return list(enumerate(ADDRESSES))
-
-    def get_macaddrs(self, tftp):
+    def get_macaddrs(self):
         self.executed.append("get_macaddrs")
         result = []
         for node in range(NUM_NODES):
