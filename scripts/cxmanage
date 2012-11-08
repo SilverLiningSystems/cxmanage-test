@@ -30,8 +30,10 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-
 """Command line tool for managing a Calxeda cluster"""
+
+# TODO: factor this out into multiple files. We could afford to have a few
+# less lines in here. Just a few.
 
 import argparse
 import os
@@ -43,7 +45,6 @@ import time
 
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.node import Node
-from cxmanage_api.node_manager import NodeManager
 from cxmanage_api.command import Command, CommandFailedError
 from cxmanage_api.image import Image
 from cxmanage_api.firmware_package import FirmwarePackage
@@ -376,33 +377,41 @@ def get_tftp(args):
 
 def get_nodes(args, tftp):
     """Get nodes"""
-    if args.all_nodes:
-        nodes = []
-        for fabric in get_fabrics(args, tftp):
-            for node in [x[1] for x in sorted(fabric.nodes.iteritems())]:
-                if not node.ip_address in [x.ip_address for x in nodes]:
-                    nodes.append(node)
-        return nodes
-    else:
-        hosts = []
-        for entry in args.hostname.split(','):
-            hosts.extend(parse_host_entry(entry))
-        return [Node(ip_address=x, username=args.user, password=args.password)
-                for x in hosts]
-
-def get_fabrics(args, tftp):
     hosts = []
     for entry in args.hostname.split(','):
         hosts.extend(parse_host_entry(entry))
 
-    fabrics = []
-    for host in hosts:
-        # TODO: parallelize this
-        fabric = NodeManager(ip_address=host, username=args.user,
-                password=args.password, tftp=tftp)
-        if not fabric in fabrics:
-            fabrics.append(fabric)
-    return fabrics
+    nodes = [Node(ip_address=x, username=args.user, password=args.password,
+            verbose=args.verbose) for x in hosts]
+
+    if args.all_nodes:
+        if not args.quiet:
+            print "Getting IP addresses..."
+
+        results, errors = _run_command(args, nodes, "get_fabric_ipinfo", tftp)
+
+        all_nodes = []
+        for node in nodes:
+            if node in results:
+                for ip_address in results[node].itervalues():
+                    new_node = Node(ip_address=ip_address, username=args.user,
+                            password=args.password, verbose=args.verbose)
+                    if not new_node in all_nodes:
+                        all_nodes.append(new_node)
+
+        if not args.quiet:
+            print "Discovered the following IP addresses:"
+            for node in all_nodes:
+                print node.ip_address
+            print
+
+        if errors:
+            print "ERROR: Failed to get IP addresses. Aborting."
+            sys.exit(1)
+
+        return all_nodes
+    else:
+        return nodes
 
 
 def parse_host_entry(entry, hostfiles=set()):
@@ -725,21 +734,28 @@ def sensor_command(args):
 
 def ipinfo_command(args):
     """get ip info from a cluster or host"""
-    tftp = get_tftp(args)
-    fabrics = get_fabrics(args, tftp)
+    args.all_nodes = False
 
-    for fabric in fabrics:
-        print 'IP info from %s' % fabric.nodes[0].ip_address
-        for node_id in fabric.nodes:
-            print 'Node %i: %s' % (node_id, fabric.nodes[node_id].ip_address)
-        print
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting IP addresses..."
+
+    results, errors = _run_command(args, nodes, "get_fabric_ipinfo", tftp)
+
+    for node in nodes:
+        if node in results:
+            print 'IP info from %s' % node.ip_address
+            for node_id, node_address in results[node].iteritems():
+                print 'Node %i: %s' % (node_id, node_address)
+            print
 
     return 0
 
 
 def macaddrs_command(args):
     """get mac addresses from a cluster or host"""
-    # TODO: display node IDs?
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
@@ -969,7 +985,7 @@ def _run_command(args, nodes, name, *method_args):
             errors = e.errors
 
     except KeyboardInterrupt:
-        retries = 0
+        args.retry = 0
         try:
             results = command.get_results()
         except CommandFailedError as e:
@@ -984,11 +1000,10 @@ def _run_command(args, nodes, name, *method_args):
         print "\n"
 
     # Handle errors
-    """
     should_retry = False
     if errors:
         _print_errors(nodes, errors)
-        if retries == "prompt":
+        if args.retry == None:
             sys.stdout.write("Retry command on failed hosts? (y/n): ")
             sys.stdout.flush()
             while True:
@@ -999,20 +1014,18 @@ def _run_command(args, nodes, name, *method_args):
                 elif command in ['n', 'no']:
                     print
                     break
-        elif retries >= 1:
+        elif args.retry >= 1:
             should_retry = True
-            if retries == 1:
+            if args.retry == 1:
                 print "Retrying command 1 more time..."
-            elif retries > 1:
-                print "Retrying command %i more times..." % retries
-            retries -= 1
-    if should_retry:
-        targets = [x for x in targets if x.address in errors]
-        new_results, errors = self._run_command_on_targets(targets,
-                retries, name, *args)
-        results.update(new_results)"""
+            elif args.retry > 1:
+                print "Retrying command %i more times..." % args.retry
+            args.retry -= 1
 
-    _print_errors(nodes, errors)
+    if should_retry:
+        nodes = [x for x in nodes if x in errors]
+        new_results, errors = _run_command(args, nodes, name, *method_args)
+        results.update(new_results)
 
     return results, errors
 
