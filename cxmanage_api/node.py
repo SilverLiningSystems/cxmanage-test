@@ -409,6 +409,50 @@ class Node(object):
         image = self._download_image(tftp, partition)
         return self.ubootenv(open(image.filename).read())
 
+    def get_fabric_ipinfo(self, tftp):
+        """ Get IP info from the fabric
+
+        Returns a dictionary that maps node IDs to IP addresses. """
+        self._tftp_init(tftp)
+
+        fd, filename = tempfile.mkstemp(dir=tftp.tftp_dir)
+        os.close(fd)
+        basename = os.path.basename(filename)
+
+        result = self.bmc.get_fabric_ipinfo(basename, self.my_tftp_address)
+        if hasattr(result, "error"):
+            raise IpmiError(result.error)
+
+        # Wait for file
+        for a in range(10):
+            try:
+                time.sleep(1)
+                tftp.get_file(src=basename, dest=filename)
+                if os.path.getsize(filename) > 0:
+                    break
+            except (TftpException, IOError):
+                pass
+
+        # Ensure file is present
+        if not os.path.exists(filename):
+            raise IOError("Failed to retrieve IP info")
+
+        # Parse addresses from ipinfo file
+        results = {}
+        for line in open(filename):
+            if line.startswith("Node"):
+                elements = line.split()
+                node_id = int(elements[1].rstrip(":"))
+                node_address = elements[2]
+                if node_address != "0.0.0.0":
+                    results[node_id] = node_address
+
+        # Make sure we found something
+        if not results:
+            raise NoIpInfoError("Failed to retrieve IP info")
+
+        return results
+
     def _get_partition(self, fwinfo, image_type, partition_arg):
         """ Get a partition for this image type based on the argument """
         # Filter partitions for this type
