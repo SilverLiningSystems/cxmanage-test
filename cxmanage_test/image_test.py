@@ -45,13 +45,10 @@ class ImageTest(unittest.TestCase):
     These will rely on an internally hosted TFTP server. """
 
     def setUp(self):
-        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
-
+        #self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         # Set up an internal server
         self.tftp = InternalTftp()
-
-    def tearDown(self):
-        shutil.rmtree(self.work_dir)
+        self.work_dir = self.tftp.tftp_dir
 
     def test_upload(self):
         """ Test image creation and upload """
@@ -60,7 +57,7 @@ class ImageTest(unittest.TestCase):
         daddr = 12345
 
         # Create image
-        filename = random_file(self.work_dir, imglen)
+        filename = random_file(imglen)
         contents = open(filename).read()
         image = TestImage(filename, "RAW")
 
@@ -83,9 +80,13 @@ class ImageTest(unittest.TestCase):
     def test_multiple_uploads(self):
         """ Test to make sure FDs are being closed """
         # Create image
-        filename = random_file(self.work_dir, 1024)
+        filename = random_file(1024)
         contents = open(filename).read()
         image = TestImage(filename, "RAW")
 
         for x in xrange(2048):
             image.upload(self.tftp, 0, 0)
+        os.remove(filename)
+        
+# End of file: ./image_test.py
+
