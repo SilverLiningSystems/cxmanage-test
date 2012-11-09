@@ -141,8 +141,6 @@ class Image:
 
         if self.type in ["CDB", "BOOT_LOG"]:
             # Look for "CDBH"
-            if (self.type == 'UBOOTENV'):
-                print 'I AM A UBOOTENV image!'
             contents = open(self.filename).read()
             if self.simg:
                 contents = get_simg_contents(contents)
