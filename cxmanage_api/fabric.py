@@ -28,18 +28,9 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-import os
-import tempfile
-import time
-
-from pyipmi import make_bmc, IpmiError
-from pyipmi.bmc import LanBMC
-from tftpy.TftpShared import TftpException
-
 from cxmanage_api.command import Command
 from cxmanage_api.tftp import InternalTftp
-from cxmanage_api.node import Node
-from cxmanage_api.cx_exceptions import NoIpInfoError
+from cxmanage_api.node import Node as NODE
 
 
 class NodeManager(object):
@@ -56,8 +47,9 @@ class NodeManager(object):
           Fabric Management commands will NOT work.
     """
 
-    def __init__(self, ip_address=None, username="admin", password="admin",
-            tftp=None, max_threads=1, command_delay=0, verbose=False):
+    def __init__(self, ip_address, username="admin", password="admin",
+            tftp=None, max_threads=1, command_delay=0, verbose=False,
+            node=NODE):
         """Default constructor for the NodeManager class.
 
         @param max_threads: Maximum number of threads to run at a time.
@@ -68,60 +60,31 @@ class NodeManager(object):
         self.max_threads = max_threads
         self.command_delay = command_delay
         self.verbose = verbose
+        self.node = node
 
         if not self.tftp:
             self.tftp = InternalTftp()
 
-        if ip_address:
-            self.set_nodes(ip_address, username, password)
+        self._discover_nodes(ip_address=ip_address, username=username,
+                password=password)
 
-    def set_nodes(self, ip_address, username="admin", password="admin"):
+    def __eq__(self, other):
+        return isinstance(other, NodeManager) and self.nodes == other.nodes
+
+    def __hash__(self):
+        return hash(tuple(self.nodes.iteritems()))
+
+    def _discover_nodes(self, ip_address, username="admin", password="admin"):
         """ Set the nodes of this fabric by pulling IP info from a BMC """
-        self.nodes = {}
+        node = self.node(ip_address=ip_address, username=username,
+                password=password, verbose=self.verbose)
 
-        bmc = make_bmc(LanBMC, hostname=ip_address, username=username,
-                            password=password, verbose=self.verbose)
+        ipinfo = node.get_fabric_ipinfo(self.tftp)
 
-        tftp_address = "%s:%s" % (self.tftp.get_address(ip_address),
-                self.tftp.get_port())
-
-        # TODO: delete this file when we're done.
-        fd, filename = tempfile.mkstemp()
-        os.close(fd)
-        basename = os.path.basename(filename)
-
-        result = bmc.get_fabric_ipinfo(basename, tftp_address)
-        if hasattr(result, "error"):
-            raise IpmiError(result.error)
-
-        # Wait for file
-        for a in range(10):
-            try:
-                time.sleep(1)
-                self.tftp.get_file(src=basename, dest=filename)
-                if os.path.getsize(filename) > 0:
-                    break
-            except (TftpException, IOError):
-                pass
-
-        # Ensure file is present
-        if not os.path.exists(filename):
-            raise IOError("Failed to retrieve IP info")
-
-        # Parse addresses from ipinfo file
-        for line in open(filename):
-            if line.startswith("Node"):
-                elements = line.split()
-                node_id = int(elements[1].rstrip(":"))
-                node_address = elements[2]
-                if node_address != "0.0.0.0":
-                    node = Node(ip_address=node_address, username=username,
-                            password=password, verbose=self.verbose)
-                    self.nodes[node_id] = node
-
-        # Make sure we found something
-        if not self.nodes:
-            raise NoIpInfoError("Failed to retrieve IP info")
+        for node_id, node_address in ipinfo.iteritems():
+            self.nodes[node_id] = self.node(ip_address=node_address,
+                    username=username, password=password,
+                    verbose=self.verbose)
 
 #########################    Command methods    #########################
 

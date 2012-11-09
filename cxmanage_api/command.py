@@ -192,9 +192,9 @@ class CommandWorker(Thread):
                     sleep(self.command._delay)
                     method = getattr(node, self.command._name)
                     result = method(*self.command._args)
-                    self.results[node.address] = result
+                    self.results[node] = result
                 except Exception as e:
-                    self.errors[node.address] = e
+                    self.errors[node] = e
         except StopIteration:
             pass
 

@@ -59,10 +59,10 @@ class CommandTest(unittest.TestCase):
 
         for target in self.good_targets:
             self.assertEqual(target.executed, [("action", ("a", "b", "c"))])
-            self.assertEqual(worker.results[target.address], "action_result")
+            self.assertEqual(worker.results[target], "action_result")
         for target in self.bad_targets:
             self.assertEqual(target.executed, [("action", ("a", "b", "c"))])
-            self.assertEqual(str(worker.errors[target.address]), "action_error")
+            self.assertEqual(str(worker.errors[target]), "action_error")
 
     def test_command(self):
         """ Test the command spawner """
@@ -80,10 +80,10 @@ class CommandTest(unittest.TestCase):
 
         for target in self.good_targets:
             self.assertEqual(target.executed, [("action", ("a", "b", "c"))])
-            self.assertEqual(results[target.address], "action_result")
+            self.assertEqual(results[target], "action_result")
         for target in self.bad_targets:
             self.assertEqual(target.executed, [("action", ("a", "b", "c"))])
-            self.assertEqual(str(errors[target.address]), "action_error")
+            self.assertEqual(str(errors[target]), "action_error")
 
     def test_command_delay(self):
         """ Test the command delay argument """

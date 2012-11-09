@@ -44,7 +44,8 @@ class NodeManagerTest(unittest.TestCase):
     """ Test the various NodeManager commands """
     def setUp(self):
         # Set up the controller and add targets
-        self.node_manager = NodeManager(max_threads=32)
+        self.node_manager = NodeManager("192.168.100.1", max_threads=32,
+                node=DummyNode)
         self.nodes = [DummyNode(x) for x in ADDRESSES]
         self.node_manager.nodes = dict((i, self.nodes[i])
                 for i in xrange(NUM_NODES))
@@ -139,8 +140,8 @@ class NodeManagerTest(unittest.TestCase):
 
 class DummyNode:
     """ Dummy node for the nodemanager tests """
-    def __init__(self, address, *args):
-        self.address = address
+    def __init__(self, ip_address, *args, **kwargs):
+        self.ip_address = ip_address
         self.executed = []
 
     def get_macaddrs(self):
@@ -229,6 +230,9 @@ class DummyNode:
         ubootenv.variables["bootcmd0"] = "run bootcmd_default"
         ubootenv.variables["bootcmd_default"] = "run bootcmd_sata"
         return ubootenv
+
+    def get_fabric_ipinfo(self, tftp):
+        return {}
 
 class DummyImage:
     def __init__(self, filename, image_type, *args):
