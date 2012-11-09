@@ -32,7 +32,7 @@ import random
 import time
 import unittest
 
-from cxmanage_api.node_manager import NodeManager
+from cxmanage_api.fabric import Fabric
 from cxmanage_api.firmware_package import FirmwarePackage
 from cxmanage_api.ubootenv import UbootEnv
 from cxmanage_test import TestSensor
@@ -40,100 +40,100 @@ from cxmanage_test import TestSensor
 NUM_NODES = 128
 ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]
 
-class NodeManagerTest(unittest.TestCase):
-    """ Test the various NodeManager commands """
+class FabricTest(unittest.TestCase):
+    """ Test the various Fabric commands """
     def setUp(self):
         # Set up the controller and add targets
-        self.node_manager = NodeManager("192.168.100.1", max_threads=32,
+        self.fabric = Fabric("192.168.100.1", max_threads=32,
                 node=DummyNode)
         self.nodes = [DummyNode(x) for x in ADDRESSES]
-        self.node_manager.nodes = dict((i, self.nodes[i])
+        self.fabric.nodes = dict((i, self.nodes[i])
                 for i in xrange(NUM_NODES))
 
     def test_command_delay(self):
         """Test that we delay for at least command_delay"""
         delay = random.randint(1, 5)
-        self.node_manager.command_delay = delay
-        self.node_manager.nodes = {0: self.node_manager.nodes[0]}
+        self.fabric.command_delay = delay
+        self.fabric.nodes = {0: self.fabric.nodes[0]}
         start = time.time()
-        self.node_manager.info_basic()
+        self.fabric.info_basic()
         finish = time.time()
         self.assertLess(delay, finish - start)
 
     def test_get_macaddrs(self):
         """ Test get_ipinfo command """
-        self.node_manager.get_macaddrs()
+        self.fabric.get_macaddrs()
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_macaddrs"])
 
     def test_get_sensors(self):
         """ Test get_sensors command """
-        self.node_manager.get_sensors()
-        self.node_manager.get_sensors("Node Power")
+        self.fabric.get_sensors()
+        self.fabric.get_sensors("Node Power")
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_sensors", "get_sensors"])
 
     def test_get_firmware_info(self):
         """ Test get_firmware_info command """
-        self.node_manager.get_firmware_info()
+        self.fabric.get_firmware_info()
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_firmware_info"])
 
     def test_check_firmware(self):
         """ Test check_firmware command """
         package = FirmwarePackage()
-        self.node_manager.check_firmware(package)
+        self.fabric.check_firmware(package)
         for node in self.nodes:
             self.assertEqual(node.executed, [("check_firmware", package)])
 
     def test_update_firmware(self):
         """ Test update_firmware command """
         package = FirmwarePackage()
-        self.node_manager.update_firmware(package)
+        self.fabric.update_firmware(package)
         for node in self.nodes:
             self.assertEqual(node.executed, [("update_firmware", package)])
 
     def test_config_reset(self):
         """ Test config_reset command """
-        self.node_manager.config_reset()
+        self.fabric.config_reset()
         for node in self.nodes:
             self.assertEqual(node.executed, ["config_reset"])
 
     def test_set_boot_order(self):
         """ Test set_boot_order command """
         boot_args = "disk0,pxe,retry"
-        self.node_manager.set_boot_order(boot_args)
+        self.fabric.set_boot_order(boot_args)
         for node in self.nodes:
             self.assertEqual(node.executed, [("set_boot_order", boot_args)])
 
     def test_get_boot_order(self):
         """ Test get_boot_order command """
-        self.node_manager.get_boot_order()
+        self.fabric.get_boot_order()
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_boot_order"])
 
     def test_info_basic(self):
         """ Test info_basic command """
-        self.node_manager.info_basic()
+        self.fabric.info_basic()
         for node in self.nodes:
             self.assertEqual(node.executed, ["info_basic"])
 
     def test_info_dump(self):
         """ Test info_dump command """
-        self.node_manager.info_dump()
+        self.fabric.info_dump()
         for node in self.nodes:
             self.assertEqual(node.executed, ["info_dump"])
 
     def test_get_ubootenv(self):
         """ Test get_ubootenv command """
-        self.node_manager.get_ubootenv()
+        self.fabric.get_ubootenv()
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_ubootenv"])
 
     def test_ipmitool_command(self):
         """ Test ipmitool_command command """
         ipmitool_args = "power status"
-        self.node_manager.ipmitool_command(ipmitool_args)
+        self.fabric.ipmitool_command(ipmitool_args)
         for node in self.nodes:
             self.assertEqual(node.executed, [("ipmitool_command", ipmitool_args)])
 

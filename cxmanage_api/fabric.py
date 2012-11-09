@@ -33,24 +33,24 @@ from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.node import Node as NODE
 
 
-class NodeManager(object):
-    """ The NodeManager class provides management of multiple nodes.
-    NodeManagers have the ability to send commands to:
+class Fabric(object):
+    """ The Fabric class provides management of multiple nodes.
+    Fabrics have the ability to send commands to:
         -> Any particular node.
         -> All nodes.
 
-    To create a NodeManager object, only a single node (ideally node 0) is needed.
+    To create a Fabric object, only a single node (ideally node 0) is needed.
     The rest of the fabric can optionally be derived via node 0.
 
     Note:
-        * Constructing NodeManager objects without a valid node 0 will mean that all
+        * Constructing Fabric objects without a valid node 0 will mean that all
           Fabric Management commands will NOT work.
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
             tftp=None, max_threads=1, command_delay=0, verbose=False,
             node=NODE):
-        """Default constructor for the NodeManager class.
+        """Default constructor for the Fabric class.
 
         @param max_threads: Maximum number of threads to run at a time.
         @type max_threads: integer
@@ -69,7 +69,7 @@ class NodeManager(object):
                 password=password)
 
     def __eq__(self, other):
-        return isinstance(other, NodeManager) and self.nodes == other.nodes
+        return isinstance(other, Fabric) and self.nodes == other.nodes
 
     def __hash__(self):
         return hash(tuple(self.nodes.iteritems()))
