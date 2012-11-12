@@ -27,48 +27,65 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-"""Calxeda Cxmanage Python API.
-
-This file conatains the following classes:
-Command
-CommandWorker
-CommandStatus
-CommandFailedError
-
-:todo: Move CommandFailedError to cx_exceptions.py
+"""Cxmanage Python API: Command, CommandWorker
 
 :requires: time
 :requires: threading
-"""
+:requires: cxmanage_api.cx_exceptions
 
+"""
 
 from time import sleep
 from threading import Thread, Lock
+from cxmanage_api.cx_exceptions import CommandFailedError
 
 
-class CommandStatus:
-    """Container for a commands status."""
-    
-    def __init__(self, successes, errors, nodes_left):
-        """Default constructor for the CommandStatus class.
+class CommandWorker(Thread):
+    """A worker thread for a command.
+
+    A worker will obtain nodes from the pool and run the named method on them
+    once started (i.e. start() is called). 
+    The thread terminates once there are no nodes remaining.
+    """
+
+    def __init__(self, command):
+        """Default constructor for the CommandWorker class.
         
-        :param successes: The successes/ip node map for this command.
-        :type successes: dictionary
-        :param errors: The errors/ip node map for this command.
-        :type errors: dictionary
-        :param nodes_left: The number of nodes left to execute the command.
-        :type nodes_left: integer
+        :param command: The command to run.
+        :type command: Command
         """
-        self.successes = successes
-        self.errors = errors
-        self.nodes_left = nodes_left
+        Thread.__init__(self)
+        self.daemon = True
+        self.command = command
+        self.results = {}
+        self.errors = {}
 
-
+    def run(self):
+        """Runs the named method, stores results/errors, then terminates."""
+        try:
+            while (True):
+                node = self.command._get_next_node()
+                try:
+                    sleep(self.command._delay)
+                    method = getattr(node, self.command._name)
+                    result = method(*self.command._args)
+                    self.results[str(node)] = result
+                
+                except Exception as e:
+                    self.errors[node] = e
+        
+        except StopIteration:
+            pass
+        
+        
 class Command:
     """Command objects are containers/managers of multi-threaded CommandWorkers
-    that execute commands in parallel on nodes & fabrics.
+    that execute commands in parallel on a node(s) & fabric(s).
     
-    They are designed to have an interface similar to that of a thread.
+    .. note::
+        * They are designed to have an interface similar to that of a thread.
+          but are not threads themselves. The CommandWorkers are the threads.
+        * start(), run(), join(), is_alive()
     
     :param nodes: Nodes to execute commands on.
     :type nodes: Node
@@ -145,6 +162,26 @@ class Command:
         :return: The commands status.
         :rtype: CommandStatus
         """
+        class CommandStatus:
+            """Container for a commands status."""
+    
+            def __init__(self, successes, errors, nodes_left):
+                """Default constructor for the CommandStatus class.
+                
+                :param successes: The successes/ip node map for this command.
+                :type successes: dictionary
+                :param errors: The errors/ip node map for this command.
+                :type errors: dictionary
+                :param nodes_left: The number of nodes left to execute the command.
+                :type nodes_left: integer
+                """
+                self.successes = successes
+                self.errors = errors
+                self.nodes_left = nodes_left
+        
+        #       
+        # get_status()
+        #        
         successes, errors = 0
         for worker in self._workers:
             successes += len(worker.results)
@@ -161,59 +198,4 @@ class Command:
             self._lock.release()
 
 
-class CommandWorker(Thread):
-    """A worker thread for a command.
-
-    Once started, the worker will obtain nodes from the pool and run the
-    named method on them. The thread terminates once there are no nodes
-    remaining.
-    """
-
-    def __init__(self, command):
-        """Default constructor for the CommandWorker class.
-        
-        :param command: The command to run.
-        :type command: Command
-        """
-        Thread.__init__(self)
-        self.daemon = True
-        self.command = command
-        self.results = {}
-        self.errors = {}
-
-    def run(self):
-        """Run the named method on some nodes, store the results/errors, then
-        terminate.
-        """
-        try:
-            while True:
-                node = self.command._get_next_node()
-                try:
-                    sleep(self.command._delay)
-                    method = getattr(node, self.command._name)
-                    result = method(*self.command._args)
-                    self.results[node] = result
-                except Exception as e:
-                    self.errors[node] = e
-        except StopIteration:
-            pass
-
-
-class CommandFailedError(Exception):
-    """Exception that is raised when a command has failed."""
-    
-    def __init__(self, results, errors):
-        """Default constructor for the CommandFailedError class.
-        
-        :param results: Command results.
-        :param errors
-        """
-        self.results = results
-        self.errors = errors
-
-    def __str__(self):
-        """String representation of this exception."""
-        return 'Results: %s Errors: %s' % (self.results, self.errors)
-    
-    
 # End of file: ./command.py

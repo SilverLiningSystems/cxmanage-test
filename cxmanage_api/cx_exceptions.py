@@ -229,5 +229,22 @@ class UnknownBootCmdError(Exception):
         return self.msg
 
 
+class CommandFailedError(Exception):
+    """Raised when a command has failed."""
+    
+    def __init__(self, results, errors):
+        """Default constructor for the CommandFailedError class.
+        
+        :param results: Command results.
+        :param errors
+        """
+        self.results = results
+        self.errors = errors
+
+    def __str__(self):
+        """String representation of this exception."""
+        return 'Results: %s Errors: %s' % (self.results, self.errors)
+
+
 # End of file: exceptions.py
  

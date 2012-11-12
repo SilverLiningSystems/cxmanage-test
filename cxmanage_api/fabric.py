@@ -66,7 +66,7 @@ class Fabric(object):
             self.tftp = InternalTftp()
 
         self._discover_nodes(ip_address=ip_address, username=username,
-                password=password)
+                             password=password)
 
     def __eq__(self, other):
         return isinstance(other, Fabric) and self.nodes == other.nodes
@@ -77,15 +77,15 @@ class Fabric(object):
     def _discover_nodes(self, ip_address, username="admin", password="admin"):
         """ Set the nodes of this fabric by pulling IP info from a BMC """
         node = self.node(ip_address=ip_address, username=username,
-                password=password, verbose=self.verbose)
+                         password=password, verbose=self.verbose)
 
         ipinfo = node.get_fabric_ipinfo(self.tftp)
-
         for node_id, node_address in ipinfo.iteritems():
             self.nodes[node_id] = self.node(ip_address=node_address,
-                    username=username, password=password,
-                    verbose=self.verbose)
-
+                                            username=username, 
+                                            password=password,
+                                            verbose=self.verbose)
+            #self.nodes[node_id].node_number = 
 #########################    Command methods    #########################
 
     def get_macaddrs(self, asynchronous=False):
