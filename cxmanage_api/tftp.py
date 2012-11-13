@@ -208,16 +208,16 @@ class ExternalTftp(object):
         """Return the listening port of this server."""
         return self.port
 
-    def get_file(self, dest, src):
+    def get_file(self, src, dest):
         """Download a file from the ExternalTftp Server.
 
-        :param dest: The local destination to copy the file to.
-        :type dest: string
         :param src: The path to the file on the Tftp server.
         :type src: string
+        :param dest: The local destination to copy the file to.
+        :type dest: string
         """
         try:
-            self.client.download(output=src, filename=dest)
+            self.client.download(output=dest, filename=src)
 
         except TftpException:
             if (self.verbose):

@@ -137,7 +137,7 @@ class ExternalTftpTest(unittest.TestCase):
         os.remove(filename)
         self.assertFalse(os.path.exists(filename))
         # Download
-        self.etftp.get_file(basename, filename)
+        self.etftp.get_file(src=basename, dest=filename)
         # Verify match
         self.assertEqual(open(filename).read(), contents)
         os.remove(filename)
