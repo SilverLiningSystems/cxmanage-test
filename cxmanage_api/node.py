@@ -35,22 +35,22 @@ A node represents a single Calxeda ECME (Energy CoreManagement Engine).
 import os
 import time
 import atexit
-import tempfile
 import traceback
 import subprocess
 
-from pyipmi import make_bmc, IpmiError
-from infodump import get_info_dump
 from pkg_resources import parse_version
+from pyipmi import make_bmc, IpmiError
+from pyipmi.bmc import LanBMC as BMC
 from tftpy.TftpShared import TftpException
+
+from cxmanage_api import temp_file
+from image import Image as IMAGE
+from ubootenv import UbootEnv as UBOOTENV
+from infodump import get_info_dump
 from cx_exceptions import NoIpInfoError, TimeoutError, NoMacAddressError
 from cx_exceptions import NoSensorError, NoFirmwareInfoError, SocmanVersionError
 from cx_exceptions import FirmwareConfigError, PriorityIncrementError
 from cx_exceptions import NoPartitionError, TransferFailure, ImageSizeError
-
-from image import Image as IMAGE
-from ubootenv import UbootEnv as UBOOTENV
-from pyipmi.bmc import LanBMC as BMC
 
 
 class Node(object):
@@ -77,7 +77,6 @@ class Node(object):
         self.password = password
         self.verbose = verbose
         self.my_tftp_address = None
-        self.my_tftp_file = None
 
         self.bmc = make_bmc(bmc, hostname=ip_address, username=username,
                             password=password, verbose=verbose)
@@ -267,8 +266,8 @@ class Node(object):
                     ubootenv.variables["bootcmd_default"] = \
                                     old_ubootenv.variables["bootcmd_default"]
 
-                    fd, filename = tempfile.mkstemp(dir=tftp.tftp_dir)
-                    with os.fdopen(fd, "w") as f:
+                    filename = temp_file()
+                    with open(filename, "w") as f:
                         f.write(ubootenv.get_contents())
                     ubootenv_image = self.image(filename, image.type, False,
                                            image.daddr, image.skip_crc32,
@@ -328,8 +327,8 @@ class Node(object):
         ubootenv.set_boot_order(boot_args)
         priority = max(int(x.priority, 16) for x in [first_part, active_part])
 
-        fd, filename = tempfile.mkstemp(dir=tftp.tftp_dir)
-        with os.fdopen(fd, "w") as f:
+        filename = temp_file()
+        with open(filename, "w") as f:
             f.write(ubootenv.get_contents())
 
         ubootenv_image = self.image(filename, image.type, False, image.daddr,
@@ -415,8 +414,7 @@ class Node(object):
         Returns a dictionary that maps node IDs to IP addresses. """
         self._tftp_init(tftp)
 
-        fd, filename = tempfile.mkstemp(dir=tftp.tftp_dir)
-        os.close(fd)
+        filename = temp_file()
         basename = os.path.basename(filename)
 
         result = self.bmc.get_fabric_ipinfo(basename, self.my_tftp_address)
@@ -549,7 +547,7 @@ class Node(object):
         self._tftp_init(tftp)
 
         # Download the image
-        fd, filename = tempfile.mkstemp(dir=tftp.tftp_dir)
+        filename = temp_file()
         basename = os.path.basename(filename)
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
@@ -621,7 +619,6 @@ class Node(object):
         self.my_tftp_address = '%s:%s' % (tftp.get_address(
                                           relative_host=self.ip_address),
                                           tftp.get_port())
-        f_hndl, self.my_tftp_file = tempfile.mkstemp(dir=tftp.tftp_dir)
 
 
 # End of file: node.py

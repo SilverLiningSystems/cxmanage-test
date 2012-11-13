@@ -40,7 +40,7 @@ from cxmanage_api.tftp import InternalTftp, ExternalTftp
 
 
 def _get_relative_host():
-    """Returns the test machine ip as a relative host to pass to the 
+    """Returns the test machine ip as a relative host to pass to the
     InternalTftp server.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -48,7 +48,7 @@ def _get_relative_host():
         # RFC863 defines port 9 as the UDP discard port, so we use it to
         # find out our local ip to pass as a relative_host
         return sock.getsockname()[0]
-        
+
     except socket.error:
         raise
 
@@ -57,10 +57,9 @@ class InternalTftpTest(unittest.TestCase):
 
     def setUp(self):
         """Create local Internal TFTP objects to test with."""
-        self.tftp1 = InternalTftp(dir_name='cxmanage_unit_test1')
-        self.tftp2 = InternalTftp(ip_address='127.0.0.254', 
-                                  dir_name='cxmanage_unit_test2')
-        
+        self.tftp1 = InternalTftp()
+        self.tftp2 = InternalTftp(ip_address='127.0.0.254')
+
     def test_put_and_get(self):
         """ Test file transfers on an internal host """
 
@@ -80,18 +79,18 @@ class InternalTftpTest(unittest.TestCase):
         # Verify match
         self.assertEqual(open(filename).read(), contents)
         os.remove(filename)
-            
+
     def test_get_port(self):
         """Tests the get_port() function."""
         self.assertEqual(self.tftp1.port, self.tftp1.get_port())
-    
+
     def test_get_address_no_relative_host(self):
         """Tests the get_address(relative_host) function with NO relative
         host defined.
         """
-        self.assertEqual(self.tftp1.ip_address, 
+        self.assertEqual(self.tftp1.ip_address,
                          self.tftp1.get_address(relative_host=None))
-    
+
     def test_get_address_with_relative_host(self):
         """Tests the get_address(relative_host) function with a relative_host
         specified.
@@ -102,7 +101,7 @@ class InternalTftpTest(unittest.TestCase):
             # find out our local ip to pass as a relative_host
             sock.connect((socket.gethostname(),9))
             relative_host = sock.getsockname()[0]
-            
+
         except socket.error:
             raise
         self.assertEqual(self.tftp2.ip_address,
@@ -113,19 +112,18 @@ class InternalTftpTest(unittest.TestCase):
 class ExternalTftpTest(unittest.TestCase):
     """Tests the ExternalTftp class.
     ..note:
-        * For testing purposes the 'external' server points to an internally 
-          hosted one, but it allows us to make sure the actual TFTP protocol is 
+        * For testing purposes the 'external' server points to an internally
+          hosted one, but it allows us to make sure the actual TFTP protocol is
           working.
     """
 
     def setUp(self):
         """Create an ExternalTftp object to test with."""
-        self.itftp = InternalTftp(ip_address='127.0.0.250', 
-                                  dir_name='cxmanage_unit_test3')
+        self.itftp = InternalTftp(ip_address='127.0.0.250')
         self.etftp = ExternalTftp(
                      self.itftp.get_address(relative_host=_get_relative_host()),
                      self.itftp.get_port())
-    
+
     def test_put_and_get(self):
         """Test the put_file(src, dest) function. Test the get_file(src,dest)
         function by movign local files around using the TFT Protocol.
@@ -141,7 +139,7 @@ class ExternalTftpTest(unittest.TestCase):
         # Download
         self.etftp.get_file(basename, filename)
         # Verify match
-        self.assertEqual(open(filename).read(), contents)        
+        self.assertEqual(open(filename).read(), contents)
         os.remove(filename)
-        
+
 # End of file: ./tftp_test.py

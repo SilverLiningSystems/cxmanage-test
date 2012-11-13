@@ -45,10 +45,12 @@ class ImageTest(unittest.TestCase):
     These will rely on an internally hosted TFTP server. """
 
     def setUp(self):
-        #self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         # Set up an internal server
         self.tftp = InternalTftp()
-        self.work_dir = self.tftp.tftp_dir
+        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
+
+    def tearDown(self):
+        shutil.rmtree(self.work_dir)
 
     def test_upload(self):
         """ Test image creation and upload """
@@ -87,6 +89,6 @@ class ImageTest(unittest.TestCase):
         for x in xrange(2048):
             image.upload(self.tftp, 0, 0)
         os.remove(filename)
-        
+
 # End of file: ./image_test.py
 

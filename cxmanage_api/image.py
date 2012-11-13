@@ -32,10 +32,10 @@
 
 import os
 import shutil
-import tempfile
 import subprocess
 
-from cxmanage_api.simg import create_simg, has_simg 
+from cxmanage_api import temp_file
+from cxmanage_api.simg import create_simg, has_simg
 from cxmanage_api.simg import valid_simg, get_simg_contents
 from cxmanage_api.cx_exceptions import InvalidImageError
 
@@ -47,7 +47,7 @@ class Image:
     def __init__(self, filename, image_type, simg=None, daddr=None,
                   skip_crc32=False, version=None):
         """Default constructor for the Image class.
-        
+
         :param filename: Path to the image.
         :type filename: string
         :param image_type: Type of image.
@@ -97,8 +97,8 @@ class Image:
             simg = create_simg(contents, priority=priority, daddr=daddr,
                     skip_crc32=self.skip_crc32, align=align,
                     version=self.version)
-            fd, filename = tempfile.mkstemp()
-            with os.fdopen(fd, "w") as f:
+            filename = temp_file()
+            with open(filename, "w") as f:
                 f.write(simg)
 
         # Make sure the simg was built correctly
@@ -108,8 +108,7 @@ class Image:
 
         # Upload to tftp
         basename = os.path.basename(filename)
-        tftp.put_file(filename, basename)
-        os.remove(filename)
+        tftp.put_file(src=filename, dest=basename)
         return basename
 
     def size(self):
@@ -128,13 +127,13 @@ class Image:
             file_process = subprocess.Popen(["file", self.filename],
                                             stdout=subprocess.PIPE)
             file_type = file_process.communicate()[0].split()[1]
-            
+
             if self.type == "SOC_ELF":
                 if file_type != "ELF":
                     return False
             elif file_type != "data":
                 return False
-        
+
         except OSError:
             # "file" tool wasn't found, just continue without it
             pass
@@ -146,5 +145,5 @@ class Image:
                 contents = get_simg_contents(contents)
             if contents[:4] != "CDBH":
                 return False
-        
+
         return True

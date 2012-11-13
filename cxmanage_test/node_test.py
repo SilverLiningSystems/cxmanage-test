@@ -53,18 +53,17 @@ class NodeTest(unittest.TestCase):
     """ Tests involving cxmanage Nodes """
 
     def setUp(self):
-        #self.work_dir = tempfile.mkdtemp(prefix="cxmanage_node_test-")
-        self.nodes = [Node(ip_address=ip, bmc=DummyBMC, image=TestImage, 
-                           ubootenv=DummyUbootEnv, verbose=True) 
+        self.nodes = [Node(ip_address=ip, bmc=DummyBMC, image=TestImage,
+                           ubootenv=DummyUbootEnv, verbose=True)
                       for ip in ADDRESSES]
-        
+
         # Set up an internal server
         self.tftp = InternalTftp()
-        self.work_dir = self.tftp.tftp_dir
-    
-    #def tearDown(self):
-        #shutil.rmtree(self.work_dir, ignore_errors=True)
-        
+        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_node_test-")
+
+    def tearDown(self):
+        shutil.rmtree(self.work_dir, ignore_errors=True)
+
     def test_get_power(self):
         """ Test node.get_power method """
         for node in self.nodes:
@@ -445,14 +444,14 @@ class Partition:
         self.retrieves = 0
         self.checks = 0
         self.activates = 0
-        self.fwinfo = FWInfoEntry(partition, type, offset, size, priority, 
+        self.fwinfo = FWInfoEntry(partition, type, offset, size, priority,
                                   daddr, in_use)
-        
+
 
 class FWInfoEntry:
     """ Firmware info for a single partition """
-    
-    def __init__(self, partition, type, offset=0, size=0, priority=0, daddr=0, 
+
+    def __init__(self, partition, type, offset=0, size=0, priority=0, daddr=0,
                   in_use=None):
         self.partition = "%2i" % partition
         self.type = {
@@ -472,7 +471,7 @@ class FWInfoEntry:
 
 class DummyUbootEnv(UbootEnv):
     """UbootEnv info."""
-    
+
     def get_boot_order(self):
         """Hard coded boot order for testing."""
         return ["disk", "pxe"]

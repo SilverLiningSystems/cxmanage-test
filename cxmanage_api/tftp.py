@@ -36,36 +36,32 @@ import atexit
 import shutil
 import socket
 import logging
-import tempfile
 import traceback
 
 from tftpy import TftpClient, TftpServer, setLogLevel
 from threading import Thread
 from tftpy.TftpShared import TftpException
 
+from cxmanage_api import temp_dir
+
 
 class InternalTftp(object):
     """Definition of an Internal TFTP server."""
 
-    def __init__(self, ip_address=None, port=0, dir_name=None, verbose=True):
+    def __init__(self, ip_address=None, port=0, verbose=True):
         """Creates an internal TFTP server to facilitate reading command
         responses.
-        
+
         :param ip_address: Ip address of the Internal TFTP Server.
         :type ip_address: string
         :param port: Port for the internal TFTP Server
         :type port: integer
-        :param dir_name: Name of the temporary directory to create.
-        :type dir_name: string
         :param verbose: Flag to turn on additional messaging.
         :type verbose: boolean
         """
-        if (not dir_name):
-            self.tftp_dir = tempfile.mkdtemp(prefix='cx_internal_tftp_')
-        else:
-            self.tftp_dir = tempfile.mkdtemp(prefix=dir_name + '_')
+        self.tftp_dir = temp_dir()
         self.verbose = verbose
-        
+
         pipe = os.pipe()
         pid = os.fork()
         if (not pid):
@@ -80,7 +76,7 @@ class InternalTftp(object):
                     with os.fdopen(pipe[1], "w") as a_file:
                         a_file.write("%i\n" % server.sock.getsockname()[1])
             #
-            # Create an Internal TFTP server thread 
+            # Create an Internal TFTP server thread
             #
             server = TftpServer(tftproot=self.tftp_dir)
             thread = PortThread()
@@ -90,32 +86,31 @@ class InternalTftp(object):
                     setLogLevel(logging.CRITICAL)
                 # Start accepting connections ...
                 server.listen(ip_address, port)
-                
+
             except KeyboardInterrupt:
                 # User @ keyboard cancelled server ...
                 if (self.verbose):
                     traceback.format_exc()
             sys.exit(0)
-        
+
         self.server = pid
         self.ip_address = ip_address
         with os.fdopen(pipe[0]) as a_fd:
             self.port = int(a_fd.readline())
         atexit.register(self.kill)
-        atexit.register(self._cleanup)
-        
+
     def get_port(self):
         """Return the listening port of this server."""
         return self.port
-    
+
     def get_address(self, relative_host=None):
         """Returns the ipv4 address of this server.
         If this is an internal server, and we're given a relative host ip,
         then discover our address to them automatically.
-        
+
         :param relative_host: Ip address to the relative host.
         :type relative_host: string
-        
+
         :return: The ipv4 address of this InternalTftpServer.
         :rtype: string
         """
@@ -127,7 +122,7 @@ class InternalTftp(object):
             ipv4 = sock.getsockname()[0]
             sock.close()
             return ipv4
-    
+
     def kill(self):
         """Kills the InternalTftpServer."""
         if (self.server):
@@ -136,12 +131,12 @@ class InternalTftp(object):
 
     def get_file(self, src, dest):
         """Download a file from the tftp server to local_path.
-        
+
         :param src: Path on the tftp_server.
         :type src: string
         :param dest: Path (on your machine) to copy the TFTP file to.
         :type dest: string
-        
+
         :return: Whether the transfer was successful or not.
         :rtype: boolean
         """
@@ -152,7 +147,7 @@ class InternalTftp(object):
                 with open(src) as a_file:
                     a_file.close()
                 shutil.copy(src, dest)
-            
+
             except Exception:
                 traceback.format_exc()
                 raise
@@ -160,12 +155,12 @@ class InternalTftp(object):
 
     def put_file(self, src, dest):
         """Upload a file from src to dest on the tftp server (path).
-        
+
         :param src: Path to the local file to send to the TFTP server.
         :type src: string
         :param dest: Path to put the file to on the TFTP Server.
         :type dest: string
-        
+
         :return: Whether the transfer was successful or not.
         :rtype: boolean
         """
@@ -176,23 +171,19 @@ class InternalTftp(object):
                 with open(src) as a_file:
                     a_file.close()
                 shutil.copy(src, dest)
-        
+
             except Exception:
                 traceback.format_exc()
                 raise
         return True
-    
-    def _cleanup(self):
-        """Removes temporary files created by this class instance."""
-        shutil.rmtree(self.tftp_dir, ignore_errors=True)
 
 
 class ExternalTftp(object):
     """Defines a ExternalTftp server, essentially makes this class a client."""
 
-    def __init__(self, ip_address, port=69, dir_name=None, verbose=True):
+    def __init__(self, ip_address, port=69, verbose=True):
         """Default constructor for this the ExternalTftp class.
-        
+
         :param ip_address: Ip address of the TFTP server.
         :type ip_address: string
         :param port: Port to the External TFTP server.
@@ -200,19 +191,13 @@ class ExternalTftp(object):
         :param verbose: Flag to turn on verbose output (cmd/response).
         :type verbose: boolean
         """
-        if (not dir_name):
-            self.tftp_dir = tempfile.mkdtemp(prefix='cx_external_tftp_')
-        else:
-            self.tftp_dir = tempfile.mkdtemp(prefix=dir_name + '_')
-        
         self.client = TftpClient(ip_address, port)
         self.ip_address = ip_address
         self.port = port
         self.verbose = verbose
-        
+
         if (self.verbose):
             setLogLevel(logging.CRITICAL)
-        atexit.register(self._cleanup)
 
     def get_address(self, relative_host=None):
         """Return the ip address of the ExternalTftp server."""
@@ -225,7 +210,7 @@ class ExternalTftp(object):
 
     def get_file(self, dest, src):
         """Download a file from the ExternalTftp Server.
-        
+
         :param dest: The local destination to copy the file to.
         :type dest: string
         :param src: The path to the file on the Tftp server.
@@ -233,7 +218,7 @@ class ExternalTftp(object):
         """
         try:
             self.client.download(output=src, filename=dest)
-            
+
         except TftpException:
             if (self.verbose):
                 traceback.format_exc()
@@ -248,10 +233,6 @@ class ExternalTftp(object):
             if (self.verbose):
                 traceback.format_exc()
             raise
-    
-    def _cleanup(self):
-        """Removes temporary files created by this class instance."""
-        shutil.rmtree(self.tftp_dir, ignore_errors=True)
 
 
 # End of file: ./tftp.py
