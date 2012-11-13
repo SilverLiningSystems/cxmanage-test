@@ -82,10 +82,10 @@ class Fabric(object):
         ipinfo = node.get_fabric_ipinfo(self.tftp)
         for node_id, node_address in ipinfo.iteritems():
             self.nodes[node_id] = self.node(ip_address=node_address,
-                                            username=username, 
+                                            username=username,
                                             password=password,
                                             verbose=self.verbose)
-            #self.nodes[node_id].node_number = 
+            #self.nodes[node_id].node_number =
 #########################    Command methods    #########################
 
     def get_macaddrs(self, asynchronous=False):
@@ -165,7 +165,7 @@ class Fabric(object):
 
     def _run_command(self, asynchronous, name, *args):
         """ Start a command on the given targets """
-        command = Command(self.nodes.values(), name, args, self.command_delay,
+        command = Command(self.nodes, name, args, self.command_delay,
                 self.max_threads)
         command.start()
         if asynchronous:

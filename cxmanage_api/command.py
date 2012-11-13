@@ -44,13 +44,13 @@ class CommandWorker(Thread):
     """A worker thread for a command.
 
     A worker will obtain nodes from the pool and run the named method on them
-    once started (i.e. start() is called). 
+    once started (i.e. start() is called).
     The thread terminates once there are no nodes remaining.
     """
 
     def __init__(self, command):
         """Default constructor for the CommandWorker class.
-        
+
         :param command: The command to run.
         :type command: Command
         """
@@ -64,29 +64,29 @@ class CommandWorker(Thread):
         """Runs the named method, stores results/errors, then terminates."""
         try:
             while (True):
-                node = self.command._get_next_node()
+                key, node = self.command._get_next_node()
                 try:
                     sleep(self.command._delay)
                     method = getattr(node, self.command._name)
                     result = method(*self.command._args)
-                    self.results[str(node)] = result
-                
+                    self.results[key] = result
+
                 except Exception as e:
-                    self.errors[node] = e
-        
+                    self.errors[key] = e
+
         except StopIteration:
             pass
-        
-        
+
+
 class Command:
     """Command objects are containers/managers of multi-threaded CommandWorkers
     that execute commands in parallel on a node(s) & fabric(s).
-    
+
     .. note::
         * They are designed to have an interface similar to that of a thread.
           but are not threads themselves. The CommandWorkers are the threads.
         * start(), run(), join(), is_alive()
-    
+
     :param nodes: Nodes to execute commands on.
     :type nodes: Node
     :param name: Named command to run.
@@ -101,7 +101,7 @@ class Command:
 
     def __init__(self, nodes, name, args, delay=0, max_threads=1):
         """Default constructor for the Command class.
-        
+
         :param nodes: Nodes to execute commands on.
         :type nodes: Node
         :param name: Named command to run.
@@ -114,11 +114,17 @@ class Command:
         :type max_threads: integer
         """
         self._lock = Lock()
-        self._node_iterator = iter(nodes)
+
+        try:
+            self._node_iterator = nodes.iteritems()
+        except AttributeError:
+            self._node_iterator = iter([(x, x) for x in nodes])
         self._node_count = len(nodes)
+
         self._name = name
         self._args = args
         self._delay = delay
+
         num_threads = min(max_threads, self._node_count)
         self._workers = [CommandWorker(self) for i in range(num_threads)]
 
@@ -134,7 +140,7 @@ class Command:
 
     def is_alive(self):
         """Tests to see if the command is alive.
-        
+
         :return: Whether or not the command is alive.
         :rtype: boolean
         """
@@ -142,9 +148,9 @@ class Command:
 
     def get_results(self):
         """Gets the command results.
-        
+
         :raises: CommandFailedError
-        
+
         :return: Results of this commands.
         :rtype: dictionary
         """
@@ -164,10 +170,10 @@ class Command:
         """
         class CommandStatus:
             """Container for a commands status."""
-    
+
             def __init__(self, successes, errors, nodes_left):
                 """Default constructor for the CommandStatus class.
-                
+
                 :param successes: The successes/ip node map for this command.
                 :type successes: dictionary
                 :param errors: The errors/ip node map for this command.
@@ -178,11 +184,12 @@ class Command:
                 self.successes = successes
                 self.errors = errors
                 self.nodes_left = nodes_left
-        
-        #       
+
+        #
         # get_status()
-        #        
-        successes, errors = 0
+        #
+        successes = 0
+        errors = 0
         for worker in self._workers:
             successes += len(worker.results)
             errors += len(worker.errors)

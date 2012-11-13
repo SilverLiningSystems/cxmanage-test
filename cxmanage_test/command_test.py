@@ -101,6 +101,18 @@ class CommandTest(unittest.TestCase):
 
         self.assertGreaterEqual(end_time - start_time, expected_duration)
 
+    def test_command_get_status(self):
+        """ Test the get_status method """
+        command = Command(self.targets, "action", ("a", "b", "c"),
+                max_threads=32)
+        command.start()
+        command.join()
+
+        status = command.get_status()
+        self.assertEqual(status.successes, NUM_NODES/2)
+        self.assertEqual(status.errors, NUM_NODES/2)
+        self.assertEqual(status.nodes_left, 0)
+
 class DummyTarget:
     def __init__(self, address, fail=False):
         self.address = address
@@ -118,7 +130,7 @@ class DummyCommand:
         self.results = []
         self.errors = []
 
-        self._iterator = iter(targets)
+        self._iterator = iter((x, x) for x in targets)
         self._name = "action"
         self._args = ("a", "b", "c")
         self._delay = 0
