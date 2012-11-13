@@ -27,22 +27,39 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-
 """ Image objects used by the cxmanage controller """
+
 
 import os
 import subprocess
-import tempfile
 
-from cxmanage import CxmanageError, WORK_DIR
-from cxmanage.simg import create_simg, has_simg, valid_simg, get_simg_contents
+from cxmanage_api import temp_file
+from cxmanage_api.simg import create_simg, has_simg
+from cxmanage_api.simg import valid_simg, get_simg_contents
+from cxmanage_api.cx_exceptions import InvalidImageError
+
 
 class Image:
     """ An image consists of an image type, a filename, and any info needed
     to build an SIMG out of it. """
 
     def __init__(self, filename, image_type, simg=None, daddr=None,
-            skip_crc32=False, version=None):
+                  skip_crc32=False, version=None):
+        """Default constructor for the Image class.
+
+        :param filename: Path to the image.
+        :type filename: string
+        :param image_type: Type of image.
+        :type image_type: string
+        :param simg: Path to the simg file.
+        :type simg: string
+        :param daddr: The daddr field in the SIMG Header.
+        :type daddr: integer
+        :param skip_crc32: Flag to skip (or not) CRC32 checking.
+        :type skip_crc32: boolean
+        :param version: Image version.
+        :type version: string
+        """
         self.filename = filename
         self.type = image_type
         self.daddr = daddr
@@ -59,8 +76,8 @@ class Image:
             self.simg = simg
 
         if not self.verify():
-            raise CxmanageError("%s is not a valid %s image" %
-                    (os.path.basename(filename), image_type))
+            raise InvalidImageError("%s is not a valid %s image" %
+                                    (filename, image_type))
 
     def upload(self, tftp, priority, daddr):
         """ Create and upload an SIMG file """
@@ -79,18 +96,18 @@ class Image:
             simg = create_simg(contents, priority=priority, daddr=daddr,
                     skip_crc32=self.skip_crc32, align=align,
                     version=self.version)
-            fd, filename = tempfile.mkstemp(dir=WORK_DIR)
-            with os.fdopen(fd, "w") as f:
+            filename = temp_file()
+            with open(filename, "w") as f:
                 f.write(simg)
 
         # Make sure the simg was built correctly
         if not valid_simg(open(filename).read()):
-            raise CxmanageError("%s is not a valid SIMG" %
+            raise InvalidImageError("%s is not a valid SIMG" %
                     os.path.basename(self.filename))
 
         # Upload to tftp
         basename = os.path.basename(filename)
-        tftp.put_file(filename, basename)
+        tftp.put_file(src=filename, dest=basename)
         return basename
 
     def size(self):
@@ -107,13 +124,15 @@ class Image:
         """ Return true if the image is valid, false otherwise """
         try:
             file_process = subprocess.Popen(["file", self.filename],
-                    stdout=subprocess.PIPE)
+                                            stdout=subprocess.PIPE)
             file_type = file_process.communicate()[0].split()[1]
+
             if self.type == "SOC_ELF":
                 if file_type != "ELF":
                     return False
             elif file_type != "data":
                 return False
+
         except OSError:
             # "file" tool wasn't found, just continue without it
             pass

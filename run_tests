@@ -33,10 +33,9 @@
 
 import unittest
 
-from cxmanage_test import tftp_test, image_test, target_test, controller_test, \
+from cxmanage_test import tftp_test, image_test, node_test, fabric_test, \
         command_test
-test_modules = [tftp_test, image_test, target_test, controller_test,
-        command_test]
+test_modules = [tftp_test, image_test, node_test, fabric_test, command_test]
 
 def main():
     """ Load and run tests """

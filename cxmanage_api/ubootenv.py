@@ -31,9 +31,11 @@
 
 import struct
 
-from cxmanage import CxmanageError
-from cxmanage.simg import has_simg, get_simg_contents
-from cxmanage.crc32 import get_crc32
+from cxmanage_api.simg import has_simg, get_simg_contents
+from cxmanage_api.crc32 import get_crc32
+from cxmanage_api.cx_exceptions import NoBootCmdDefaultError 
+from cxmanage_api.cx_exceptions import UnknownBootCmdError
+
 
 ENVIRONMENT_SIZE = 8192
 
@@ -113,7 +115,7 @@ class UbootEnv:
         boot_args = []
 
         if not "bootcmd_default" in self.variables:
-            raise CxmanageError("Variable bootcmd_default not found")
+            raise NoBootCmdDefaultError("Variable bootcmd_default not found")
         commands = self.variables["bootcmd_default"].split("; ")
 
         retry = False
@@ -134,7 +136,8 @@ class UbootEnv:
                 boot_args.append("reset")
                 break
             else:
-                raise CxmanageError("Unrecognized boot command: %s" % command)
+                raise UnknownBootCmdError("Unrecognized boot command: %s" % 
+                                          command)
 
             if retry:
                 boot_args.append("retry")
@@ -157,7 +160,7 @@ class UbootEnv:
 
         # Add padding to end
         contents += "".join([chr(255)
-                for a in range(ENVIRONMENT_SIZE - len(contents) - 4)])
+                for _ in range(ENVIRONMENT_SIZE - len(contents) - 4)])
 
         # Add crc32 to beginning
         crc32 = get_crc32(contents, 0xFFFFFFFF) ^ 0xFFFFFFFF

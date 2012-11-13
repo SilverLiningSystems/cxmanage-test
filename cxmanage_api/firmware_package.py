@@ -27,34 +27,41 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+"""Firmware Package class description."""
 
-import tarfile
 import os
+import tarfile
 import ConfigParser
 import pkg_resources
 
-from cxmanage import WORK_DIR
-from cxmanage.image import Image
+from cxmanage_api import temp_dir
+from cxmanage_api.image import Image
 
 class FirmwarePackage:
     """ A firmware update package containing multiple images and version info
     """
 
     def __init__(self, filename=None):
+        """Default constructor for the FirmwarePackage class.
+
+        :param filename: The file to extract and read.
+        :type filename: string
+        """
         self.images = []
         self.version = None
         self.config = None
         self.required_socman_version = None
+        self.work_dir = temp_dir()
 
         if filename:
             # Extract files and read config
             try:
-                tarfile.open(filename, "r").extractall(WORK_DIR)
+                tarfile.open(filename, "r").extractall(self.work_dir)
             except (IOError, tarfile.ReadError):
                 raise ValueError("%s is not a valid tar.gz file"
                         % os.path.basename(filename))
             config = ConfigParser.SafeConfigParser()
-            if len(config.read(WORK_DIR + "/MANIFEST")) == 0:
+            if len(config.read(self.work_dir + "/MANIFEST")) == 0:
                 raise ValueError("%s is not a valid firmware package"
                         % os.path.basename(filename))
 
@@ -64,6 +71,7 @@ class FirmwarePackage:
                 try:
                     pkg_resources.require("cxmanage>=%s" % cxmanage_ver)
                 except pkg_resources.VersionConflict:
+                    # @todo: CxmanageVersionError?
                     raise ValueError(
                             "%s requires cxmanage version %s or later."
                             % (filename, cxmanage_ver))
@@ -79,7 +87,7 @@ class FirmwarePackage:
             # Add all images from package
             image_sections = [x for x in config.sections() if x != "package"]
             for section in image_sections:
-                filename = "%s/%s" % (WORK_DIR, section)
+                filename = "%s/%s" % (self.work_dir, section)
                 image_type = config.get(section, "type").upper()
                 simg = None
                 daddr = None
@@ -116,7 +124,7 @@ class FirmwarePackage:
                 config.set(section, "skip_crc32", str(image.skip_crc32))
             if image.version != None:
                 config.set(section, "versionstr", image.version)
-        manifest = open("%s/MANIFEST" % WORK_DIR, "w")
+        manifest = open("%s/MANIFEST" % self.work_dir, "w")
         config.write(manifest)
         manifest.close()
 
@@ -127,7 +135,7 @@ class FirmwarePackage:
             tar = tarfile.open(filename, "w:bz2")
         else:
             tar = tarfile.open(filename, "w")
-        tar.add("%s/MANIFEST" % WORK_DIR, "MANIFEST")
+        tar.add("%s/MANIFEST" % self.work_dir, "MANIFEST")
         for image in self.images:
             tar.add(image.filename, os.path.basename(image.filename))
         tar.close()

@@ -27,6 +27,7 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+"""Unit tests for the Node class."""
 
 
 import random
@@ -36,85 +37,75 @@ import unittest
 
 from pyipmi.bmc import LanBMC
 
-from cxmanage import CxmanageError
-from cxmanage.simg import create_simg
-from cxmanage.target import Target
-from cxmanage.tftp import InternalTftp, ExternalTftp
-from cxmanage.ubootenv import UbootEnv
-from cxmanage.firmware_package import FirmwarePackage
-
 from cxmanage_test import TestImage, TestSensor
+from cxmanage_api.simg import create_simg
+from cxmanage_api.node import Node
+from cxmanage_api.tftp import InternalTftp, ExternalTftp
+from cxmanage_api.ubootenv import UbootEnv
+from cxmanage_api.cx_exceptions import SocmanVersionError, FirmwareConfigError
+from cxmanage_api.firmware_package import FirmwarePackage
+
 
 NUM_NODES = 4
 ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]
 
-class TargetTest(unittest.TestCase):
-    """ Tests involving cxmanage targets """
+class NodeTest(unittest.TestCase):
+    """ Tests involving cxmanage Nodes """
 
     def setUp(self):
-        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
-
-        self.targets = [Target(x, verbosity=0, bmc_class=DummyBMC,
-                ubootenv_class=DummyUbootEnv, image_class=TestImage)
-                for x in ADDRESSES]
+        self.nodes = [Node(ip_address=ip, bmc=DummyBMC, image=TestImage,
+                           ubootenv=DummyUbootEnv, verbose=True)
+                      for ip in ADDRESSES]
 
         # Set up an internal server
         self.tftp = InternalTftp()
+        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_node_test-")
 
     def tearDown(self):
-        shutil.rmtree(self.work_dir)
-
-    def test_get_ipinfo(self):
-        """ Test target.get_ipinfo method """
-        for target in self.targets:
-            result = target.get_ipinfo(self.tftp)
-
-            self.assertEqual(target.bmc.executed, ["get_fabric_ipinfo"])
-            self.assertEqual(result, [(i, ADDRESSES[i])
-                    for i in range(NUM_NODES)])
+        shutil.rmtree(self.work_dir, ignore_errors=True)
 
     def test_get_power(self):
-        """ Test target.get_power method """
-        for target in self.targets:
-            result = target.get_power()
+        """ Test node.get_power method """
+        for node in self.nodes:
+            result = node.get_power()
 
-            self.assertEqual(target.bmc.executed, ["get_chassis_status"])
+            self.assertEqual(node.bmc.executed, ["get_chassis_status"])
             self.assertEqual(result, False)
 
     def test_set_power(self):
-        """ Test target.set_power method """
-        for target in self.targets:
+        """ Test node.set_power method """
+        for node in self.nodes:
             modes = ["off", "on", "reset", "off"]
             for mode in modes:
-                target.set_power(mode)
+                node.set_power(mode)
 
-            self.assertEqual(target.bmc.executed,
+            self.assertEqual(node.bmc.executed,
                     [("set_chassis_power", x) for x in modes])
 
     def test_get_power_policy(self):
-        """ Test target.get_power_policy method """
-        for target in self.targets:
-            result = target.get_power_policy()
+        """ Test node.get_power_policy method """
+        for node in self.nodes:
+            result = node.get_power_policy()
 
-            self.assertEqual(target.bmc.executed, ["get_chassis_status"])
+            self.assertEqual(node.bmc.executed, ["get_chassis_status"])
             self.assertEqual(result, "always-off")
 
     def test_set_power_policy(self):
-        """ Test target.set_power_policy method """
-        for target in self.targets:
+        """ Test node.set_power_policy method """
+        for node in self.nodes:
             modes = ["always-on", "previous", "always-off"]
             for mode in modes:
-                target.set_power_policy(mode)
+                node.set_power_policy(mode)
 
-            self.assertEqual(target.bmc.executed,
+            self.assertEqual(node.bmc.executed,
                     [("set_chassis_policy", x) for x in modes])
 
     def test_get_sensors(self):
-        """ Test target.get_sensors method """
-        for target in self.targets:
-            result = target.get_sensors()
+        """ Test node.get_sensors method """
+        for node in self.nodes:
+            result = node.get_sensors()
 
-            self.assertEqual(target.bmc.executed, ["sdr_list"])
+            self.assertEqual(node.bmc.executed, ["sdr_list"])
 
             self.assertEqual(len(result), 2)
             self.assertEqual(result[0].sensor_name, "Node Power")
@@ -123,8 +114,8 @@ class TargetTest(unittest.TestCase):
             self.assertTrue(result[1].sensor_reading.endswith("degrees C"))
 
     def test_check_firmware(self):
-        """ Test target.check_firmware method """
-        for target in self.targets:
+        """ Test node.check_firmware method """
+        for node in self.nodes:
             filename = "%s/%s" % (self.work_dir, "image.bin")
             open(filename, "w").write("")
             images = [
@@ -136,16 +127,16 @@ class TargetTest(unittest.TestCase):
             # should pass
             package = FirmwarePackage()
             package.images = images
-            target.check_firmware(package)
+            node.check_firmware(package)
 
             # should fail if we specify a socman version
             try:
                 package = FirmwarePackage()
                 package.images = images
                 package.required_socman_version = "0.0.1"
-                target.check_firmware(package)
+                node.check_firmware(package)
                 self.fail()
-            except CxmanageError:
+            except SocmanVersionError:
                 pass
 
             # should fail if we try to upload a slot2
@@ -153,13 +144,13 @@ class TargetTest(unittest.TestCase):
                 package = FirmwarePackage()
                 package.images = images
                 package.config = "slot2"
-                target.check_firmware(package)
+                node.check_firmware(package)
                 self.fail()
-            except CxmanageError:
+            except FirmwareConfigError:
                 pass
 
     def test_update_firmware(self):
-        """ Test target.update_firmware method """
+        """ Test node.update_firmware method """
         filename = "%s/%s" % (self.work_dir, "image.bin")
         open(filename, "w").write("")
 
@@ -171,10 +162,10 @@ class TargetTest(unittest.TestCase):
         ]
         package.version = "0.0.1"
 
-        for target in self.targets:
-            target.update_firmware(self.tftp, package)
+        for node in self.nodes:
+            node.update_firmware(self.tftp, package)
 
-            partitions = target.bmc.partitions
+            partitions = node.bmc.partitions
             unchanged_partitions = [partitions[x] for x in [0, 1, 4]]
             changed_partitions = [partitions[x] for x in [2, 3, 6]]
             ubootenv_partition = partitions[5]
@@ -196,16 +187,16 @@ class TargetTest(unittest.TestCase):
             self.assertEqual(ubootenv_partition.checks, 1)
             self.assertEqual(ubootenv_partition.activates, 1)
 
-            self.assertEqual(target.bmc.executed[-1],
+            self.assertEqual(node.bmc.executed[-1],
                     ("set_firmware_version", "0.0.1"))
 
     def test_config_reset(self):
-        """ Test target.config_reset method """
-        for target in self.targets:
-            target.config_reset(self.tftp)
+        """ Test node.config_reset method """
+        for node in self.nodes:
+            node.config_reset(self.tftp)
 
             # Assert config reset
-            executed = target.bmc.executed
+            executed = node.bmc.executed
             self.assertEqual(
                     len([x for x in executed if x == "reset_firmware"]), 1)
 
@@ -214,8 +205,8 @@ class TargetTest(unittest.TestCase):
                     len([x for x in executed if x == "sel_clear"]), 1)
 
             # Assert ubootenv changes
-            active = target.bmc.partitions[5]
-            inactive = target.bmc.partitions[6]
+            active = node.bmc.partitions[5]
+            inactive = node.bmc.partitions[6]
             self.assertEqual(active.updates, 1)
             self.assertEqual(active.retrieves, 0)
             self.assertEqual(active.checks, 1)
@@ -226,12 +217,12 @@ class TargetTest(unittest.TestCase):
             self.assertEqual(inactive.activates, 0)
 
     def test_set_boot_order(self):
-        """ Test target.set_boot_order method """
+        """ Test node.set_boot_order method """
         boot_args = ["disk", "pxe", "retry"]
-        for target in self.targets:
-            target.set_boot_order(self.tftp, boot_args)
+        for node in self.nodes:
+            node.set_boot_order(self.tftp, boot_args)
 
-            partitions = target.bmc.partitions
+            partitions = node.bmc.partitions
             ubootenv_partition = partitions[5]
             unchanged_partitions = [x for x in partitions
                     if x != ubootenv_partition]
@@ -248,11 +239,11 @@ class TargetTest(unittest.TestCase):
                 self.assertEqual(partition.activates, 0)
 
     def test_get_boot_order(self):
-        """ Test target.get_boot_order method """
-        for target in self.targets:
-            result = target.get_boot_order(self.tftp)
+        """ Test node.get_boot_order method """
+        for node in self.nodes:
+            result = node.get_boot_order(self.tftp)
 
-            partitions = target.bmc.partitions
+            partitions = node.bmc.partitions
             ubootenv_partition = partitions[5]
             unchanged_partitions = [x for x in partitions
                     if x != ubootenv_partition]
@@ -271,23 +262,22 @@ class TargetTest(unittest.TestCase):
             self.assertEqual(result, ["disk", "pxe"])
 
     def test_info_basic(self):
-        """ Test target.info_basic method """
-        for target in self.targets:
-            result = target.info_basic()
+        """ Test node.info_basic method """
+        for node in self.nodes:
+            result = node.info_basic()
 
-            self.assertEqual(target.bmc.executed, ["info_basic",
+            self.assertEqual(node.bmc.executed, ["info_basic",
                     "get_firmware_info", "info_card"])
             for attr in ["header", "version", "build_number", "timestamp",
                     "soc_version"]:
                 self.assertTrue(hasattr(result, attr))
 
+
 class DummyBMC(LanBMC):
-    """ Dummy BMC for the target tests """
+    """ Dummy BMC for the node tests """
     def __init__(self, **kwargs):
-        LanBMC.__init__(self, **kwargs)
-
+        super(DummyBMC, self).__init__(**kwargs)
         self.executed = []
-
         self.partitions = [
                 Partition(0, 3, 0, 393216, in_use=True),        # socman
                 Partition(1, 10, 393216, 196608),               # factory cdb
@@ -446,6 +436,7 @@ class DummyBMC(LanBMC):
                 self.revision = "0"
         return Result()
 
+
 class Partition:
     def __init__(self, partition, type, offset=0,
             size=0, priority=0, daddr=0, in_use=None):
@@ -453,13 +444,15 @@ class Partition:
         self.retrieves = 0
         self.checks = 0
         self.activates = 0
-        self.fwinfo = FWInfoEntry(partition, type, offset,
-                size, priority, daddr, in_use)
+        self.fwinfo = FWInfoEntry(partition, type, offset, size, priority,
+                                  daddr, in_use)
+
 
 class FWInfoEntry:
     """ Firmware info for a single partition """
-    def __init__(self, partition, type, offset=0,
-            size=0, priority=0, daddr=0, in_use=None):
+
+    def __init__(self, partition, type, offset=0, size=0, priority=0, daddr=0,
+                  in_use=None):
         self.partition = "%2i" % partition
         self.type = {
                 2: "02 (S2_ELF)",
@@ -475,6 +468,13 @@ class FWInfoEntry:
         self.flags = "fffffffd"
         self.version = "v0.0.0"
 
+
 class DummyUbootEnv(UbootEnv):
+    """UbootEnv info."""
+
     def get_boot_order(self):
+        """Hard coded boot order for testing."""
         return ["disk", "pxe"]
+
+
+# End of file: node_test.py

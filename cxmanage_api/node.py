@@ -27,175 +27,118 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+"""Python implementation of a single node.
+A node represents a single Calxeda ECME (Energy CoreManagement Engine).
+"""
 
-
-""" Target objects used by the cxmanage controller """
 
 import os
-import subprocess
-import tempfile
 import time
+import traceback
+import subprocess
 
 from pkg_resources import parse_version
-
-from cxmanage import CxmanageError, WORK_DIR
-from cxmanage.image import Image
-from cxmanage.ubootenv import UbootEnv
-from cxmanage.infodump import get_info_dump
-
 from pyipmi import make_bmc, IpmiError
-from pyipmi.bmc import LanBMC
+from pyipmi.bmc import LanBMC as BMC
+from tftpy.TftpShared import TftpException
 
-class Target:
-    """ Contains info for a single target. A target consists of a hostname,
-    an username, and a password. """
+from cxmanage_api import temp_file
+from cxmanage_api.image import Image as IMAGE
+from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
+from cxmanage_api.infodump import get_info_dump
+from cxmanage_api.cx_exceptions import NoIpInfoError, TimeoutError, \
+        NoSensorError, NoFirmwareInfoError, SocmanVersionError, \
+        FirmwareConfigError, PriorityIncrementError, NoPartitionError, \
+        TransferFailure, ImageSizeError
 
-    def __init__(self, address, username="admin", password="admin",
-            verbosity=0, bmc_class=LanBMC, ubootenv_class=UbootEnv,
-            image_class=Image):
-        self.address = address
+
+class Node(object):
+    """The node represents a single node which is defined as an:
+    ip_address, and login credentials, to facilitate communications between
+    Python -> Calxeda ECMEs.
+    """
+
+    def __init__(self, ip_address, username="admin", password="admin",
+                  verbose=False, bmc=BMC, image=IMAGE, ubootenv=UBOOTENV):
+        """Default constructor for the Node class.
+
+        :param ip_address: The ip_address of the Node.
+        :type ip_address: string
+        :param username: The login username credential. [Default admin]
+        :type username: string
+        :param password: The login password credential. [Default admin]
+        :type password: string
+        :param verbose: Flag to turn on verbose output (cmd/response).
+        :type verbose: boolean
+        """
+        self.ip_address = ip_address
         self.username = username
         self.password = password
-        self.verbosity = verbosity
-        self.ubootenv_class = ubootenv_class
-        self.image_class = image_class
+        self.verbose = verbose
+        self.my_tftp_address = None
 
-        verbose = verbosity >= 2
-        self.bmc = make_bmc(bmc_class, hostname=address,
-                username=username, password=password, verbose=verbose)
+        self.bmc = make_bmc(bmc, hostname=ip_address, username=username,
+                            password=password, verbose=verbose)
+        self.image = image
+        self.ubootenv = ubootenv
 
-    def get_ipinfo(self, tftp):
-        """ Download IP info from this target """
-        tftp_address = "%s:%s" % (tftp.get_address(self.address),
-                tftp.get_port())
+    def __eq__(self, other):
+        return isinstance(other, Node) and self.ip_address == other.ip_address
 
-        fd, filename = tempfile.mkstemp(dir=WORK_DIR)
-        os.close(fd)
-        basename = os.path.basename(filename)
+    def __hash__(self):
+        return hash(self.ip_address)
 
-        # Send ipinfo command
-        try:
-            result = self.bmc.get_fabric_ipinfo(basename, tftp_address)
-        except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
-        if hasattr(result, "error"):
-            raise CxmanageError(result.error)
+    def get_macaddrs(self):
+        """ Return a list of mac addresses for this node """
+        result = []
+        i = 0
 
-        # Wait for file
-        for a in range(10):
-            try:
-                time.sleep(1)
-                tftp.get_file(basename, filename)
-                if os.path.getsize(filename) > 0:
-                    break
-            except CxmanageError:
-                pass
+        macaddr = self.bmc.get_fabric_macaddr(iface=i)
+        while macaddr:
+            result.append(macaddr)
+            i += 1
+            macaddr = self.bmc.get_fabric_macaddr(iface=i)
 
-        # Ensure file is present
-        if not os.path.exists(filename):
-            raise CxmanageError("Failed to retrieve IP info")
-
-        # Parse addresses from ipinfo file
-        results = []
-        for line in open(filename):
-            if line.startswith("Node"):
-                elements = line.split()
-                node = int(elements[1].rstrip(":"))
-                address = elements[2]
-                if address != "0.0.0.0":
-                    results.append((node, address))
-        results.sort()
-
-        # Make sure we found something
-        if len(results) == 0:
-            raise CxmanageError("Failed to retrieve IP info")
-
-        return results
-
-    def get_macaddrs(self, tftp):
-        """ Download mac addresses from this target """
-        tftp_address = "%s:%s" % (tftp.get_address(self.address),
-                tftp.get_port())
-
-        fd, filename = tempfile.mkstemp(dir=WORK_DIR)
-        os.close(fd)
-        basename = os.path.basename(filename)
-
-        # Send ipinfo command
-        try:
-            result = self.bmc.get_fabric_macaddresses(basename, tftp_address)
-        except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
-        if hasattr(result, "error"):
-            raise CxmanageError(result.error)
-
-        # Wait for file
-        for a in range(10):
-            try:
-                time.sleep(1)
-                tftp.get_file(basename, filename)
-                if os.path.getsize(filename) > 0:
-                    break
-            except CxmanageError:
-                pass
-
-        # Ensure file is present
-        if not os.path.exists(filename):
-            raise CxmanageError("Failed to retrieve mac addresses")
-
-        # Parse addresses from macaddrs file
-        results = []
-        for line in open(filename):
-            if line.startswith("Node"):
-                elements = line.split()
-                node = int(elements[1].rstrip(","))
-                port = int(elements[3].rstrip(":"))
-                address = elements[4]
-                results.append((node, port, address))
-        results.sort()
-
-        # Make sure we found something
-        if len(results) == 0:
-            raise CxmanageError("Failed to retrieve mac addresses")
-
-        return results
+        return result
 
     def get_power(self):
         """ Return power status reported by IPMI """
         try:
             return self.bmc.get_chassis_status().power_on
         except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
+            raise IpmiError(self._parse_ipmierror(e))
 
     def set_power(self, mode):
         """ Send an IPMI power command to this target """
         try:
             self.bmc.set_chassis_power(mode=mode)
         except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
+            raise IpmiError(self._parse_ipmierror(e))
 
     def get_power_policy(self):
         """ Return power status reported by IPMI """
         try:
             return self.bmc.get_chassis_status().power_restore_policy
         except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
+            raise IpmiError(self._parse_ipmierror(e))
 
     def set_power_policy(self, state):
         """ Set default power state for A9 """
         try:
             self.bmc.set_chassis_policy(state)
         except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
+            raise IpmiError(self._parse_ipmierror(e))
 
     def mc_reset(self):
         """ Send an IPMI MC reset command to the target """
         try:
             result = self.bmc.mc_reset("cold")
+            # @todo: These calls to hasattr() may go away if a command raises
+            # an exception on error?
             if hasattr(result, "error"):
-                raise CxmanageError(result.error)
+                raise Exception(result.error)
         except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
+            raise IpmiError(self._parse_ipmierror(e))
 
     def get_sensors(self, name=""):
         """ Get a list of sensors from this target """
@@ -203,14 +146,14 @@ class Target:
             sensors =  [x for x in self.bmc.sdr_list()
                     if name.lower() in x.sensor_name.lower()]
         except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
+            raise IpmiError(self._parse_ipmierror(e))
 
         if len(sensors) == 0:
             if name == "":
-                raise CxmanageError("No sensors were found")
+                raise NoSensorError("No sensors were found")
             else:
-                raise CxmanageError("No sensors containing \"%s\" were found"
-                        % name)
+                raise NoSensorError("No sensors containing \"%s\" were " +
+                                         "found" % name)
 
         return sensors
 
@@ -220,14 +163,13 @@ class Target:
             fwinfo = [x for x in self.bmc.get_firmware_info()
                     if hasattr(x, "partition")]
             if len(fwinfo) == 0:
-                raise CxmanageError("Failed to retrieve firmware info")
+                raise NoFirmwareInfoError("Failed to retrieve firmware info")
 
             # Clean up the fwinfo results
             for entry in fwinfo:
                 if entry.version == "":
                     entry.version = "Unknown"
 
-            # TODO: remove this later
             # Flag CDB as "in use" based on socman info
             for a in range(1, len(fwinfo)):
                 previous = fwinfo[a-1]
@@ -238,11 +180,10 @@ class Target:
                         current.in_use = "1"
                     else:
                         current.in_use = previous.in_use
-
             return fwinfo
 
-        except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
+        except IpmiError as error_details:
+            raise IpmiError(self._parse_ipmierror(error_details))
 
     def check_firmware(self, package, partition_arg="INACTIVE", priority=None):
         """ Check if this host is ready for an update """
@@ -255,15 +196,18 @@ class Target:
             required_version = package.required_socman_version.lstrip("v")
             if package.required_socman_version and parse_version(soc_version) \
                     < parse_version(required_version):
-                raise CxmanageError("Update requires socman version %s (found %s)"
+                raise SocmanVersionError(
+                        "Update requires socman version %s (found %s)"
                         % (required_version, soc_version))
 
         # Check firmware config
         if info.version != "Unknown" and len(info.version) < 32:
             if package.config == "default" and "slot2" in info.version:
-                raise CxmanageError("Refusing to upload a \'default\' package to a \'slot2\' host")
+                raise FirmwareConfigError(
+                "Refusing to upload a \'default\' package to a \'slot2\' host")
             if package.config == "slot2" and not "slot2" in info.version:
-                raise CxmanageError("Refusing to upload a \'slot2\' package to a \'default\' host")
+                raise FirmwareConfigError(
+                "Refusing to upload a \'slot2\' package to a \'default\' host")
 
         # Check that the priority can be bumped
         if priority == None:
@@ -273,7 +217,8 @@ class Target:
                         int(partition.flags, 16) & 2 == 0):
                     priority = max(priority, int(partition.priority, 16) + 1)
             if priority > 0xFFFF:
-                raise CxmanageError("Unable to increment SIMG priority, too high")
+                raise PriorityIncrementError(
+                      "Unable to increment SIMG priority, too high")
 
         # Check partitions
         for image in package.images:
@@ -298,8 +243,8 @@ class Target:
                         int(partition.flags, 16) & 2 == 0):
                     priority = max(priority, int(partition.priority, 16) + 1)
             if priority > 0xFFFF:
-                raise CxmanageError(
-                        "Unable to increment SIMG priority, too high")
+                raise PriorityIncrementError(
+                                "Unable to increment SIMG priority, too high")
 
         for image in package.images:
             if image.type == "UBOOTENV":
@@ -313,19 +258,19 @@ class Target:
 
                 # Update running ubootenv
                 old_ubootenv_image = self._download_image(tftp, running_part)
-                old_ubootenv = self.ubootenv_class(open(
-                        old_ubootenv_image.filename).read())
+                old_ubootenv = self.ubootenv(open(
+                                        old_ubootenv_image.filename).read())
                 if "bootcmd_default" in old_ubootenv.variables:
-                    ubootenv = self.ubootenv_class(open(image.filename).read())
+                    ubootenv = self.ubootenv(open(image.filename).read())
                     ubootenv.variables["bootcmd_default"] = \
-                            old_ubootenv.variables["bootcmd_default"]
+                                    old_ubootenv.variables["bootcmd_default"]
 
-                    fd, filename = tempfile.mkstemp(dir=WORK_DIR)
-                    with os.fdopen(fd, "w") as f:
+                    filename = temp_file()
+                    with open(filename, "w") as f:
                         f.write(ubootenv.get_contents())
-                    ubootenv_image = self.image_class(filename, image.type,
-                            False, image.daddr, image.skip_crc32,
-                            image.version)
+                    ubootenv_image = self.image(filename, image.type, False,
+                                           image.daddr, image.skip_crc32,
+                                           image.version)
                     self._upload_image(tftp, ubootenv_image, running_part,
                             priority)
                 else:
@@ -354,7 +299,7 @@ class Target:
             # Reset CDB
             result = self.bmc.reset_firmware()
             if hasattr(result, "error"):
-                raise CxmanageError(result.error)
+                raise Exception(result.error)
 
             # Reset ubootenv
             fwinfo = self.get_firmware_info()
@@ -367,7 +312,7 @@ class Target:
             self.bmc.sel_clear()
 
         except IpmiError as e:
-            raise CxmanageError(self._parse_ipmierror(e))
+            raise IpmiError(self._parse_ipmierror(e))
 
     def set_boot_order(self, tftp, boot_args):
         """ Set boot order """
@@ -377,15 +322,16 @@ class Target:
 
         # Download active ubootenv, modify, then upload to first partition
         image = self._download_image(tftp, active_part)
-        ubootenv = self.ubootenv_class(open(image.filename).read())
+        ubootenv = self.ubootenv(open(image.filename).read())
         ubootenv.set_boot_order(boot_args)
         priority = max(int(x.priority, 16) for x in [first_part, active_part])
 
-        fd, filename = tempfile.mkstemp(dir=WORK_DIR)
-        with os.fdopen(fd, "w") as f:
+        filename = temp_file()
+        with open(filename, "w") as f:
             f.write(ubootenv.get_contents())
-        ubootenv_image = self.image_class(filename, image.type, False,
-                image.daddr, image.skip_crc32, image.version)
+
+        ubootenv_image = self.image(filename, image.type, False, image.daddr,
+                                    image.skip_crc32, image.version)
         self._upload_image(tftp, ubootenv_image, first_part, priority)
 
     def get_boot_order(self, tftp):
@@ -395,8 +341,10 @@ class Target:
     def info_basic(self):
         """ Get basic SoC info from this target """
         result = self.bmc.get_info_basic()
+        # @todo: These calls to hasattr() may go away if a command raises
+        # an exception on error?
         if hasattr(result, "error"):
-            raise CxmanageError(result.error)
+            raise Exception(result.error)
 
         result.soc_version = "v%s" % result.soc_version
 
@@ -414,7 +362,8 @@ class Target:
             try:
                 partition = self._get_partition(fwinfo, ptype, "ACTIVE")
                 setattr(result, var, partition.version)
-            except CxmanageError:
+
+            except NoPartitionError:
                 pass
 
         try:
@@ -440,10 +389,10 @@ class Target:
             command = ["ipmitool"]
 
         command += ["-U", self.username, "-P", self.password, "-H",
-                self.address]
+                self.ip_address]
         command += ipmitool_args
 
-        if self.verbosity >= 2:
+        if (self.verbose):
             print "Running %s" % " ".join(command)
 
         process = subprocess.Popen(command, stdout=subprocess.PIPE,
@@ -456,7 +405,50 @@ class Target:
         fwinfo = self.get_firmware_info()
         partition = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
         image = self._download_image(tftp, partition)
-        return self.ubootenv_class(open(image.filename).read())
+        return self.ubootenv(open(image.filename).read())
+
+    def get_fabric_ipinfo(self, tftp):
+        """ Get IP info from the fabric
+
+        Returns a dictionary that maps node IDs to IP addresses. """
+        self._tftp_init(tftp)
+
+        filename = temp_file()
+        basename = os.path.basename(filename)
+
+        result = self.bmc.get_fabric_ipinfo(basename, self.my_tftp_address)
+        if hasattr(result, "error"):
+            raise IpmiError(result.error)
+
+        # Wait for file
+        for a in range(10):
+            try:
+                time.sleep(1)
+                tftp.get_file(src=basename, dest=filename)
+                if os.path.getsize(filename) > 0:
+                    break
+            except (TftpException, IOError):
+                pass
+
+        # Ensure file is present
+        if not os.path.exists(filename):
+            raise IOError("Failed to retrieve IP info")
+
+        # Parse addresses from ipinfo file
+        results = {}
+        for line in open(filename):
+            if line.startswith("Node"):
+                elements = line.split()
+                node_id = int(elements[1].rstrip(":"))
+                node_address = elements[2]
+                if node_address != "0.0.0.0":
+                    results[node_id] = node_address
+
+        # Make sure we found something
+        if not results:
+            raise NoIpInfoError("Failed to retrieve IP info")
+
+        return results
 
     def _get_partition(self, fwinfo, image_type, partition_arg):
         """ Get a partition for this image type based on the argument """
@@ -464,14 +456,14 @@ class Target:
         partitions = [x for x in fwinfo if
                 x.type.split()[1][1:-1] == image_type]
         if len(partitions) < 1:
-            raise CxmanageError("No partition of type %s found on host"
+            raise NoPartitionError("No partition of type %s found on host"
                     % image_type)
 
         if partition_arg == "FIRST":
             return partitions[0]
         elif partition_arg == "SECOND":
             if len(partitions) < 2:
-                raise CxmanageError("No second partition found on host")
+                raise NoPartitionError("No second partition found on host")
             return partitions[1]
         elif partition_arg == "OLDEST":
             # Return the oldest partition
@@ -502,10 +494,9 @@ class Target:
 
     def _upload_image(self, tftp, image, partition, priority=None):
         """ Upload a single image. This includes uploading the image,
-        performing the firmware update, crc32 check, and activation."""
-        tftp_address = "%s:%s" % (tftp.get_address(self.address),
-                tftp.get_port())
-
+        performing the firmware update, crc32 check, and activation.
+        """
+        self._tftp_init(tftp)
         partition_id = int(partition.partition)
         if priority == None:
             priority = int(partition.priority, 16)
@@ -513,95 +504,120 @@ class Target:
 
         # Check image size
         if image.size() > int(partition.size, 16):
-            raise CxmanageError("%s image is too large for partition %i" %
+            raise ImageSizeError("%s image is too large for partition %i" %
                     image.type, partition_id)
 
         # Upload image to tftp server
         filename = image.upload(tftp, priority, daddr)
 
-        errors = 0
         while True:
             try:
                 # Update the firmware
                 result = self.bmc.update_firmware(filename,
-                        partition_id, image.type, tftp_address)
+                                        partition_id, image.type,
+                                        self.my_tftp_address)
                 if not hasattr(result, "tftp_handle_id"):
-                    raise CxmanageError("Failed to start firmware upload")
+                    raise AttributeError("Failed to start firmware upload")
                 self._wait_for_transfer(result.tftp_handle_id)
 
                 # Verify crc and activate
                 result = self.bmc.check_firmware(partition_id)
                 if not hasattr(result, "crc32") or result.error != None:
-                    raise CxmanageError("Node reported crc32 check failure")
+                    # @todo: Is this the right Exception to raise?
+                    raise AttributeError("Node reported crc32 check failure")
                 self.bmc.activate_firmware(partition_id)
 
                 break
 
-            except CxmanageError as e:
-                errors += 1
-                if errors >= 3:
-                    raise e
+            except Exception:
+                if (self.verbose):
+                    traceback.format_exc()
+                raise
 
     def _download_image(self, tftp, partition):
         """ Download an image from the target.
 
-        Returns an image. """
-        tftp_address = "%s:%s" % (tftp.get_address(self.address),
-                tftp.get_port())
+        :param tftp: TFTP Server for send/recv commands.
+        :type tftp: InternalTftp or ExternalTftp
+
+        :return: An image.
+        :rtype: cxmanage_api.Image
+        """
+        self._tftp_init(tftp)
 
         # Download the image
-        fd, filename = tempfile.mkstemp(dir=WORK_DIR)
-        os.close(fd)
+        filename = temp_file()
         basename = os.path.basename(filename)
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
 
-        errors = 0
         while True:
             try:
                 result = self.bmc.retrieve_firmware(basename, partition_id,
-                        image_type, tftp_address)
+                        image_type, self.my_tftp_address)
+
                 if not hasattr(result, "tftp_handle_id"):
-                    raise CxmanageError("Failed to start firmware download")
+                    raise AttributeError("Failed to start firmware download")
+
                 self._wait_for_transfer(result.tftp_handle_id)
                 break
-            except CxmanageError as e:
-                errors += 1
-                if errors >= 3:
-                    raise e
+
+            except Exception:
+                if (self.verbose):
+                    traceback.format_exc()
+                raise
 
         tftp.get_file(basename, filename)
-
-        return self.image_class(filename, image_type,
-                daddr=int(partition.daddr, 16), version=partition.version)
+        return self.image(filename=filename, image_type=image_type,
+                          daddr=int(partition.daddr, 16),
+                          version=partition.version)
 
     def _wait_for_transfer(self, handle):
-        """ Wait for a firmware transfer to finish"""
+        """Wait for a firmware transfer to finish.
+
+        :param handle: Handle to send commands over.
+        :type handle:
+        """
         deadline = time.time() + 180
 
         result = self.bmc.get_firmware_status(handle)
         if not hasattr(result, "status"):
-            raise CxmanageError("Failed to retrieve transfer info")
+            raise AttributeError('Failed to retrieve firmware transfer status')
 
         while result.status == "In progress":
             if time.time() >= deadline:
-                raise CxmanageError("Transfer timed out after 3 minutes")
+                raise TimeoutError("Transfer timed out after 3 minutes")
 
             time.sleep(1)
 
             result = self.bmc.get_firmware_status(handle)
             if not hasattr(result, "status"):
-                raise CxmanageError("Failed to retrieve transfer info")
+                raise AttributeError("Failed to retrieve transfer info")
 
         if result.status != "Complete":
-            raise CxmanageError("Node reported transfer failure")
+            raise TransferFailure("Node reported transfer failure")
 
-    def _parse_ipmierror(self, e):
+    def _parse_ipmierror(self, error_details):
         """ Parse a meaningful message from an IpmiError """
         try:
-            error = str(e).lstrip().splitlines()[0].rstrip()
-            if error.startswith("Error: "):
+            error = str(error_details).lstrip().splitlines()[0].rstrip()
+            if error.startswith('Error: '):
                 error = error[7:]
-            return "IPMItool error (%s)" % error
+            return 'IPMItool ERROR: %s' % error
+
         except IndexError:
-            return "IPMItool error"
+            return 'IPMITool encountered an error.'
+
+    def _tftp_init(self, tftp):
+        """Sets the current tftp server/client information for this class.
+        Creates the temporary FILE for communication.
+
+        :param tftp: TFTP server(or client) to connect to.
+        :type tftp: tftp.InternalTftp or tftp.ExternalTftp
+        """
+        self.my_tftp_address = '%s:%s' % (tftp.get_address(
+                                          relative_host=self.ip_address),
+                                          tftp.get_port())
+
+
+# End of file: node.py

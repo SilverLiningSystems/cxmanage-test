@@ -34,13 +34,13 @@ from setuptools import setup
 setup(
     name='cxmanage',
     version='0.6.1',
-    packages=['cxmanage'],
+    packages=['cxmanage_api'],
     scripts=['scripts/cxmanage', 'scripts/cxpackage'],
-    package_data={'cxmanage': ['data/cids', 'data/registers']},
+    package_data={'cxmanage_api': ['data/cids', 'data/registers']},
     description='Calxeda Management Utility',
     # NOTE: As of right now, the pyipmi version requirement needs to be updated
     # at the top of scripts/cxmanage as well.
-    install_requires=['tftpy', 'pyipmi>=0.5.1', 'argparse'],
+    install_requires=['tftpy', 'pyipmi>=0.5.2', 'argparse'],
     classifiers=[
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 2.7']

@@ -29,15 +29,29 @@
 # DAMAGE.
 
 import atexit
+import os
 import shutil
 import tempfile
 
-WORK_DIR = tempfile.mkdtemp(prefix="cxmanage-")
+WORK_DIR = tempfile.mkdtemp(prefix="cxmanage_api-")
+atexit.register(lambda: shutil.rmtree(WORK_DIR))
 
-def cleanup():
-    shutil.rmtree(WORK_DIR)
-atexit.register(cleanup)
+def temp_file():
+    """
+    Create a temporary file that will be cleaned up at exit.
 
-class CxmanageError(Exception):
-    """ Generic cxmanage error"""
-    pass
+    Returns the filename.
+    """
+    fd, filename = tempfile.mkstemp(dir=WORK_DIR)
+    os.close(fd)
+    return filename
+
+def temp_dir():
+    """
+    Create a temporary directory that will be cleaned up at exit.
+
+    Returns the directory name.
+    """
+    return tempfile.mkdtemp(dir=WORK_DIR)
+
+# End of file:./__init__.py

@@ -27,81 +27,118 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+"""Unit tests for the Internal and External Tftp classes."""
 
 
 import os
-import shutil
-import tempfile
+import socket
 import unittest
 
-from cxmanage.tftp import InternalTftp, ExternalTftp
-
 from cxmanage_test import random_file
+from cxmanage_api.tftp import InternalTftp, ExternalTftp
+
+
+def _get_relative_host():
+    """Returns the test machine ip as a relative host to pass to the
+    InternalTftp server.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # RFC863 defines port 9 as the UDP discard port, so we use it to
+        # find out our local ip to pass as a relative_host
+        return sock.getsockname()[0]
+
+    except socket.error:
+        raise
 
 class InternalTftpTest(unittest.TestCase):
-    """ Tests involving an internal TFTP server """
+    """ Tests the functions of the InternalTftp class."""
 
     def setUp(self):
-        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
-        self.tftp = InternalTftp()
-
-    def tearDown(self):
-        shutil.rmtree(self.work_dir)
+        """Create local Internal TFTP objects to test with."""
+        self.tftp1 = InternalTftp()
+        self.tftp2 = InternalTftp(ip_address='127.0.0.254')
 
     def test_put_and_get(self):
         """ Test file transfers on an internal host """
 
         # Create file
-        filename = random_file(self.work_dir, 1024)
+        filename = random_file(1024)
         contents = open(filename).read()
 
         # Upload and remove
         basename = os.path.basename(filename)
-        self.tftp.put_file(filename, basename)
+        self.tftp1.put_file(filename, basename)
         os.remove(filename)
         self.assertFalse(os.path.exists(filename))
 
         # Download
-        self.tftp.get_file(basename, filename)
+        self.tftp1.get_file(basename, filename)
 
         # Verify match
         self.assertEqual(open(filename).read(), contents)
+        os.remove(filename)
+
+    def test_get_port(self):
+        """Tests the get_port() function."""
+        self.assertEqual(self.tftp1.port, self.tftp1.get_port())
+
+    def test_get_address_no_relative_host(self):
+        """Tests the get_address(relative_host) function with NO relative
+        host defined.
+        """
+        self.assertEqual(self.tftp1.ip_address,
+                         self.tftp1.get_address(relative_host=None))
+
+    def test_get_address_with_relative_host(self):
+        """Tests the get_address(relative_host) function with a relative_host
+        specified.
+        """
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # RFC863 defines port 9 as the UDP discard port, so we use it to
+            # find out our local ip to pass as a relative_host
+            sock.connect((socket.gethostname(),9))
+            relative_host = sock.getsockname()[0]
+
+        except socket.error:
+            raise
+        self.assertEqual(self.tftp2.ip_address,
+                         self.tftp2.get_address(relative_host=relative_host))
+        sock.close()
+
 
 class ExternalTftpTest(unittest.TestCase):
-    """ Tests involving an external TFTP server.
-
-    For testing purposes the 'external' server points to an internally hosted
-    one, but it allows us to make sure the actual TFTP protocol is working. """
+    """Tests the ExternalTftp class.
+    ..note:
+        * For testing purposes the 'external' server points to an internally
+          hosted one, but it allows us to make sure the actual TFTP protocol is
+          working.
+    """
 
     def setUp(self):
-        self.work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
-
-        # Set up an internal server
-        self.internal_tftp = InternalTftp()
-
-        # Set up external server
-        address = "localhost"
-        port = self.internal_tftp.get_port()
-        self.tftp = ExternalTftp(address, port)
-
-    def tearDown(self):
-        shutil.rmtree(self.work_dir)
+        """Create an ExternalTftp object to test with."""
+        self.itftp = InternalTftp(ip_address='127.0.0.250')
+        self.etftp = ExternalTftp(
+                     self.itftp.get_address(relative_host=_get_relative_host()),
+                     self.itftp.get_port())
 
     def test_put_and_get(self):
-        """ Test file transfers on an external host """
-
+        """Test the put_file(src, dest) function. Test the get_file(src,dest)
+        function by movign local files around using the TFT Protocol.
+        """
         # Create file
-        filename = random_file(self.work_dir, 1024)
+        filename = random_file(1024)
         contents = open(filename).read()
-
         # Upload and remove original file
         basename = os.path.basename(filename)
-        self.tftp.put_file(filename, basename)
+        self.etftp.put_file(src=filename, dest=basename)
         os.remove(filename)
         self.assertFalse(os.path.exists(filename))
-
         # Download
-        self.tftp.get_file(basename, filename)
-
+        self.etftp.get_file(src=basename, dest=filename)
         # Verify match
         self.assertEqual(open(filename).read(), contents)
+        os.remove(filename)
+
+# End of file: ./tftp_test.py
