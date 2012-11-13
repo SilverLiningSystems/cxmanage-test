@@ -30,8 +30,6 @@
 """Firmware Package class description."""
 
 import os
-import atexit
-import shutil
 import tarfile
 import ConfigParser
 import pkg_resources

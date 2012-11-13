@@ -31,7 +31,6 @@
 
 
 import os
-import shutil
 import subprocess
 
 from cxmanage_api import temp_file

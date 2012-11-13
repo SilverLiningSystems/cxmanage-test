@@ -34,7 +34,6 @@ A node represents a single Calxeda ECME (Energy CoreManagement Engine).
 
 import os
 import time
-import atexit
 import traceback
 import subprocess
 
@@ -44,13 +43,13 @@ from pyipmi.bmc import LanBMC as BMC
 from tftpy.TftpShared import TftpException
 
 from cxmanage_api import temp_file
-from image import Image as IMAGE
-from ubootenv import UbootEnv as UBOOTENV
-from infodump import get_info_dump
-from cx_exceptions import NoIpInfoError, TimeoutError, NoMacAddressError
-from cx_exceptions import NoSensorError, NoFirmwareInfoError, SocmanVersionError
-from cx_exceptions import FirmwareConfigError, PriorityIncrementError
-from cx_exceptions import NoPartitionError, TransferFailure, ImageSizeError
+from cxmanage_api.image import Image as IMAGE
+from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
+from cxmanage_api.infodump import get_info_dump
+from cxmanage_api.cx_exceptions import NoIpInfoError, TimeoutError, \
+        NoSensorError, NoFirmwareInfoError, SocmanVersionError, \
+        FirmwareConfigError, PriorityIncrementError, NoPartitionError, \
+        TransferFailure, ImageSizeError
 
 
 class Node(object):
