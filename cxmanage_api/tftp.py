@@ -191,7 +191,6 @@ class ExternalTftp(object):
         :param verbose: Flag to turn on verbose output (cmd/response).
         :type verbose: boolean
         """
-        self.client = TftpClient(ip_address, port)
         self.ip_address = ip_address
         self.port = port
         self.verbose = verbose
@@ -217,7 +216,10 @@ class ExternalTftp(object):
         :type dest: string
         """
         try:
-            self.client.download(output=dest, filename=src)
+            # NOTE: TftpClient is not threadsafe, so we create a unique
+            # instance for each transfer.
+            client = TftpClient(self.ip_address, self.port)
+            client.download(output=dest, filename=src)
 
         except TftpException:
             if (self.verbose):
@@ -227,7 +229,10 @@ class ExternalTftp(object):
     def put_file(self, src, dest):
         """ Upload a file to the tftp server """
         try:
-            self.client.upload(input=src, filename=dest)
+            # NOTE: TftpClient is not threadsafe, so we create a unique
+            # instance for each transfer.
+            client = TftpClient(self.ip_address, self.port)
+            client.upload(input=src, filename=dest)
 
         except TftpException:
             if (self.verbose):
