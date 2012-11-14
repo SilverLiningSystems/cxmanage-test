@@ -25,10 +25,10 @@ Installation
 ============
 Requirements
 ------------
-``Operating System``
-    Ubuntu 12.04 LTS (or greater)
-    
-    Windows 7 (or greater)
+``Operating Systems``
+   **Ubuntu** 12.04 LTS (or greater)
+   
+   **Windows** 7 (or greater)
 
 .. warning::
     * Windows requires `Cygwin <http://cygwin.com>`_
@@ -138,14 +138,16 @@ Getting Started
 So you have the Cxmanage Python API properly installed, so now what?
 
 The Cxmanage Python API Docs will give you information on how to use Calxeda
-classes and functions. 
-
-Optionally, you can view the API source for even more
-clarity.
+classes and functions. Optionally, you can view the API source for even more
+clarity on the internals.
 
 ``API Docs``
-    Table of Contents ...
 
+.. toctree::
+   
+   Node <node>
+    
+    
 PyUnit Test Integration
 -----------------------
 

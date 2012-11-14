@@ -6,7 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build
-API_GEN		  = generate_api_rst.py
+API_GEN       = source/generate_api_rst.py
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
