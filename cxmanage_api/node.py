@@ -42,7 +42,7 @@ from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC as BMC
 from tftpy.TftpShared import TftpException
 
-from cxmanage_api import temp_file
+from cxmanage_api import temp_file, ubootenv
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.infodump import get_info_dump
@@ -53,24 +53,38 @@ from cxmanage_api.cx_exceptions import NoIpInfoError, TimeoutError, \
 
 
 class Node(object):
-    """The node represents a single node which is defined as an:
-    ip_address, and login credentials, to facilitate communications between
-    Python -> Calxeda ECMEs.
+    """A node is a single instance of an ECME.
+    
+    >>> from cxmanage_api.node import Node
+    >>> node = Node(ip_adress='10.20.1.9', verbose=True)
+        
+    :param ip_address: The ip_address of the Node.
+    :type ip_address: string
+    :param username: The login username credential. [Default admin]
+    :type username: string
+    :param password: The login password credential. [Default admin]
+    :type password: string
+    :param verbose: Flag to turn on verbose output (cmd/response).
+    :type verbose: boolean
+    :param bmc: BMC object for this Node. Default: pyipmi.bmc.LanBMC
+    :type bmc: BMC
+    :param image: Image object for this node. Default cxmanage_api.Image
+    :type image: `Image <image.html>`_
+    :param ubootenv: UbootEnv  for this node. Default cxmanage_api.UbootEnv
+    :type ubootenv: `UbootEnv <ubootenv.html>`_
+    
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
-                  verbose=False, bmc=BMC, image=IMAGE, ubootenv=UBOOTENV):
-        """Default constructor for the Node class.
-
-        :param ip_address: The ip_address of the Node.
-        :type ip_address: string
-        :param username: The login username credential. [Default admin]
-        :type username: string
-        :param password: The login password credential. [Default admin]
-        :type password: string
-        :param verbose: Flag to turn on verbose output (cmd/response).
-        :type verbose: boolean
-        """
+                  verbose=False, bmc=None, image=None, ubootenv=None):
+        """Default constructor for the Node class."""
+        #
+        # Dependency Integration
+        #
+        if not (bmc): bmc = BMC
+        if not (image): image = IMAGE
+        if not (ubootenv):ubootenv = UBOOTENV
+            
         self.ip_address = ip_address
         self.username = username
         self.password = password
@@ -89,48 +103,103 @@ class Node(object):
         return hash(self.ip_address)
 
     def get_macaddrs(self):
-        """ Return a list of mac addresses for this node """
-        result = []
-        i = 0
+        """Return a list of mac addresses for this node.
+        
+        >>> node.get_macaddrs()
+        ['fc:2f:40:3b:ec:40', 'fc:2f:40:3b:ec:41', 'fc:2f:40:3b:ec:42']
 
+        :return: MAC Addresses for all interfaces.
+        :rtype: list
+        
+        """
+        i = 0
+        result = []
         macaddr = self.bmc.get_fabric_macaddr(iface=i)
-        while macaddr:
+        while (macaddr):
             result.append(macaddr)
             i += 1
             macaddr = self.bmc.get_fabric_macaddr(iface=i)
-
         return result
 
     def get_power(self):
-        """ Return power status reported by IPMI """
+        """Return power status reported by IPMI.
+        
+        >>> # Powered ON system ...
+        >>> node.get_power()
+        True
+        >>> # Powered OFF system ...
+        >>> node.get_power()
+        False
+
+        :return: The power state of the Node.
+        :rtype: boolean
+         
+        """
         try:
             return self.bmc.get_chassis_status().power_on
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
     def set_power(self, mode):
-        """ Send an IPMI power command to this target """
+        """Send an IPMI power command to this target.
+        
+        >>> # To turn the power 'off'
+        >>> node.set_power(mode='off')
+        >>> # A quick 'get' to see if it took effect ...
+        >>> node.get_power()
+        False
+        
+        >>> # To turn the power 'on'
+        >>> node.set_power(mode='on')
+
+        :param mode: Mode to set the power state to. ('on'/'off')
+        :type mode: string
+        
+        """
         try:
             self.bmc.set_chassis_power(mode=mode)
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
     def get_power_policy(self):
-        """ Return power status reported by IPMI """
+        """Return power status reported by IPMI.
+        
+        >>> node.get_power_policy()
+        'always-off'
+        
+        :return: The Nodes current power policy.
+        :rtype: string
+        
+        """
         try:
             return self.bmc.get_chassis_status().power_restore_policy
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
     def set_power_policy(self, state):
-        """ Set default power state for A9 """
+        """Set default power state for Linux side.
+        
+        >>> # Set the state to 'always-on'
+        >>> node.set_power_policy(state='always-on')
+        >>> # A quick check to make sure our setting took ...
+        >>> node.get_power_policy()
+        'always-on'
+
+        :param state: State to set the power policy to.
+        :type state: string
+        
+        """
         try:
             self.bmc.set_chassis_policy(state)
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
     def mc_reset(self):
-        """ Send an IPMI MC reset command to the target """
+        """Send an IPMI MC reset command to the target.
+        
+        >>> node.mc_reset()
+        
+        """
         try:
             result = self.bmc.mc_reset("cold")
             # @todo: These calls to hasattr() may go away if a command raises
@@ -141,24 +210,40 @@ class Node(object):
             raise IpmiError(self._parse_ipmierror(e))
 
     def get_sensors(self, name=""):
-        """ Get a list of sensors from this target """
+        """Get a list of sensors from this target.
+        
+        .. note::
+            * If no sensor name is specified, ALL sensors will be returned.
+        
+        >>> node.get_sensors()
+        [<pyipmi.sdr.AnalogSdr object at 0x12d9450>, 
+         <pyipmi.sdr.AnalogSdr object at 0x12d9490>, 
+         <pyipmi.sdr.AnalogSdr object at 0x12d9510>, ... ]
+         
+        
+        :param name: Name of the sensor you wish to get.
+        :type name: string
+        
+        :return: Sensor information.
+        :rtype: list
+        
+        """
         try:
-            sensors =  [x for x in self.bmc.sdr_list()
-                    if name.lower() in x.sensor_name.lower()]
+            sensors =  [x for x in self.bmc.sdr_list() 
+                        if name.lower() in x.sensor_name.lower()]
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
-        if len(sensors) == 0:
-            if name == "":
+        if (len(sensors) == 0):
+            if (name == ""):
                 raise NoSensorError("No sensors were found")
             else:
                 raise NoSensorError("No sensors containing \"%s\" were " +
-                                         "found" % name)
-
+                                    "found" % name)
         return sensors
 
     def get_firmware_info(self):
-        """ Get firmware info from the target """
+        """Get firmware info from the target """
         try:
             fwinfo = [x for x in self.bmc.get_firmware_info()
                     if hasattr(x, "partition")]
@@ -186,51 +271,102 @@ class Node(object):
             raise IpmiError(self._parse_ipmierror(error_details))
 
     def check_firmware(self, package, partition_arg="INACTIVE", priority=None):
-        """ Check if this host is ready for an update """
+        """Check if this host is ready for an update.
+        
+        .. note::
+            * Requires an update `FirmwarePackage <firmware_package.html>`_ object.
+                    
+        >>> from cxmanage_api.firmware_package import FirmwarePackage
+        >>> fwp = FirmwarePackage(filename='/path/to/ECX-1000_update-v1.7.1-dirty.tar.gz')
+        >>> node.check_firmware(package=fwp)
+        
+        :param package: The firmware package to deploy.
+        :type package: `FirmwarePackage <firmware_package.html>`_
+        :param partition_arg: Which partition to update to.
+        :type partition_arg: string
+        :param priority: SIMG Header priority value. 
+        :type priority: integer
+        
+        :return: Whether or not the Node needs a firmware update.
+        :rtype: boolean
+        
+        :raises SocmanVersionError: If the socman version is not correct.
+        :raises FirmwareConfigError: If 
+        :raises PriorityIncrementError: If the SIMG Header priority cannot be changed.
+        
+        """
         info = self.info_basic()
         fwinfo = self.get_firmware_info()
-
         # Check socman version
-        if package.required_socman_version:
+        if (package.required_socman_version):
             soc_version = info.soc_version.lstrip("v")
             required_version = package.required_socman_version.lstrip("v")
-            if package.required_socman_version and parse_version(soc_version) \
-                    < parse_version(required_version):
+            if ((package.required_socman_version and 
+                 parse_version(soc_version)) < 
+                 parse_version(required_version)):
                 raise SocmanVersionError(
                         "Update requires socman version %s (found %s)"
                         % (required_version, soc_version))
 
         # Check firmware config
-        if info.version != "Unknown" and len(info.version) < 32:
-            if package.config == "default" and "slot2" in info.version:
+        if ((info.version != "Unknown") and (len(info.version) < 32)):
+            if ((package.config == "default") and ("slot2" in info.version)):
                 raise FirmwareConfigError(
                 "Refusing to upload a \'default\' package to a \'slot2\' host")
-            if package.config == "slot2" and not "slot2" in info.version:
+            if ((package.config == "slot2") and (not "slot2" in info.version)):
                 raise FirmwareConfigError(
                 "Refusing to upload a \'slot2\' package to a \'default\' host")
 
         # Check that the priority can be bumped
-        if priority == None:
+        if (priority == None):
             image_types = [x.type for x in package.images]
             for partition in fwinfo:
                 if (partition.type.split()[1].strip("()") in image_types and
-                        int(partition.flags, 16) & 2 == 0):
+                    int(partition.flags, 16) & 2 == 0):
                     priority = max(priority, int(partition.priority, 16) + 1)
-            if priority > 0xFFFF:
+            if (priority > 0xFFFF):
                 raise PriorityIncrementError(
-                      "Unable to increment SIMG priority, too high")
+                                "Unable to increment SIMG priority, too high")
 
         # Check partitions
         for image in package.images:
-            if image.type == "UBOOTENV" or partition_arg == "BOTH":
+            if ((image.type == "UBOOTENV") or (partition_arg == "BOTH")):
                 self._get_partition(fwinfo, image.type, "FIRST")
                 self._get_partition(fwinfo, image.type, "SECOND")
             else:
                 self._get_partition(fwinfo, image.type, partition_arg)
+        return True
 
     def update_firmware(self, tftp, package, partition_arg="INACTIVE",
             priority=None):
-        """ Update firmware on this target. """
+        """ Update firmware on this target.
+        
+        .. note::
+            * Requires an Internal or External TFTP server.
+            * Fabric objects usually provide this mechanism for Nodes.
+            * Requires an update `FirmwarePackage <firmware_package.html>`_ object.
+        
+        >>> from cxmanage_api.tftp import InternalTftp
+        >>> from cxmanage_api.firmware_package import FirmwarePackage
+        >>> i_tftp = InternalTftp()
+        >>> fw_path = '/path/to/ECX-1000_update-v1.7.1-dirty.tar.gz'
+        >>> fw_pkg = FirmwarePackage(filename=fw_path)
+        >>> node.update_firmware(tftp=i_tftp, package=fw_pkg)
+
+        :param tftp: The internal/external TFTP server to use for data xfer.
+        :type tftp: `Tftp <tftp.html>`_
+        :param  package: Firmware package to deploy.
+        :type package: `FirmwarePackage <firmware_package.html>`_
+        :param partition_arg: Partition to upgrade to.
+        :type partition_arg: string
+        
+        :raises PriorityIncrementError: If the SIMG Header priority cannot be changed.
+
+        >>> node.config_reset(tftp=i_tftp)
+
+        :param tftp: TFTP Server to tx/rx commands/repsonses.
+        :type tftp: `Tftp <tftp.html>`_
+        """
         fwinfo = self.get_firmware_info()
 
         # Get the new priority
@@ -294,11 +430,26 @@ class Node(object):
             self.bmc.set_firmware_version(package.version)
 
     def config_reset(self, tftp):
-        """ Reset configuration to factory default """
+        """ Reset configuration to factory defaults.
+        
+        .. note::
+            * Requires an Internal or External TFTP server.
+            * Fabric objects usually provide this mechanism for Nodes.
+        
+        >>> from cxmanage_api.tftp import InternalTftp
+        >>> i_tftp = InternalTftp()
+        >>> node.config_reset(tftp=i_tftp)
+
+        :param tftp: TFTP Server to tx/rx commands/repsonses.
+        :type tftp: `Tftp <tftp.html>`_
+        
+        :raises IpmiError: If errors in the command occur with BMC communication.
+        
+        """
         try:
             # Reset CDB
             result = self.bmc.reset_firmware()
-            if hasattr(result, "error"):
+            if (hasattr(result, "error")):
                 raise Exception(result.error)
 
             # Reset ubootenv
@@ -307,15 +458,28 @@ class Node(object):
             factory_part = self._get_partition(fwinfo, "UBOOTENV", "SECOND")
             image = self._download_image(tftp, factory_part)
             self._upload_image(tftp, image, running_part)
-
             # Clear SEL
             self.bmc.sel_clear()
-
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
     def set_boot_order(self, tftp, boot_args):
-        """ Set boot order """
+        """Sets boot-able device order.
+        
+        .. note::
+            * Requires an Internal or External TFTP server.
+            * Fabric objects usually provide this mechanism for Nodes.
+        
+        >>> from cxmanage_api.tftp import InternalTftp
+        >>> i_tftp = InternalTftp()
+        >>> node.set_boot_order(tftp=i_tftp, boot_args=['pxe', 'disk'])
+        
+        :param tftp: TFTP Server to tx/rx commands/repsonses.
+        :type tftp: `Tftp <tftp.html>`_
+        :param boot_args: Arguments list to pass on to the uboot environment.
+        :type boot_args: list
+        
+        """
         fwinfo = self.get_firmware_info()
         first_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
         active_part = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
@@ -335,11 +499,11 @@ class Node(object):
         self._upload_image(tftp, ubootenv_image, first_part, priority)
 
     def get_boot_order(self, tftp):
-        """ Get boot order """
+        """Get boot order """
         return self.get_ubootenv(tftp).get_boot_order()
 
     def info_basic(self):
-        """ Get basic SoC info from this target """
+        """Get basic SoC info from this target """
         result = self.bmc.get_info_basic()
         # @todo: These calls to hasattr() may go away if a command raises
         # an exception on error?
@@ -378,11 +542,11 @@ class Node(object):
         return result
 
     def info_dump(self, tftp):
-        """ Dump info from this target """
+        """Dump info from this target """
         return get_info_dump(tftp, self)
 
     def ipmitool_command(self, ipmitool_args):
-        """ Execute an arbitrary ipmitool command """
+        """Execute an arbitrary ipmitool command """
         if "IPMITOOL_PATH" in os.environ:
             command = [os.environ["IPMITOOL_PATH"]]
         else:
@@ -401,14 +565,14 @@ class Node(object):
         return (stdout + stderr).strip()
 
     def get_ubootenv(self, tftp):
-        """ Get the active u-boot environment """
+        """Get the active u-boot environment """
         fwinfo = self.get_firmware_info()
         partition = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
         image = self._download_image(tftp, partition)
         return self.ubootenv(open(image.filename).read())
 
     def get_fabric_ipinfo(self, tftp):
-        """ Get IP info from the fabric
+        """Get IP info from the fabric
 
         Returns a dictionary that maps node IDs to IP addresses. """
         self._tftp_init(tftp)
@@ -451,7 +615,7 @@ class Node(object):
         return results
 
     def _get_partition(self, fwinfo, image_type, partition_arg):
-        """ Get a partition for this image type based on the argument """
+        """Get a partition for this image type based on the argument """
         # Filter partitions for this type
         partitions = [x for x in fwinfo if
                 x.type.split()[1][1:-1] == image_type]
@@ -493,7 +657,7 @@ class Node(object):
             raise ValueError("Invalid partition argument: %s" % partition_arg)
 
     def _upload_image(self, tftp, image, partition, priority=None):
-        """ Upload a single image. This includes uploading the image,
+        """Upload a single image. This includes uploading the image,
         performing the firmware update, crc32 check, and activation.
         """
         self._tftp_init(tftp)
@@ -535,10 +699,10 @@ class Node(object):
                 raise
 
     def _download_image(self, tftp, partition):
-        """ Download an image from the target.
+        """Download an image from the target.
 
-        :param tftp: TFTP Server for send/recv commands.
-        :type tftp: InternalTftp or ExternalTftp
+        :param tftp: TFTP Server to tx/rx commands/repsonses.
+        :type tftp: `Tftp <tftp.html>`_
 
         :return: An image.
         :rtype: cxmanage_api.Image
@@ -598,7 +762,7 @@ class Node(object):
             raise TransferFailure("Node reported transfer failure")
 
     def _parse_ipmierror(self, error_details):
-        """ Parse a meaningful message from an IpmiError """
+        """Parse a meaningful message from an IpmiError """
         try:
             error = str(error_details).lstrip().splitlines()[0].rstrip()
             if error.startswith('Error: '):
