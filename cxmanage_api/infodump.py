@@ -35,16 +35,16 @@ from pkg_resources import resource_string
 
 def get_info_dump(tftp, node):
     """Prints the IPMI data available from the SoC.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
     :type node: Node
-    
+
     """
     lines = [chassis(tftp, node),
              lan(tftp, node),
-             controller(tftp, node),    
+             controller(tftp, node),
              sdr(tftp, node),
              sensor(tftp, node),
              fru(tftp, node),
@@ -62,28 +62,28 @@ def get_info_dump(tftp, node):
 
 def ipmitool(node, cmd):
     """Run an ipmitool command on a node.
-    
+
     :param node: Node to run the command on.
     :type node: Node
     :param cmd: Command to run.
     :type cmd: string
-    
+
     """
     ipmitool_args = cmd.split()
     try:
         return node.ipmitool_command(ipmitool_args)
-    
+
     except Exception as e:
         return "%s: %s" % (e.__class__.__name__, e)
 
 def chassis(tftp, node):
-    """Print Chassis information. 
-    
+    """Print Chassis information.
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
     :type node: Node
-    
+
     """
     lines = ['[ IPMI Chassis status ]',
              ipmitool(node, 'chassis status') + '\n',
@@ -109,12 +109,12 @@ def chassis(tftp, node):
 
 def lan(tftp, node):
     """Print LAN information for a node.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
     :type node: Node
-    
+
     """
     lines = ['[ IPMI LAN Configuration ]',
              ipmitool(node, 'lan print') + '\n',
@@ -126,12 +126,12 @@ def lan(tftp, node):
 
 def controller(tftp, node):
     """Print management controller information.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
     :type node: Node
-    
+
     """
     lines = ['[ IPMI BMC GUID ]',
              ipmitool(node, 'mc guid') + '\n',
@@ -143,12 +143,12 @@ def controller(tftp, node):
 
 def sdr(tftp, node):
     """Print sensor data record information.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
     :type node: Node
-    
+
     """
     lines = ['[ IPMI Sensor Description Records ]',
              ipmitool(node, 'sdr')]
@@ -156,12 +156,12 @@ def sdr(tftp, node):
 
 def sensor(tftp, node):
     """Print sensor information.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
     :type node: Node
-    
+
     """
     lines = ['[ IPMI Sensors ]',
              ipmitool(node, 'sensor')]
@@ -169,12 +169,12 @@ def sensor(tftp, node):
 
 def fru(tftp, node):
     """Print FRU information.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
-    :type node: Node    
-    
+    :type node: Node
+
     """
     lines = ['[ IPMI FRU data records ]',
              ipmitool(node, 'fru')]
@@ -182,12 +182,12 @@ def fru(tftp, node):
 
 def sel(tftp, node):
     """Print the event log.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
-    :type node: Node    
-    
+    :type node: Node
+
     """
     lines = ['[ IPMI System Event Log ]',
              ipmitool(node, 'sel')]
@@ -195,12 +195,12 @@ def sel(tftp, node):
 
 def pef(tftp, node):
     """Print PEF information.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
-    :type node: Node    
-    
+    :type node: Node
+
     """
     lines = ['[ IPMI Platform Event Filters ]',
              ipmitool(node, 'pef')]
@@ -208,12 +208,12 @@ def pef(tftp, node):
 
 def user(tftp, node):
     """Print user information.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
     :type node: Node
-        
+
     """
     lines = ['[ IPMI Users ]',
              ipmitool(node, 'user list')]
@@ -221,12 +221,12 @@ def user(tftp, node):
 
 def session(tftp, node):
     """Print session information.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
-    :type node: Node    
-    
+    :type node: Node
+
     """
     lines = [
              # FIXME: This command seems to cause an mpu fault
@@ -237,12 +237,12 @@ def session(tftp, node):
 
 def channel(tftp, node):
     """Print channel information.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
-    :type node: Node    
-    
+    :type node: Node
+
     """
     lines = [#'[ IPMI Channel Access ]',
              #ipmitool(node, 'channel getaccess'),
@@ -254,13 +254,13 @@ def channel(tftp, node):
     return '\n'.join(lines)
 
 def firmware(tftp, node):
-    """ Print firmware information. 
-    
+    """ Print firmware information.
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
-    :type node: Node    
-    
+    :type node: Node
+
     """
     lines = ['[ IPMI Firmware Info ]',
              ipmitool(node, 'cxoem fw info')]
@@ -268,12 +268,12 @@ def firmware(tftp, node):
 
 def fabric(tftp, node):
     """Print the fabric-related data.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
-    :type node: Node    
-    
+    :type node: Node
+
     """
     lines = ['[ CXOEM Fabric Data ]']
     ipinfo = []
@@ -281,7 +281,7 @@ def fabric(tftp, node):
         ipinfo = node.get_ipinfo(tftp)
         for entry in ipinfo:
             lines.append('Node %i: %s' % entry)
-    
+
     except Exception as e:
         lines.append('%s: %s' % (e.__class__.__name__, e))
 
@@ -289,7 +289,7 @@ def fabric(tftp, node):
         macaddrs = node.get_macaddrs(tftp)
         for entry in macaddrs:
             lines.append('Node %i, Port %i: %s' % entry)
-    
+
     except Exception as e:
         lines.append('%s: %s' % (e.__class__.__name__, e))
 
@@ -303,22 +303,22 @@ def fabric(tftp, node):
 
 def get_ubootenv(tftp, node):
     """ Print u-boot environment variables.
-    
+
     :param tftp: Tftp server to facilitate command/response data.
     :type tftp: InternalTftp or ExternalTftp
     :param node: Node to get info dump from.
     :type node: Node
-        
+
     """
     lines = ['[ U-Boot Environment ]']
     try:
         fwinfo = node.get_firmware_info()
         partition = node._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
         ubootenv = node._download_ubootenv(tftp, partition)
-        
+
         for variable in sorted(ubootenv.variables):
             lines.append('%s=%s' % (variable, ubootenv.variables[variable]))
-    
+
     except Exception as e:
         lines.append('%s: %s' % (e.__class__.__name__, e))
 
@@ -326,17 +326,17 @@ def get_ubootenv(tftp, node):
 
 def get_cdb(node, cids=None):
     """Print info for each CDB entry.
-    
+
     :param node: Node to get info dump from.
     :type node: Node
-    :param cids: List of cids. 
+    :param cids: List of cids.
     :type cids: list
-        
+
     """
     lines = []
 
     if (cids == None):
-        string = resource_string('cxmanage', 'data/cids')
+        string = resource_string('cxmanage_api', 'data/cids')
         cids = set()
         for line in string.splitlines():
             for entry in line.partition('#')[0].split():
@@ -346,7 +346,7 @@ def get_cdb(node, cids=None):
     for cid in cids:
         lines.append('[ CDB %s ]' % cid)
         output = ipmitool(node, 'cxoem data cdb read 64 %s' % cid)
-        size_lines = [x for x in output.split('\n') 
+        size_lines = [x for x in output.split('\n')
                       if x.startswith('CID size')]
         value_lines = [x for x in output.split('\n') if x.startswith('Value')]
 
@@ -363,12 +363,12 @@ def get_cdb(node, cids=None):
 
 def get_registers(node, regfile=None):
     """Print info for each register.
-    
+
     :param node: Node to get info dump from.
     :type node: Node
     :param regfile: Register file to read from. (path)
-    :type regfile: string    
-    
+    :type regfile: string
+
     """
     lines = ['[ Memory dump ]']
     register_ranges = get_register_ranges(regfile)
@@ -396,7 +396,7 @@ def get_registers(node, regfile=None):
                 for i in range(words_to_read):
                     lines.append('Memory address %08x: %s' % (address + i * 4,
                             values[i]))
-            
+
             except Exception:
                 lines.append('Failed to read memory address %08x' % address)
                 return '\n'.join(lines)
@@ -407,13 +407,13 @@ def get_registers(node, regfile=None):
 
 def get_register_ranges(regfile=None):
     """Get registers as a list of (start, end) ranges
-    
+
     :param regfile: Register file to read. (path)
     :type regfile: string
-    
+
     """
     if (regfile == None):
-        string = resource_string('cxmanage', 'data/registers')
+        string = resource_string('cxmanage_api', 'data/registers')
     else:
         string = open(regfile).read()
 
