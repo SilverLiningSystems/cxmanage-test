@@ -75,11 +75,11 @@ class FabricTest(unittest.TestCase):
         finish = time.time()
         self.assertLess(delay, finish - start)
 
-    def test_get_macaddrs(self):
-        """ Test get_ipinfo command """
-        self.fabric.get_macaddrs()
+    def test_get_mac_addresses(self):
+        """ Test get_mac_addresses command """
+        self.fabric.get_mac_addresses()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["get_macaddrs"])
+            self.assertEqual(node.executed, ["get_mac_addresses"])
 
     def test_get_sensors(self):
         """ Test get_sensors command """
@@ -161,8 +161,8 @@ class DummyNode:
         self.ip_address = ip_address
         self.tftp = tftp
 
-    def get_macaddrs(self):
-        self.executed.append("get_macaddrs")
+    def get_mac_addresses(self):
+        self.executed.append("get_mac_addresses")
         result = []
         for node in range(NUM_NODES):
             for port in range(3):

@@ -284,16 +284,12 @@ def fabric(node):
     except Exception as e:
         lines.append('%s: %s' % (e.__class__.__name__, e))
 
-    # TODO: make this work again...
-    # Info dump needs a rewrite.
-    """
     try:
-        macaddrs = node.get_macaddrs(tftp)
-        for entry in macaddrs:
-            lines.append('Node %i, Port %i: %s' % entry)
+        macaddrs = node.get_mac_addresses()
+        for i in xrange(len(macaddrs)):
+            lines.append('Port %i: %s' % (i, macaddrs[i]))
     except Exception as e:
         lines.append('%s: %s' % (e.__class__.__name__, e))
-    """
 
     for node_id, node_address in ipinfo.iteritems():
         for item in ['netmask', 'defgw', 'ipsrc']:

@@ -115,7 +115,7 @@ class Node(object):
 
 ################################ Public methods ###############################
 
-    def get_macaddrs(self):
+    def get_mac_addresses(self):
         """Return a list of mac addresses for this node.
 
         >>> node.get_macaddrs()

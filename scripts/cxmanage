@@ -767,7 +767,7 @@ def macaddrs_command(args):
 
     if not args.quiet:
         print "Getting MAC addresses..."
-    results, errors = _run_command(args, nodes, "get_macaddrs")
+    results, errors = _run_command(args, nodes, "get_mac_addresses")
 
     for node in nodes:
         if node in results:

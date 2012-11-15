@@ -88,9 +88,9 @@ class Fabric(object):
 
 ############################## Public methods #################################
 
-    def get_macaddrs(self, asynchronous=False):
+    def get_mac_addresses(self, asynchronous=False):
         """ Get MAC addresses from all nodes """
-        return self._run_command(asynchronous, "get_macaddrs")
+        return self._run_command(asynchronous, "get_mac_addresses")
 
     def get_power(self, asynchronous=False):
         """ Get the power status of all nodes """
