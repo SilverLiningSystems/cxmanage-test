@@ -55,15 +55,15 @@ class Fabric(object):
         @param max_threads: Maximum number of threads to run at a time.
         @type max_threads: integer
         """
+        if not tftp:
+            tftp = InternalTftp()
+
         self.nodes = {}
-        self.tftp = tftp
+        self._tftp = tftp
         self.max_threads = max_threads
         self.command_delay = command_delay
         self.verbose = verbose
         self.node = node
-
-        if not self.tftp:
-            self.tftp = InternalTftp()
 
         self._discover_nodes(ip_address=ip_address, username=username,
                              password=password)
@@ -74,19 +74,19 @@ class Fabric(object):
     def __hash__(self):
         return hash(tuple(self.nodes.iteritems()))
 
-    def _discover_nodes(self, ip_address, username="admin", password="admin"):
-        """ Set the nodes of this fabric by pulling IP info from a BMC """
-        node = self.node(ip_address=ip_address, username=username,
-                         password=password, verbose=self.verbose)
+    @property
+    def tftp(self):
+        """ Get the tftp server """
+        return self._tftp
 
-        ipinfo = node.get_fabric_ipinfo(self.tftp)
-        for node_id, node_address in ipinfo.iteritems():
-            self.nodes[node_id] = self.node(ip_address=node_address,
-                                            username=username,
-                                            password=password,
-                                            verbose=self.verbose)
-            #self.nodes[node_id].node_number =
-#########################    Command methods    #########################
+    @tftp.setter
+    def tftp(self, value):
+        """ Set the tftp server in all the nodes """
+        self._tftp = value
+        for node in self.nodes.values():
+            node.tftp = value
+
+############################## Public methods #################################
 
     def get_macaddrs(self, asynchronous=False):
         """ Get MAC addresses from all nodes """
@@ -129,21 +129,20 @@ class Fabric(object):
     def update_firmware(self, package, partition_arg="INACTIVE", priority=None,
             asynchronous=False):
         """ Update the firmware on all nodes """
-        return self._run_command(asynchronous, "update_firmware", self.tftp,
-                package, partition_arg, priority)
+        return self._run_command(asynchronous, "update_firmware", package,
+                partition_arg, priority)
 
     def config_reset(self, asynchronous=False):
         """ Reset the configuration on all nodes """
-        return self._run_command(asynchronous, "config_reset", self.tftp)
+        return self._run_command(asynchronous, "config_reset")
 
     def set_boot_order(self, boot_args, asynchronous=False):
         """ Set the boot order on all nodes """
-        return self._run_command(asynchronous, "set_boot_order", self.tftp,
-                boot_args)
+        return self._run_command(asynchronous, "set_boot_order", boot_args)
 
     def get_boot_order(self, asynchronous=False):
         """ Get the boot order from all nodes """
-        return self._run_command(asynchronous, "get_boot_order", self.tftp)
+        return self._run_command(asynchronous, "get_boot_order")
 
     # TODO: should this be called get_versions?
     def info_basic(self, asynchronous=False):
@@ -152,16 +151,32 @@ class Fabric(object):
 
     def info_dump(self, asynchronous=False):
         """ Dump info from all nodes """
-        return self._run_command(asynchronous, "info_dump", self.tftp)
+        return self._run_command(asynchronous, "info_dump")
 
     def get_ubootenv(self, asynchronous=False):
         """ Get the u-boot environment from all nodes """
-        return self._run_command(asynchronous, "get_ubootenv", self.tftp)
+        return self._run_command(asynchronous, "get_ubootenv")
 
     def ipmitool_command(self, ipmitool_args, asynchronous=False):
         """ Run an arbitrary IPMItool command on all nodes """
         return self._run_command(asynchronous, "ipmitool_command",
                 ipmitool_args)
+
+############################### Private methods ###############################
+
+    def _discover_nodes(self, ip_address, username="admin", password="admin"):
+        """ Set the nodes of this fabric by pulling IP info from a BMC """
+        node = self.node(ip_address=ip_address, username=username,
+                         password=password, tftp=self.tftp,
+                         verbose=self.verbose)
+
+        ipinfo = node.get_fabric_ipinfo()
+        for node_id, node_address in ipinfo.iteritems():
+            self.nodes[node_id] = self.node(ip_address=node_address,
+                                            username=username,
+                                            password=password,
+                                            tftp=self.tftp,
+                                            verbose=self.verbose)
 
     def _run_command(self, asynchronous, name, *args):
         """ Start a command on the given targets """

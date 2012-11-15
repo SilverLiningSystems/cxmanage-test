@@ -33,7 +33,7 @@
 from pkg_resources import resource_string
 
 
-def get_info_dump(tftp, node):
+def get_info_dump(node):
     """Prints the IPMI data available from the SoC.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -42,20 +42,20 @@ def get_info_dump(tftp, node):
     :type node: Node
 
     """
-    lines = [chassis(tftp, node),
-             lan(tftp, node),
-             controller(tftp, node),
-             sdr(tftp, node),
-             sensor(tftp, node),
-             fru(tftp, node),
-             sel(tftp, node),
-             pef(tftp, node),
-             user(tftp, node),
-             channel(tftp, node),
-             #session(tftp, node),
-             firmware(tftp, node),
-             fabric(tftp, node),
-             get_ubootenv(tftp, node),
+    lines = [chassis(node),
+             lan(node),
+             controller(node),
+             sdr(node),
+             sensor(node),
+             fru(node),
+             sel(node),
+             pef(node),
+             user(node),
+             channel(node),
+             #session(node),
+             firmware(node),
+             fabric(node),
+             get_ubootenv(node),
              get_cdb(node),
              get_registers(node)]
     return '\n\n'.join(lines)
@@ -76,7 +76,7 @@ def ipmitool(node, cmd):
     except Exception as e:
         return "%s: %s" % (e.__class__.__name__, e)
 
-def chassis(tftp, node):
+def chassis(node):
     """Print Chassis information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -107,7 +107,7 @@ def chassis(tftp, node):
              ipmitool(node, 'chassis bootparam get 7')]
     return '\n'.join(lines)
 
-def lan(tftp, node):
+def lan(node):
     """Print LAN information for a node.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -124,7 +124,7 @@ def lan(tftp, node):
              ipmitool(node, 'lan stats get')]
     return '\n'.join(lines)
 
-def controller(tftp, node):
+def controller(node):
     """Print management controller information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -141,7 +141,7 @@ def controller(tftp, node):
              ipmitool(node, 'mc getenables')]
     return '\n'.join(lines)
 
-def sdr(tftp, node):
+def sdr(node):
     """Print sensor data record information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -154,7 +154,7 @@ def sdr(tftp, node):
              ipmitool(node, 'sdr')]
     return '\n'.join(lines)
 
-def sensor(tftp, node):
+def sensor(node):
     """Print sensor information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -167,7 +167,7 @@ def sensor(tftp, node):
              ipmitool(node, 'sensor')]
     return '\n'.join(lines)
 
-def fru(tftp, node):
+def fru(node):
     """Print FRU information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -180,7 +180,7 @@ def fru(tftp, node):
              ipmitool(node, 'fru')]
     return '\n'.join(lines)
 
-def sel(tftp, node):
+def sel(node):
     """Print the event log.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -193,7 +193,7 @@ def sel(tftp, node):
              ipmitool(node, 'sel')]
     return '\n'.join(lines)
 
-def pef(tftp, node):
+def pef(node):
     """Print PEF information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -206,7 +206,7 @@ def pef(tftp, node):
              ipmitool(node, 'pef')]
     return '\n'.join(lines)
 
-def user(tftp, node):
+def user(node):
     """Print user information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -219,7 +219,7 @@ def user(tftp, node):
              ipmitool(node, 'user list')]
     return '\n'.join(lines)
 
-def session(tftp, node):
+def session(node):
     """Print session information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -235,7 +235,7 @@ def session(tftp, node):
             ]
     return '\n'.join(lines)
 
-def channel(tftp, node):
+def channel(node):
     """Print channel information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -253,7 +253,7 @@ def channel(tftp, node):
             ]
     return '\n'.join(lines)
 
-def firmware(tftp, node):
+def firmware(node):
     """ Print firmware information.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -266,7 +266,7 @@ def firmware(tftp, node):
              ipmitool(node, 'cxoem fw info')]
     return '\n'.join(lines)
 
-def fabric(tftp, node):
+def fabric(node):
     """Print the fabric-related data.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -276,32 +276,33 @@ def fabric(tftp, node):
 
     """
     lines = ['[ CXOEM Fabric Data ]']
-    ipinfo = []
+    ipinfo = {}
     try:
-        ipinfo = node.get_ipinfo(tftp)
-        for entry in ipinfo:
-            lines.append('Node %i: %s' % entry)
-
+        ipinfo = node.get_fabric_ipinfo()
+        for x in ipinfo.iteritems():
+            lines.append('Node %i: %s' % x)
     except Exception as e:
         lines.append('%s: %s' % (e.__class__.__name__, e))
 
+    # TODO: make this work again...
+    # Info dump needs a rewrite.
+    """
     try:
         macaddrs = node.get_macaddrs(tftp)
         for entry in macaddrs:
             lines.append('Node %i, Port %i: %s' % entry)
-
     except Exception as e:
         lines.append('%s: %s' % (e.__class__.__name__, e))
+    """
 
-    for entry in ipinfo:
-        node_id = entry[0]
+    for node_id, node_address in ipinfo.iteritems():
         for item in ['netmask', 'defgw', 'ipsrc']:
             value = ipmitool(node, 'cxoem fabric get %s node %i'
                     % (item, node_id))
             lines.append('Node %i, %s: %s' % (node_id, item, value))
     return '\n'.join(lines)
 
-def get_ubootenv(tftp, node):
+def get_ubootenv(node):
     """ Print u-boot environment variables.
 
     :param tftp: Tftp server to facilitate command/response data.
@@ -312,9 +313,7 @@ def get_ubootenv(tftp, node):
     """
     lines = ['[ U-Boot Environment ]']
     try:
-        fwinfo = node.get_firmware_info()
-        partition = node._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
-        ubootenv = node._download_ubootenv(tftp, partition)
+        ubootenv = node.get_ubootenv()
 
         for variable in sorted(ubootenv.variables):
             lines.append('%s=%s' % (variable, ubootenv.variables[variable]))

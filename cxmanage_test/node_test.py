@@ -53,12 +53,12 @@ class NodeTest(unittest.TestCase):
     """ Tests involving cxmanage Nodes """
 
     def setUp(self):
-        self.nodes = [Node(ip_address=ip, bmc=DummyBMC, image=TestImage,
-                           ubootenv=DummyUbootEnv, verbose=True)
-                      for ip in ADDRESSES]
+        tftp = InternalTftp()
+        self.nodes = [Node(ip_address=ip, tftp=tftp, bmc=DummyBMC,
+                image=TestImage, ubootenv=DummyUbootEnv, verbose=True)
+                for ip in ADDRESSES]
 
         # Set up an internal server
-        self.tftp = InternalTftp()
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage_node_test-")
 
     def tearDown(self):
@@ -155,7 +155,7 @@ class NodeTest(unittest.TestCase):
         package.version = "0.0.1"
 
         for node in self.nodes:
-            node.update_firmware(self.tftp, package)
+            node.update_firmware(package)
 
             partitions = node.bmc.partitions
             unchanged_partitions = [partitions[x] for x in [0, 1, 4]]
@@ -185,7 +185,7 @@ class NodeTest(unittest.TestCase):
     def test_config_reset(self):
         """ Test node.config_reset method """
         for node in self.nodes:
-            node.config_reset(self.tftp)
+            node.config_reset()
 
             # Assert config reset
             executed = node.bmc.executed
@@ -212,7 +212,7 @@ class NodeTest(unittest.TestCase):
         """ Test node.set_boot_order method """
         boot_args = ["disk", "pxe", "retry"]
         for node in self.nodes:
-            node.set_boot_order(self.tftp, boot_args)
+            node.set_boot_order(boot_args)
 
             partitions = node.bmc.partitions
             ubootenv_partition = partitions[5]
@@ -233,7 +233,7 @@ class NodeTest(unittest.TestCase):
     def test_get_boot_order(self):
         """ Test node.get_boot_order method """
         for node in self.nodes:
-            result = node.get_boot_order(self.tftp)
+            result = node.get_boot_order()
 
             partitions = node.bmc.partitions
             ubootenv_partition = partitions[5]

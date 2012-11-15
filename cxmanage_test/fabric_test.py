@@ -33,6 +33,7 @@ import time
 import unittest
 
 from cxmanage_api.fabric import Fabric
+from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.firmware_package import FirmwarePackage
 from cxmanage_api.ubootenv import UbootEnv
 from cxmanage_test import TestSensor
@@ -49,6 +50,20 @@ class FabricTest(unittest.TestCase):
         self.nodes = [DummyNode(x) for x in ADDRESSES]
         self.fabric.nodes = dict((i, self.nodes[i])
                 for i in xrange(NUM_NODES))
+
+    def test_tftp(self):
+        """ Test the tftp property """
+        tftp = InternalTftp()
+        self.fabric.tftp = tftp
+        self.assertTrue(self.fabric.tftp is tftp)
+        for node in self.nodes:
+            self.assertTrue(node.tftp is tftp)
+
+        tftp = ExternalTftp("127.0.0.1")
+        self.fabric.tftp = tftp
+        self.assertTrue(self.fabric.tftp is tftp)
+        for node in self.nodes:
+            self.assertTrue(node.tftp is tftp)
 
     def test_command_delay(self):
         """Test that we delay for at least command_delay"""
@@ -140,9 +155,11 @@ class FabricTest(unittest.TestCase):
 
 class DummyNode:
     """ Dummy node for the nodemanager tests """
-    def __init__(self, ip_address, *args, **kwargs):
-        self.ip_address = ip_address
+    def __init__(self, ip_address, username="admin", password="admin",
+            tftp=None, *args, **kwargs):
         self.executed = []
+        self.ip_address = ip_address
+        self.tftp = tftp
 
     def get_macaddrs(self):
         self.executed.append("get_macaddrs")
@@ -176,7 +193,7 @@ class DummyNode:
     def is_updatable(self, package, partition_arg="INACTIVE", priority=None):
         self.executed.append(("is_updatable", package))
 
-    def update_firmware(self, tftp, package, partition_arg="INACTIVE",
+    def update_firmware(self, package, partition_arg="INACTIVE",
             priority=None):
         self.executed.append(("update_firmware", package))
         time.sleep(random.randint(0, 2))
@@ -191,13 +208,13 @@ class DummyNode:
         ]
         return [x for x in sensors if name.lower() in x.sensor_name.lower()]
 
-    def config_reset(self, tftp):
+    def config_reset(self):
         self.executed.append("config_reset")
 
-    def set_boot_order(self, tftp, boot_args):
+    def set_boot_order(self, boot_args):
         self.executed.append(("set_boot_order", boot_args))
 
-    def get_boot_order(self, tftp):
+    def get_boot_order(self):
         self.executed.append("get_boot_order")
         return ["disk", "pxe"]
 
@@ -216,14 +233,14 @@ class DummyNode:
                 self.uboot_version = "0.0.0"
         return Result()
 
-    def info_dump(self, tftp):
+    def info_dump(self):
         self.executed.append("info_dump")
 
     def ipmitool_command(self, ipmitool_args):
         self.executed.append(("ipmitool_command", ipmitool_args))
         return "Dummy output"
 
-    def get_ubootenv(self, tftp):
+    def get_ubootenv(self):
         self.executed.append("get_ubootenv")
 
         ubootenv = UbootEnv()
@@ -231,7 +248,7 @@ class DummyNode:
         ubootenv.variables["bootcmd_default"] = "run bootcmd_sata"
         return ubootenv
 
-    def get_fabric_ipinfo(self, tftp):
+    def get_fabric_ipinfo(self):
         return {}
 
 class DummyImage:

@@ -43,6 +43,7 @@ from pyipmi.bmc import LanBMC as BMC
 from tftpy.TftpShared import TftpException
 
 from cxmanage_api import temp_file
+from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.infodump import get_info_dump
@@ -76,20 +77,25 @@ class Node(object):
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
-                  verbose=False, bmc=None, image=None, ubootenv=None):
+                  tftp=None, verbose=False, bmc=None, image=None,
+                  ubootenv=None):
         """Default constructor for the Node class."""
-        #
+        if tftp == None:
+            tftp = InternalTftp()
+
         # Dependency Integration
-        #
-        if not (bmc): bmc = BMC
-        if not (image): image = IMAGE
-        if not (ubootenv):ubootenv = UBOOTENV
+        if not bmc:
+            bmc = BMC
+        if not image:
+            image = IMAGE
+        if not ubootenv:
+            ubootenv = UBOOTENV
 
         self.ip_address = ip_address
         self.username = username
         self.password = password
+        self.tftp = tftp
         self.verbose = verbose
-        self.my_tftp_address = None
 
         self.bmc = make_bmc(bmc, hostname=ip_address, username=username,
                             password=password, verbose=verbose)
@@ -101,6 +107,13 @@ class Node(object):
 
     def __hash__(self):
         return hash(self.ip_address)
+
+    @property
+    def tftp_address(self):
+        return '%s:%s' % (self.tftp.get_address(relative_host=self.ip_address),
+                self.tftp.get_port())
+
+################################ Public methods ###############################
 
     def get_macaddrs(self):
         """Return a list of mac addresses for this node.
@@ -282,7 +295,7 @@ class Node(object):
                 PriorityIncrementError, NoPartitionError):
             return False
 
-    def update_firmware(self, tftp, package, partition_arg="INACTIVE",
+    def update_firmware(self, package, partition_arg="INACTIVE",
             priority=None):
         """ Update firmware on this target.
 
@@ -326,10 +339,10 @@ class Node(object):
                         "SECOND")
 
                 # Update factory ubootenv
-                self._upload_image(tftp, image, factory_part, priority)
+                self._upload_image(image, factory_part, priority)
 
                 # Update running ubootenv
-                old_ubootenv_image = self._download_image(tftp, running_part)
+                old_ubootenv_image = self._download_image(running_part)
                 old_ubootenv = self.ubootenv(open(
                                         old_ubootenv_image.filename).read())
                 if "bootcmd_default" in old_ubootenv.variables:
@@ -343,10 +356,10 @@ class Node(object):
                     ubootenv_image = self.image(filename, image.type, False,
                                            image.daddr, image.skip_crc32,
                                            image.version)
-                    self._upload_image(tftp, ubootenv_image, running_part,
+                    self._upload_image(ubootenv_image, running_part,
                             priority)
                 else:
-                    self._upload_image(tftp, image, running_part, priority)
+                    self._upload_image(image, running_part, priority)
 
             else:
                 # Get the partitions
@@ -360,12 +373,12 @@ class Node(object):
 
                 # Update the image
                 for partition in partitions:
-                    self._upload_image(tftp, image, partition, priority)
+                    self._upload_image(image, partition, priority)
 
         if package.version:
             self.bmc.set_firmware_version(package.version)
 
-    def config_reset(self, tftp):
+    def config_reset(self):
         """ Reset configuration to factory defaults.
 
         .. note::
@@ -392,14 +405,14 @@ class Node(object):
             fwinfo = self.get_firmware_info()
             running_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
             factory_part = self._get_partition(fwinfo, "UBOOTENV", "SECOND")
-            image = self._download_image(tftp, factory_part)
-            self._upload_image(tftp, image, running_part)
+            image = self._download_image(factory_part)
+            self._upload_image(image, running_part)
             # Clear SEL
             self.bmc.sel_clear()
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
-    def set_boot_order(self, tftp, boot_args):
+    def set_boot_order(self, boot_args):
         """Sets boot-able device order.
 
         .. note::
@@ -421,7 +434,7 @@ class Node(object):
         active_part = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
 
         # Download active ubootenv, modify, then upload to first partition
-        image = self._download_image(tftp, active_part)
+        image = self._download_image(active_part)
         ubootenv = self.ubootenv(open(image.filename).read())
         ubootenv.set_boot_order(boot_args)
         priority = max(int(x.priority, 16) for x in [first_part, active_part])
@@ -432,11 +445,11 @@ class Node(object):
 
         ubootenv_image = self.image(filename, image.type, False, image.daddr,
                                     image.skip_crc32, image.version)
-        self._upload_image(tftp, ubootenv_image, first_part, priority)
+        self._upload_image(ubootenv_image, first_part, priority)
 
-    def get_boot_order(self, tftp):
+    def get_boot_order(self):
         """Get boot order """
-        return self.get_ubootenv(tftp).get_boot_order()
+        return self.get_ubootenv().get_boot_order()
 
     def info_basic(self):
         """Get basic SoC info from this target """
@@ -477,9 +490,9 @@ class Node(object):
 
         return result
 
-    def info_dump(self, tftp):
+    def info_dump(self):
         """Dump info from this target """
-        return get_info_dump(tftp, self)
+        return get_info_dump(self)
 
     def ipmitool_command(self, ipmitool_args):
         """Execute an arbitrary ipmitool command """
@@ -500,23 +513,21 @@ class Node(object):
         stdout, stderr = process.communicate()
         return (stdout + stderr).strip()
 
-    def get_ubootenv(self, tftp):
+    def get_ubootenv(self):
         """Get the active u-boot environment """
         fwinfo = self.get_firmware_info()
         partition = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
-        image = self._download_image(tftp, partition)
+        image = self._download_image(partition)
         return self.ubootenv(open(image.filename).read())
 
-    def get_fabric_ipinfo(self, tftp):
+    def get_fabric_ipinfo(self):
         """Get IP info from the fabric
 
         Returns a dictionary that maps node IDs to IP addresses. """
-        self._tftp_init(tftp)
-
         filename = temp_file()
         basename = os.path.basename(filename)
 
-        result = self.bmc.get_fabric_ipinfo(basename, self.my_tftp_address)
+        result = self.bmc.get_fabric_ipinfo(basename, self.tftp_address)
         if hasattr(result, "error"):
             raise IpmiError(result.error)
 
@@ -524,7 +535,7 @@ class Node(object):
         for a in range(10):
             try:
                 time.sleep(1)
-                tftp.get_file(src=basename, dest=filename)
+                self.tftp.get_file(src=basename, dest=filename)
                 if os.path.getsize(filename) > 0:
                     break
             except (TftpException, IOError):
@@ -549,6 +560,8 @@ class Node(object):
             raise NoIpInfoError("Failed to retrieve IP info")
 
         return results
+
+############################### Private methods ###############################
 
     def _get_partition(self, fwinfo, image_type, partition_arg):
         """Get a partition for this image type based on the argument """
@@ -592,11 +605,10 @@ class Node(object):
         else:
             raise ValueError("Invalid partition argument: %s" % partition_arg)
 
-    def _upload_image(self, tftp, image, partition, priority=None):
+    def _upload_image(self, image, partition, priority=None):
         """Upload a single image. This includes uploading the image,
         performing the firmware update, crc32 check, and activation.
         """
-        self._tftp_init(tftp)
         partition_id = int(partition.partition)
         if priority == None:
             priority = int(partition.priority, 16)
@@ -608,14 +620,14 @@ class Node(object):
                     image.type, partition_id)
 
         # Upload image to tftp server
-        filename = image.upload(tftp, priority, daddr)
+        filename = image.upload(self.tftp, priority, daddr)
 
         while True:
             try:
                 # Update the firmware
                 result = self.bmc.update_firmware(filename,
                                         partition_id, image.type,
-                                        self.my_tftp_address)
+                                        self.tftp_address)
                 if not hasattr(result, "tftp_handle_id"):
                     raise AttributeError("Failed to start firmware upload")
                 self._wait_for_transfer(result.tftp_handle_id)
@@ -634,7 +646,7 @@ class Node(object):
                     traceback.format_exc()
                 raise
 
-    def _download_image(self, tftp, partition):
+    def _download_image(self, partition):
         """Download an image from the target.
 
         :param tftp: TFTP Server to tx/rx commands/repsonses.
@@ -643,8 +655,6 @@ class Node(object):
         :return: An image.
         :rtype: cxmanage_api.Image
         """
-        self._tftp_init(tftp)
-
         # Download the image
         filename = temp_file()
         basename = os.path.basename(filename)
@@ -654,7 +664,7 @@ class Node(object):
         while True:
             try:
                 result = self.bmc.retrieve_firmware(basename, partition_id,
-                        image_type, self.my_tftp_address)
+                        image_type, self.tftp_address)
 
                 if not hasattr(result, "tftp_handle_id"):
                     raise AttributeError("Failed to start firmware download")
@@ -667,7 +677,7 @@ class Node(object):
                     traceback.format_exc()
                 raise
 
-        tftp.get_file(basename, filename)
+        self.tftp.get_file(basename, filename)
         return self.image(filename=filename, image_type=image_type,
                           daddr=int(partition.daddr, 16),
                           version=partition.version)
@@ -781,17 +791,6 @@ class Node(object):
 
         except IndexError:
             return 'IPMITool encountered an error.'
-
-    def _tftp_init(self, tftp):
-        """Sets the current tftp server/client information for this class.
-        Creates the temporary FILE for communication.
-
-        :param tftp: TFTP server(or client) to connect to.
-        :type tftp: tftp.InternalTftp or tftp.ExternalTftp
-        """
-        self.my_tftp_address = '%s:%s' % (tftp.get_address(
-                                          relative_host=self.ip_address),
-                                          tftp.get_port())
 
 
 # End of file: node.py
