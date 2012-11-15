@@ -120,10 +120,10 @@ class Fabric(object):
         """ Get firmware info from all nodes """
         return self._run_command(asynchronous, "get_firmware_info")
 
-    def check_firmware(self, package, partition_arg="INACTIVE", priority=None,
+    def is_updatable(self, package, partition_arg="INACTIVE", priority=None,
             asynchronous=False):
         """ Check the firmware on all nodes """
-        return self._run_command(asynchronous, "check_firmware", package,
+        return self._run_command(asynchronous, "is_updatable", package,
                 partition_arg, priority)
 
     def update_firmware(self, package, partition_arg="INACTIVE", priority=None,

@@ -79,12 +79,12 @@ class FabricTest(unittest.TestCase):
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_firmware_info"])
 
-    def test_check_firmware(self):
-        """ Test check_firmware command """
+    def test_is_updatable(self):
+        """ Test is_updatable command """
         package = FirmwarePackage()
-        self.fabric.check_firmware(package)
+        self.fabric.is_updatable(package)
         for node in self.nodes:
-            self.assertEqual(node.executed, [("check_firmware", package)])
+            self.assertEqual(node.executed, [("is_updatable", package)])
 
     def test_update_firmware(self):
         """ Test update_firmware command """
@@ -173,8 +173,8 @@ class DummyNode:
     def get_firmware_info(self):
         self.executed.append("get_firmware_info")
 
-    def check_firmware(self, package, partition_arg="INACTIVE", priority=None):
-        self.executed.append(("check_firmware", package))
+    def is_updatable(self, package, partition_arg="INACTIVE", priority=None):
+        self.executed.append(("is_updatable", package))
 
     def update_firmware(self, tftp, package, partition_arg="INACTIVE",
             priority=None):

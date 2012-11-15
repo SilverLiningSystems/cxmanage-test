@@ -624,7 +624,7 @@ def fwupdate_command(args):
         if not args.quiet:
             print "Checking hosts..."
 
-        results, errors = _run_command(args, nodes, "check_firmware", package,
+        results, errors = _run_command(args, nodes, "_check_firmware", package,
                 args.partition, args.priority)
         if errors:
             print "ERROR: Firmware update aborted."

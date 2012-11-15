@@ -113,8 +113,8 @@ class NodeTest(unittest.TestCase):
             self.assertEqual(result[1].sensor_name, "Board Temp")
             self.assertTrue(result[1].sensor_reading.endswith("degrees C"))
 
-    def test_check_firmware(self):
-        """ Test node.check_firmware method """
+    def test_is_updatable(self):
+        """ Test node.is_updatable method """
         for node in self.nodes:
             filename = "%s/%s" % (self.work_dir, "image.bin")
             open(filename, "w").write("")
@@ -127,27 +127,19 @@ class NodeTest(unittest.TestCase):
             # should pass
             package = FirmwarePackage()
             package.images = images
-            node.check_firmware(package)
+            self.assertTrue(node.is_updatable(package))
 
             # should fail if we specify a socman version
-            try:
-                package = FirmwarePackage()
-                package.images = images
-                package.required_socman_version = "0.0.1"
-                node.check_firmware(package)
-                self.fail()
-            except SocmanVersionError:
-                pass
+            package = FirmwarePackage()
+            package.images = images
+            package.required_socman_version = "0.0.1"
+            self.assertFalse(node.is_updatable(package))
 
             # should fail if we try to upload a slot2
-            try:
-                package = FirmwarePackage()
-                package.images = images
-                package.config = "slot2"
-                node.check_firmware(package)
-                self.fail()
-            except FirmwareConfigError:
-                pass
+            package = FirmwarePackage()
+            package.images = images
+            package.config = "slot2"
+            self.assertFalse(node.is_updatable(package))
 
     def test_update_firmware(self):
         """ Test node.update_firmware method """

@@ -42,7 +42,7 @@ from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC as BMC
 from tftpy.TftpShared import TftpException
 
-from cxmanage_api import temp_file, ubootenv
+from cxmanage_api import temp_file
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.infodump import get_info_dump
@@ -54,10 +54,10 @@ from cxmanage_api.cx_exceptions import NoIpInfoError, TimeoutError, \
 
 class Node(object):
     """A node is a single instance of an ECME.
-    
+
     >>> from cxmanage_api.node import Node
     >>> node = Node(ip_adress='10.20.1.9', verbose=True)
-        
+
     :param ip_address: The ip_address of the Node.
     :type ip_address: string
     :param username: The login username credential. [Default admin]
@@ -72,7 +72,7 @@ class Node(object):
     :type image: `Image <image.html>`_
     :param ubootenv: UbootEnv  for this node. Default cxmanage_api.UbootEnv
     :type ubootenv: `UbootEnv <ubootenv.html>`_
-    
+
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
@@ -84,7 +84,7 @@ class Node(object):
         if not (bmc): bmc = BMC
         if not (image): image = IMAGE
         if not (ubootenv):ubootenv = UBOOTENV
-            
+
         self.ip_address = ip_address
         self.username = username
         self.password = password
@@ -104,13 +104,13 @@ class Node(object):
 
     def get_macaddrs(self):
         """Return a list of mac addresses for this node.
-        
+
         >>> node.get_macaddrs()
         ['fc:2f:40:3b:ec:40', 'fc:2f:40:3b:ec:41', 'fc:2f:40:3b:ec:42']
 
         :return: MAC Addresses for all interfaces.
         :rtype: list
-        
+
         """
         i = 0
         result = []
@@ -123,7 +123,7 @@ class Node(object):
 
     def get_power(self):
         """Return power status reported by IPMI.
-        
+
         >>> # Powered ON system ...
         >>> node.get_power()
         True
@@ -133,7 +133,7 @@ class Node(object):
 
         :return: The power state of the Node.
         :rtype: boolean
-         
+
         """
         try:
             return self.bmc.get_chassis_status().power_on
@@ -142,19 +142,19 @@ class Node(object):
 
     def set_power(self, mode):
         """Send an IPMI power command to this target.
-        
+
         >>> # To turn the power 'off'
         >>> node.set_power(mode='off')
         >>> # A quick 'get' to see if it took effect ...
         >>> node.get_power()
         False
-        
+
         >>> # To turn the power 'on'
         >>> node.set_power(mode='on')
 
         :param mode: Mode to set the power state to. ('on'/'off')
         :type mode: string
-        
+
         """
         try:
             self.bmc.set_chassis_power(mode=mode)
@@ -163,13 +163,13 @@ class Node(object):
 
     def get_power_policy(self):
         """Return power status reported by IPMI.
-        
+
         >>> node.get_power_policy()
         'always-off'
-        
+
         :return: The Nodes current power policy.
         :rtype: string
-        
+
         """
         try:
             return self.bmc.get_chassis_status().power_restore_policy
@@ -178,7 +178,7 @@ class Node(object):
 
     def set_power_policy(self, state):
         """Set default power state for Linux side.
-        
+
         >>> # Set the state to 'always-on'
         >>> node.set_power_policy(state='always-on')
         >>> # A quick check to make sure our setting took ...
@@ -187,7 +187,7 @@ class Node(object):
 
         :param state: State to set the power policy to.
         :type state: string
-        
+
         """
         try:
             self.bmc.set_chassis_policy(state)
@@ -196,9 +196,9 @@ class Node(object):
 
     def mc_reset(self):
         """Send an IPMI MC reset command to the target.
-        
+
         >>> node.mc_reset()
-        
+
         """
         try:
             result = self.bmc.mc_reset("cold")
@@ -211,25 +211,25 @@ class Node(object):
 
     def get_sensors(self, name=""):
         """Get a list of sensors from this target.
-        
+
         .. note::
             * If no sensor name is specified, ALL sensors will be returned.
-        
+
         >>> node.get_sensors()
-        [<pyipmi.sdr.AnalogSdr object at 0x12d9450>, 
-         <pyipmi.sdr.AnalogSdr object at 0x12d9490>, 
+        [<pyipmi.sdr.AnalogSdr object at 0x12d9450>,
+         <pyipmi.sdr.AnalogSdr object at 0x12d9490>,
          <pyipmi.sdr.AnalogSdr object at 0x12d9510>, ... ]
-         
-        
+
+
         :param name: Name of the sensor you wish to get.
         :type name: string
-        
+
         :return: Sensor information.
         :rtype: list
-        
+
         """
         try:
-            sensors =  [x for x in self.bmc.sdr_list() 
+            sensors =  [x for x in self.bmc.sdr_list()
                         if name.lower() in x.sensor_name.lower()]
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
@@ -270,82 +270,27 @@ class Node(object):
         except IpmiError as error_details:
             raise IpmiError(self._parse_ipmierror(error_details))
 
-    def check_firmware(self, package, partition_arg="INACTIVE", priority=None):
-        """Check if this host is ready for an update.
-        
-        .. note::
-            * Requires an update `FirmwarePackage <firmware_package.html>`_ object.
-                    
-        >>> from cxmanage_api.firmware_package import FirmwarePackage
-        >>> fwp = FirmwarePackage(filename='/path/to/ECX-1000_update-v1.7.1-dirty.tar.gz')
-        >>> node.check_firmware(package=fwp)
-        
-        :param package: The firmware package to deploy.
-        :type package: `FirmwarePackage <firmware_package.html>`_
-        :param partition_arg: Which partition to update to.
-        :type partition_arg: string
-        :param priority: SIMG Header priority value. 
-        :type priority: integer
-        
-        :return: Whether or not the Node needs a firmware update.
-        :rtype: boolean
-        
-        :raises SocmanVersionError: If the socman version is not correct.
-        :raises FirmwareConfigError: If 
-        :raises PriorityIncrementError: If the SIMG Header priority cannot be changed.
-        
-        """
-        info = self.info_basic()
-        fwinfo = self.get_firmware_info()
-        # Check socman version
-        if (package.required_socman_version):
-            soc_version = info.soc_version.lstrip("v")
-            required_version = package.required_socman_version.lstrip("v")
-            if ((package.required_socman_version and 
-                 parse_version(soc_version)) < 
-                 parse_version(required_version)):
-                raise SocmanVersionError(
-                        "Update requires socman version %s (found %s)"
-                        % (required_version, soc_version))
+    def is_updatable(self, package, partition_arg="INACTIVE", priority=None):
+        """ Check this node against the given firmware package to see if we're
+        ready for an update.
 
-        # Check firmware config
-        if ((info.version != "Unknown") and (len(info.version) < 32)):
-            if ((package.config == "default") and ("slot2" in info.version)):
-                raise FirmwareConfigError(
-                "Refusing to upload a \'default\' package to a \'slot2\' host")
-            if ((package.config == "slot2") and (not "slot2" in info.version)):
-                raise FirmwareConfigError(
-                "Refusing to upload a \'slot2\' package to a \'default\' host")
-
-        # Check that the priority can be bumped
-        if (priority == None):
-            image_types = [x.type for x in package.images]
-            for partition in fwinfo:
-                if (partition.type.split()[1].strip("()") in image_types and
-                    int(partition.flags, 16) & 2 == 0):
-                    priority = max(priority, int(partition.priority, 16) + 1)
-            if (priority > 0xFFFF):
-                raise PriorityIncrementError(
-                                "Unable to increment SIMG priority, too high")
-
-        # Check partitions
-        for image in package.images:
-            if ((image.type == "UBOOTENV") or (partition_arg == "BOTH")):
-                self._get_partition(fwinfo, image.type, "FIRST")
-                self._get_partition(fwinfo, image.type, "SECOND")
-            else:
-                self._get_partition(fwinfo, image.type, partition_arg)
-        return True
+        Returns true or false."""
+        try:
+            self._check_firmware(package, partition_arg, priority)
+            return True
+        except (SocmanVersionError, FirmwareConfigError,
+                PriorityIncrementError, NoPartitionError):
+            return False
 
     def update_firmware(self, tftp, package, partition_arg="INACTIVE",
             priority=None):
         """ Update firmware on this target.
-        
+
         .. note::
             * Requires an Internal or External TFTP server.
             * Fabric objects usually provide this mechanism for Nodes.
             * Requires an update `FirmwarePackage <firmware_package.html>`_ object.
-        
+
         >>> from cxmanage_api.tftp import InternalTftp
         >>> from cxmanage_api.firmware_package import FirmwarePackage
         >>> i_tftp = InternalTftp()
@@ -359,7 +304,7 @@ class Node(object):
         :type package: `FirmwarePackage <firmware_package.html>`_
         :param partition_arg: Partition to upgrade to.
         :type partition_arg: string
-        
+
         :raises PriorityIncrementError: If the SIMG Header priority cannot be changed.
 
         >>> node.config_reset(tftp=i_tftp)
@@ -371,16 +316,7 @@ class Node(object):
 
         # Get the new priority
         if priority == None:
-            image_types = [x.type for x in package.images]
-            for partition in fwinfo:
-                # Make sure this partition is one of the types we're updating
-                # and that the partition is flagged as "active"
-                if (partition.type.split()[1].strip("()") in image_types and
-                        int(partition.flags, 16) & 2 == 0):
-                    priority = max(priority, int(partition.priority, 16) + 1)
-            if priority > 0xFFFF:
-                raise PriorityIncrementError(
-                                "Unable to increment SIMG priority, too high")
+            priority = self._get_next_priority(fwinfo, package)
 
         for image in package.images:
             if image.type == "UBOOTENV":
@@ -431,20 +367,20 @@ class Node(object):
 
     def config_reset(self, tftp):
         """ Reset configuration to factory defaults.
-        
+
         .. note::
             * Requires an Internal or External TFTP server.
             * Fabric objects usually provide this mechanism for Nodes.
-        
+
         >>> from cxmanage_api.tftp import InternalTftp
         >>> i_tftp = InternalTftp()
         >>> node.config_reset(tftp=i_tftp)
 
         :param tftp: TFTP Server to tx/rx commands/repsonses.
         :type tftp: `Tftp <tftp.html>`_
-        
+
         :raises IpmiError: If errors in the command occur with BMC communication.
-        
+
         """
         try:
             # Reset CDB
@@ -465,20 +401,20 @@ class Node(object):
 
     def set_boot_order(self, tftp, boot_args):
         """Sets boot-able device order.
-        
+
         .. note::
             * Requires an Internal or External TFTP server.
             * Fabric objects usually provide this mechanism for Nodes.
-        
+
         >>> from cxmanage_api.tftp import InternalTftp
         >>> i_tftp = InternalTftp()
         >>> node.set_boot_order(tftp=i_tftp, boot_args=['pxe', 'disk'])
-        
+
         :param tftp: TFTP Server to tx/rx commands/repsonses.
         :type tftp: `Tftp <tftp.html>`_
         :param boot_args: Arguments list to pass on to the uboot environment.
         :type boot_args: list
-        
+
         """
         fwinfo = self.get_firmware_info()
         first_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
@@ -760,6 +696,80 @@ class Node(object):
 
         if result.status != "Complete":
             raise TransferFailure("Node reported transfer failure")
+
+    def _check_firmware(self, package, partition_arg="INACTIVE", priority=None):
+        """Check if this host is ready for an update.
+
+        .. note::
+            * Requires an update `FirmwarePackage <firmware_package.html>`_ object.
+
+        >>> from cxmanage_api.firmware_package import FirmwarePackage
+        >>> fwp = FirmwarePackage(filename='/path/to/ECX-1000_update-v1.7.1-dirty.tar.gz')
+        >>> node._check_firmware(package=fwp)
+
+        :param package: The firmware package to deploy.
+        :type package: `FirmwarePackage <firmware_package.html>`_
+        :param partition_arg: Which partition to update to.
+        :type partition_arg: string
+        :param priority: SIMG Header priority value.
+        :type priority: integer
+
+        :return: Whether or not the Node needs a firmware update.
+        :rtype: boolean
+
+        :raises SocmanVersionError: If the socman version is not correct.
+        :raises FirmwareConfigError: If
+        :raises PriorityIncrementError: If the SIMG Header priority cannot be changed.
+
+        """
+        info = self.info_basic()
+        fwinfo = self.get_firmware_info()
+        # Check socman version
+        if (package.required_socman_version):
+            soc_version = info.soc_version.lstrip("v")
+            required_version = package.required_socman_version.lstrip("v")
+            if ((package.required_socman_version and
+                 parse_version(soc_version)) <
+                 parse_version(required_version)):
+                raise SocmanVersionError(
+                        "Update requires socman version %s (found %s)"
+                        % (required_version, soc_version))
+
+        # Check firmware config
+        if ((info.version != "Unknown") and (len(info.version) < 32)):
+            if ((package.config == "default") and ("slot2" in info.version)):
+                raise FirmwareConfigError(
+                "Refusing to upload a \'default\' package to a \'slot2\' host")
+            if ((package.config == "slot2") and (not "slot2" in info.version)):
+                raise FirmwareConfigError(
+                "Refusing to upload a \'slot2\' package to a \'default\' host")
+
+        # Check that the priority can be bumped
+        if priority == None:
+            priority = self._get_next_priority(fwinfo, package)
+
+        # Check partitions
+        for image in package.images:
+            if ((image.type == "UBOOTENV") or (partition_arg == "BOTH")):
+                self._get_partition(fwinfo, image.type, "FIRST")
+                self._get_partition(fwinfo, image.type, "SECOND")
+            else:
+                self._get_partition(fwinfo, image.type, partition_arg)
+        return True
+
+    def _get_next_priority(self, fwinfo, package):
+        """ Get the next priority """
+        priority = None
+        image_types = [x.type for x in package.images]
+        for partition in fwinfo:
+            partition_active = int(partition.flags, 16) & 2
+            partition_type = partition.type.split()[1].strip("()")
+            if not partition_active and partition_type in image_types:
+                priority = max(priority, int(partition.priority, 16) + 1)
+        if priority > 0xFFFF:
+            raise PriorityIncrementError(
+                            "Unable to increment SIMG priority, too high")
+        return priority
 
     def _parse_ipmierror(self, error_details):
         """Parse a meaningful message from an IpmiError """
