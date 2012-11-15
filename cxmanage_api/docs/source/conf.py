@@ -12,6 +12,7 @@
 # serve to show the default.
 
 import sys, os
+import cloud_sptheme
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -24,11 +25,17 @@ sys.path.insert(0, os.path.abspath('..'))
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
+todo_include_todos = True
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.todo', 
-              'sphinx.ext.autosummary']
-todo_include_todos = True
+sphinx_extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.todo', 
+                     'sphinx.ext.autosummary']
+cloud_sptheme_extensions = ['cloud_sptheme.ext.index_styling', 
+                            'cloud_sptheme.ext.relbar_toc',
+                            'cloud_sptheme.ext.autodoc_sections',
+                            'cloud_sptheme.ext.escaped_samp_literals',
+                            'cloud_sptheme.ext.table_styling']
+extensions = sphinx_extensions + cloud_sptheme_extensions
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -94,7 +101,6 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-import cloud_sptheme as csp
 html_theme = 'cloud'
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -103,7 +109,7 @@ html_theme = 'cloud'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = [csp.get_theme_dir()]
+html_theme_path = [cloud_sptheme.get_theme_dir()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".

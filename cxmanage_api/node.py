@@ -393,7 +393,8 @@ class Node(object):
         :type tftp: `Tftp <tftp.html>`_
 
         :raises IpmiError: If errors in the command occur with BMC communication.
-
+        :raises Exception: If there are errors within the command response.
+        
         """
         try:
             # Reset CDB

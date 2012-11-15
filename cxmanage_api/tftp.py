@@ -41,24 +41,27 @@ import traceback
 from tftpy import TftpClient, TftpServer, setLogLevel
 from threading import Thread
 from tftpy.TftpShared import TftpException
-
 from cxmanage_api import temp_dir
 
 
 class InternalTftp(object):
-    """Definition of an Internal TFTP server."""
+    """Internally serves files using TFTP.
+    
+    >>> # Typical instantiation ...
+    >>> from cxmanage_api.tftp import InternalTftp
+    >>> i_tftp = InternalTftp()
+    
+    :param ip_address: Ip address for the Internal TFTP server to use.
+    :type ip_address: string
+    :param port: Port for the internal TFTP server.
+    :type port: integer
+    :param verbose: Flag to turn on additional messaging.
+    :type verbose: boolean
+    
+    """
 
     def __init__(self, ip_address=None, port=0, verbose=True):
-        """Creates an internal TFTP server to facilitate reading command
-        responses.
-
-        :param ip_address: Ip address of the Internal TFTP Server.
-        :type ip_address: string
-        :param port: Port for the internal TFTP Server
-        :type port: integer
-        :param verbose: Flag to turn on additional messaging.
-        :type verbose: boolean
-        """
+        """Default constructor for the InternalTftp class."""
         self.tftp_dir = temp_dir()
         self.verbose = verbose
 

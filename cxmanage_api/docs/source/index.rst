@@ -146,6 +146,8 @@ clarity on the internals.
 .. toctree::
    
    Node <node>
+   Fabric <fabric>
+   Internal/External TFTP <tftp>
     
     
 PyUnit Test Integration

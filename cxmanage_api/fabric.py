@@ -35,35 +35,36 @@ from cxmanage_api.node import Node as NODE
 
 class Fabric(object):
     """ The Fabric class provides management of multiple nodes.
-    Fabrics have the ability to send commands to:
-        -> Any particular node.
-        -> All nodes.
-
-    To create a Fabric object, only a single node (ideally node 0) is needed.
-    The rest of the fabric can optionally be derived via node 0.
-
-    Note:
-        * Constructing Fabric objects without a valid node 0 will mean that all
-          Fabric Management commands will NOT work.
+    
+    :param ip_address: The ip_address of the Node.
+    :type ip_address: string
+    :param username: The login username credential. [Default admin]
+    :type username: string
+    :param password: The login password credential. [Default admin]
+    :type password: string
+    :param max_threads: Maximum number of threads to run at a time.
+    :type max_threads: integer
+    :param command_delay: Seconds to wait before sending multi-threaded commands.
+    :type command_delay: integer
+    :param verbose: Flag to turn on verbose output (cmd/response).
+    :type verbose: boolean
+    :param node: Node type, for dependency integration.
+    :type node: `Node <node.html>`_      
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
             tftp=None, max_threads=1, command_delay=0, verbose=False,
-            node=NODE):
-        """Default constructor for the Fabric class.
-
-        @param max_threads: Maximum number of threads to run at a time.
-        @type max_threads: integer
-        """
-        if not tftp:
-            tftp = InternalTftp()
-
+            node=None):
+        """Default constructor for the Fabric class."""
         self.nodes = {}
         self._tftp = tftp
         self.max_threads = max_threads
         self.command_delay = command_delay
         self.verbose = verbose
         self.node = node
+        
+        if not (node): node = NODE
+        if not self.tftp: self.tftp = InternalTftp()
 
         self._discover_nodes(ip_address=ip_address, username=username,
                              password=password)
