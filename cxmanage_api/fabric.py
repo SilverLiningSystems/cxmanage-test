@@ -35,8 +35,11 @@ from cxmanage_api.node import Node as NODE
 
 class Fabric(object):
     """ The Fabric class provides management of multiple nodes.
-    
-    :param ip_address: The ip_address of the Node.
+
+    >>> from cxmanage_api.fabric import Fabric
+    >>> f = Fabric('10.20.1.9')
+
+    :param ip_address: The ip_address of ANY known node for the Fabric.
     :type ip_address: string
     :param username: The login username credential. [Default admin]
     :type username: string
@@ -49,7 +52,7 @@ class Fabric(object):
     :param verbose: Flag to turn on verbose output (cmd/response).
     :type verbose: boolean
     :param node: Node type, for dependency integration.
-    :type node: `Node <node.html>`_      
+    :type node: `Node <node.html>`_
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
@@ -62,9 +65,12 @@ class Fabric(object):
         self.command_delay = command_delay
         self.verbose = verbose
         self.node = node
-        
-        if not (node): node = NODE
-        if not self.tftp: self.tftp = InternalTftp()
+
+        if (not self.node):
+            self.node = NODE
+
+        if (not self.tftp):
+            self.tftp = InternalTftp()
 
         self._discover_nodes(ip_address=ip_address, username=username,
                              password=password)
@@ -77,12 +83,20 @@ class Fabric(object):
 
     @property
     def tftp(self):
-        """ Get the tftp server """
+        """Returns the tftp server for this Fabric.
+
+        >>> f = Fabric('10.20.1.9')
+        >>> f.tftp
+        <cxmanage_api.tftp.InternalTftp object at 0x7f5ebbd20b10>
+
+        :return: The tftfp server.
+        :rtype: `Tftp <tftp.html>`_
+
+        """
         return self._tftp
 
     @tftp.setter
     def tftp(self, value):
-        """ Set the tftp server in all the nodes """
         self._tftp = value
         for node in self.nodes.values():
             node.tftp = value
@@ -170,7 +184,6 @@ class Fabric(object):
         node = self.node(ip_address=ip_address, username=username,
                          password=password, tftp=self.tftp,
                          verbose=self.verbose)
-
         ipinfo = node.get_fabric_ipinfo()
         for node_id, node_address in ipinfo.iteritems():
             self.nodes[node_id] = self.node(ip_address=node_address,
@@ -189,3 +202,5 @@ class Fabric(object):
         else:
             command.join()
             return command.get_results()
+
+# End of file: ./fabric.py

@@ -46,18 +46,18 @@ from cxmanage_api import temp_dir
 
 class InternalTftp(object):
     """Internally serves files using TFTP.
-    
+
     >>> # Typical instantiation ...
     >>> from cxmanage_api.tftp import InternalTftp
     >>> i_tftp = InternalTftp()
-    
+
     :param ip_address: Ip address for the Internal TFTP server to use.
     :type ip_address: string
     :param port: Port for the internal TFTP server.
     :type port: integer
     :param verbose: Flag to turn on additional messaging.
     :type verbose: boolean
-    
+
     """
 
     def __init__(self, ip_address=None, port=0, verbose=True):
@@ -203,7 +203,7 @@ class ExternalTftp(object):
 
     def get_address(self, relative_host=None):
         """Return the ip address of the ExternalTftp server."""
-        del relative_host # Needed only for function signature.
+        del relative_host  # Needed only for function signature.
         return self.ip_address
 
     def get_port(self):
