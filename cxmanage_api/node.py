@@ -591,10 +591,6 @@ class Node(object):
             except (TftpException, IOError):
                 pass
 
-        # Ensure file is present
-        if (not os.path.exists(filename)):
-            raise IOError("Failed to retrieve IP info")
-
         # Parse addresses from ipinfo file
         results = {}
         for line in open(filename):
@@ -607,7 +603,7 @@ class Node(object):
 
         # Make sure we found something
         if (not results):
-            raise NoIpInfoError("Failed to retrieve IP info")
+            raise NoIpInfoError("Node failed to reach TFTP server")
         return results
 
 ############################### Private methods ###############################
@@ -728,10 +724,10 @@ class Node(object):
             time.sleep(1)
             result = self.bmc.get_firmware_status(handle)
             if (not hasattr(result, "status")):
-                raise AttributeError("Failed to retrieve transfer info")
+                raise AttributeError("Failed to retrieve firmware transfer status")
 
         if (result.status != "Complete"):
-            raise TransferFailure("Node reported transfer failure")
+            raise TransferFailure("Node reported TFTP transfer failure")
 
     def _check_firmware(self, package, partition_arg="INACTIVE", priority=None):
         """Check if this host is ready for an update."""
