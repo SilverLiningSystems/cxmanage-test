@@ -110,13 +110,20 @@ class Node(object):
 
     @property
     def tftp_address(self):
+        """Returns the tftp_address (ip:port) that this node is using.
+
+        >>> node.tftp_address
+        '10.20.2.172:35123'
+
+        :returns: The tftp address and port that this node is using.
+        :rtype: string
+
+        """
         return '%s:%s' % (self.tftp.get_address(relative_host=self.ip_address),
                 self.tftp.get_port())
 
-################################ Public methods ###############################
-
     def get_mac_addresses(self):
-        """Returns a list of MAC addresses for this node.
+        """Gets a list of MAC addresses for this node.
 
         >>> node.get_macaddrs()
         ['fc:2f:40:3b:ec:40', 'fc:2f:40:3b:ec:41', 'fc:2f:40:3b:ec:42']
@@ -135,7 +142,7 @@ class Node(object):
         return result
 
     def get_power(self):
-        """Return power status reported by IPMI.
+        """Returns the power status for this node.
 
         >>> # Powered ON system ...
         >>> node.get_power()
@@ -299,10 +306,19 @@ class Node(object):
             raise IpmiError(self._parse_ipmierror(error_details))
 
     def is_updatable(self, package, partition_arg="INACTIVE", priority=None):
-        """ Check this node against the given firmware package to see if we're
-        ready for an update.
+        """Checks to see if the node can be updated with this firmware package.
 
-        Returns true or false."""
+        >>> from cxmanage_api.firmware_package import FirmwarePackage
+        >>> fwpkg = FirmwarePackage('ECX-1000_update-v1.7.1-dirty.tar.gz')
+        >>> fwpkg.version
+        'ECX-1000-v1.7.1-dirty'
+        >>> node.is_updatable(fwpkg)
+        True
+
+        :return: Whether the node is updatable or not.
+        :rtype: boolean
+
+        """
         try:
             self._check_firmware(package, partition_arg, priority)
             return True
@@ -311,34 +327,23 @@ class Node(object):
             return False
 
     def update_firmware(self, package, partition_arg="INACTIVE",
-            priority=None):
+                          priority=None):
         """ Update firmware on this target.
 
-        .. note::
-            * Requires an Internal or External TFTP server.
-            * Fabric objects usually provide this mechanism for Nodes.
-            * Requires an update `FirmwarePackage <firmware_package.html>`_ object.
-
-        >>> from cxmanage_api.tftp import InternalTftp
         >>> from cxmanage_api.firmware_package import FirmwarePackage
-        >>> i_tftp = InternalTftp()
-        >>> fw_path = '/path/to/ECX-1000_update-v1.7.1-dirty.tar.gz'
-        >>> fw_pkg = FirmwarePackage(filename=fw_path)
-        >>> node.update_firmware(tftp=i_tftp, package=fw_pkg)
+        >>> fwpkg = FirmwarePackage('ECX-1000_update-v1.7.1-dirty.tar.gz')
+        >>> fwpkg.version
+        'ECX-1000-v1.7.1-dirty'
+        >>> node.update_firmware(package=fwpkg)
 
-        :param tftp: The internal/external TFTP server to use for data xfer.
-        :type tftp: `Tftp <tftp.html>`_
         :param  package: Firmware package to deploy.
         :type package: `FirmwarePackage <firmware_package.html>`_
         :param partition_arg: Partition to upgrade to.
         :type partition_arg: string
 
-        :raises PriorityIncrementError: If the SIMG Header priority cannot be changed.
+        :raises PriorityIncrementError: If the SIMG Header priority cannot be
+                                        changed.
 
-        >>> node.config_reset(tftp=i_tftp)
-
-        :param tftp: TFTP Server to tx/rx commands/repsonses.
-        :type tftp: `Tftp <tftp.html>`_
         """
         fwinfo = self.get_firmware_info()
 
@@ -394,7 +399,7 @@ class Node(object):
             self.bmc.set_firmware_version(package.version)
 
     def config_reset(self):
-        """ Reset configuration to factory defaults.
+        """Resets configuration to factory defaults.
 
         >>> node.config_reset()
 
@@ -420,7 +425,7 @@ class Node(object):
             raise IpmiError(self._parse_ipmierror(e))
 
     def set_boot_order(self, boot_args):
-        """Sets boot-able device order.
+        """Sets boot-able device order for this node.
 
         >>> node.set_boot_order(boot_args=['pxe', 'disk'])
 
@@ -562,6 +567,9 @@ class Node(object):
     def get_fabric_ipinfo(self):
         """Gets what ip information THIS node knows about the Fabric.
 
+        >>> node.get_fabric_ipinfo()
+        {0: '10.20.1.9', 1: '10.20.2.131', 2: '10.20.0.220', 3: '10.20.2.5'}
+
         :return: Returns a map of node_ids->ip_addresses.
         :rtype: dictionary
 
@@ -606,8 +614,6 @@ class Node(object):
         if (not results):
             raise NoIpInfoError("Node failed to reach TFTP server")
         return results
-
-############################### Private methods ###############################
 
     def _get_partition(self, fwinfo, image_type, partition_arg):
         """Get a partition for this image type based on the argument."""
@@ -792,4 +798,4 @@ class Node(object):
             return 'IPMITool encountered an error.'
 
 
-# End of file: node.py
+# End of file: ./node.py

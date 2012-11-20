@@ -30,22 +30,21 @@ Requirements
    
    **Windows** 7 (or greater)
 
-.. warning::
-    * Windows requires `Cygwin <http://cygwin.com>`_
-
 ``Python``
     Python version 2.6
-
+    
 .. note::
+    * Windows requires `Cygwin <http://cygwin.com>`_
     * For Cygwin compatibility, Python version 2.6 is adhered to.
+
 
 Installation Steps
 ------------------
 ``Linux``
-    `Instructions <https://wiki.calxeda.com/display/DOCSUG/Installing+cxmanage+%28Linux%29>`_
+    `Calxeda Linux Official Install Instructions <https://wiki.calxeda.com/display/DOCSUG/Installing+cxmanage+%28Linux%29>`_
 
 ``Windows``
-    `Instructions <https://wiki.calxeda.com/display/DOCSUG/Installing+cxmanage+and+IPMItool+%28Windows%29>`_
+    `Calxeda Windows Official Install Instructions <https://wiki.calxeda.com/display/DOCSUG/Installing+cxmanage+and+IPMItool+%28Windows%29>`_
 
 Usage
 =====
@@ -58,6 +57,12 @@ PYTHONPATH) you can simply declare and use Calxeda objects.
 The following is just a small excerpt of how to use the Cxmanage Python API.
 More extensive examples and sample code can be found in the development 
 tutorials and Getting Started guide. 
+
+
+.. note::
+    * If you're using a Virtual Environment, be sure to:
+        workon <VirtualEnvironment Name>
+        
 
 Example code::
     
@@ -144,10 +149,10 @@ clarity on the internals.
 ``API Docs``
 
 .. toctree::
-   
-   Node <node>
-   Fabric <fabric>
-   Internal/External TFTP <tftp>
+
+    Node <node>
+    Fabric <fabric>
+    Internal/External TFTP <tftp>
     
     
 PyUnit Test Integration
