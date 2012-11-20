@@ -59,21 +59,22 @@ class Fabric(object):
             tftp=None, max_threads=1, command_delay=0, verbose=False,
             node=None):
         """Default constructor for the Fabric class."""
-        self.nodes = {}
         self._tftp = tftp
         self.max_threads = max_threads
         self.command_delay = command_delay
         self.verbose = verbose
         self.node = node
+        self.ip_address = ip_address
+        self.username = username
+        self.password = password
+
+        self._nodes = {}
 
         if (not self.node):
             self.node = NODE
 
         if (not self.tftp):
             self.tftp = InternalTftp()
-
-        self._discover_nodes(ip_address=ip_address, username=username,
-                             password=password)
 
     def __eq__(self, other):
         return isinstance(other, Fabric) and self.nodes == other.nodes
@@ -98,6 +99,10 @@ class Fabric(object):
     @tftp.setter
     def tftp(self, value):
         self._tftp = value
+
+        if not self._nodes:
+            return
+
         for node in self.nodes.values():
             node.tftp = value
 
@@ -176,6 +181,13 @@ class Fabric(object):
         """ Run an arbitrary IPMItool command on all nodes """
         return self._run_command(asynchronous, "ipmitool_command",
                 ipmitool_args)
+    @property
+    def nodes(self):
+        """List of nodes in the fabric - lazily initialized"""
+        if not self._nodes:
+            self._discover_nodes(self.ip_address)
+
+        return self._nodes
 
 ############################### Private methods ###############################
 
@@ -186,7 +198,7 @@ class Fabric(object):
                          verbose=self.verbose)
         ipinfo = node.get_fabric_ipinfo()
         for node_id, node_address in ipinfo.iteritems():
-            self.nodes[node_id] = self.node(ip_address=node_address,
+            self._nodes[node_id] = self.node(ip_address=node_address,
                                             username=username,
                                             password=password,
                                             tftp=self.tftp,

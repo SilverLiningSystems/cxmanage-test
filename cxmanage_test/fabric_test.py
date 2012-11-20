@@ -48,7 +48,7 @@ class FabricTest(unittest.TestCase):
         self.fabric = Fabric("192.168.100.1", max_threads=32,
                 node=DummyNode)
         self.nodes = [DummyNode(x) for x in ADDRESSES]
-        self.fabric.nodes = dict((i, self.nodes[i])
+        self.fabric._nodes = dict((i, self.nodes[i])
                 for i in xrange(NUM_NODES))
 
     def test_tftp(self):
@@ -69,7 +69,7 @@ class FabricTest(unittest.TestCase):
         """Test that we delay for at least command_delay"""
         delay = random.randint(1, 5)
         self.fabric.command_delay = delay
-        self.fabric.nodes = {0: self.fabric.nodes[0]}
+        self.fabric._nodes = {0: self.fabric.nodes[0]}
         start = time.time()
         self.fabric.info_basic()
         finish = time.time()
