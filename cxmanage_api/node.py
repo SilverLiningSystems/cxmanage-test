@@ -582,7 +582,8 @@ class Node(object):
             raise Exception(result.error)
 
         # Wait for file
-        for a in range(10):
+        deadline = time.time() + 10
+        while time.time() < deadline:
             try:
                 time.sleep(1)
                 self.tftp.get_file(src=basename, dest=filename)

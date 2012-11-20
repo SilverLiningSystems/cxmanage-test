@@ -229,6 +229,13 @@ class ExternalTftp(object):
                 traceback.format_exc()
             raise
 
+        # client.download can return a TypeError. Seems like a tftpy bug.
+        # Let's raise something else.
+        except TypeError:
+            if (self.verbose):
+                traceback.format_exc()
+            raise TftpException("Failed download file from TFTP server")
+
     def put_file(self, src, dest):
         """ Upload a file to the tftp server """
         try:
@@ -241,6 +248,13 @@ class ExternalTftp(object):
             if (self.verbose):
                 traceback.format_exc()
             raise
+
+        # client.upload can return a TypeError. Seems like a tftpy bug.
+        # Let's raise something else.
+        except TypeError:
+            if (self.verbose):
+                traceback.format_exc()
+            raise TftpException("Failed to upload file to TFTP server")
 
 
 # End of file: ./tftp.py
