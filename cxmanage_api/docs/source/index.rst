@@ -152,8 +152,15 @@ clarity on the internals.
 
     Node <node>
     Fabric <fabric>
+    Command <command>
+    CRC32 <crc32>
+    Cxmanage API Exceptions <cx_exceptions>
+    Firmware Package <firmware_package>
+    Image <image>
+    Info Dump <infodump>
     Internal/External TFTP <tftp>
-    
+    SIMG <simg>
+    U-Boot Environment <ubootenv>
     
 PyUnit Test Integration
 -----------------------

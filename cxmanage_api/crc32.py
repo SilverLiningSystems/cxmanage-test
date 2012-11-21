@@ -100,9 +100,23 @@ TABLE = [0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
         0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d]
 
 def get_crc32(string, crc=0):
-    """ Compute crc32 value of the given string """
+    """Computes the crc32 value of the given string.
+
+    >> get_crc32(string='Foo Bar Baz')
+    3901333286
+    >>> get_crc32(string='Foo Bar Baz', crc=1)
+    688341222
+
+    :param string: The string to calculate the crc32 for.
+    :type string: string
+    :param crc: The XOR offset.
+    :type crc: integer
+
+    """
     for char in string:
         byte = ord(char)
         crc = TABLE[(crc ^ byte) & 0xff] ^ (crc >> 8)
-
     return crc
+
+
+# End of file: ./crc32.py

@@ -27,13 +27,7 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-"""Cxmanage Python API: Command, CommandWorker
 
-:requires: time
-:requires: threading
-:requires: cxmanage_api.cx_exceptions
-
-"""
 
 from time import sleep
 from threading import Thread, Lock
@@ -41,27 +35,33 @@ from cxmanage_api.cx_exceptions import CommandFailedError
 
 
 class CommandWorker(Thread):
-    """A worker thread for a command.
+    """A worker thread for a `Command <command.html>`_.
 
-    A worker will obtain nodes from the pool and run the named method on them
-    once started (i.e. start() is called).
-    The thread terminates once there are no nodes remaining.
+    A CommandWorker will obtain nodes from the pool and run the named method on
+    them once started. The thread terminates once there are no nodes remaining.
+
+    >>> from cxmanage_api.command import CommandWorker
+    >>> cw = CommandWorker(command=cmd)
+
+    :param command: The command to run.
+    :type command: Command
+
     """
 
     def __init__(self, command):
-        """Default constructor for the CommandWorker class.
-
-        :param command: The command to run.
-        :type command: Command
-        """
-        Thread.__init__(self)
+        """Default constructor for the CommandWorker class."""
+        super(CommandWorker, self).__init__()
         self.daemon = True
         self.command = command
         self.results = {}
         self.errors = {}
 
     def run(self):
-        """Runs the named method, stores results/errors, then terminates."""
+        """Runs the named method, stores results/errors, then terminates.
+
+        >>> cw.run()
+
+        """
         try:
             while (True):
                 key, node = self.command._get_next_node()
@@ -70,49 +70,46 @@ class CommandWorker(Thread):
                     method = getattr(node, self.command._name)
                     result = method(*self.command._args)
                     self.results[key] = result
-
                 except Exception as e:
                     self.errors[key] = e
-
         except StopIteration:
             pass
 
 
 class Command:
-    """Command objects are containers/managers of multi-threaded CommandWorkers
-    that execute commands in parallel on a node(s) & fabric(s).
+    """Commands are containers/managers of multi-threaded CommandWorkers.
 
     .. note::
-        * They are designed to have an interface similar to that of a thread.
-          but are not threads themselves. The CommandWorkers are the threads.
-        * start(), run(), join(), is_alive()
+        * Commands are designed to have an interface similar to a thread,
+          but they are not threads. The CommandWorkers are the actual threads.
+
+    >>> # Create a list of Nodes ...
+    >>> from cxmanage_api.node import Node
+    >>> n1 = Node('10.20.1.9')
+    >>> n2 = Node('10.20.2.131')
+    >>> nodes = [n1, n2]
+    >>> #
+    >>> # Typical instantiation ...
+    >>> # (this example gets the mac addresses which takes no arguments)
+    >>> #
+    >>> from cxmanage_api.command import Command
+    >>> cmd = Command(nodes=nodes, name='get_mac_addresses', args=[])
 
     :param nodes: Nodes to execute commands on.
-    :type nodes: Node
+    :type nodes: list
     :param name: Named command to run.
     :type name: string
     :param args: Arguments to pass on to the command.
     :type args: list
-    :param delay: Time to wait before issuing the next command. Default=0
+    :param delay: Time to wait before issuing the next command.
     :type delay: integer
     :param max_threads: Maximum number of threads to spawn at a time.
     :type max_threads: integer
+
     """
 
     def __init__(self, nodes, name, args, delay=0, max_threads=1):
-        """Default constructor for the Command class.
-
-        :param nodes: Nodes to execute commands on.
-        :type nodes: Node
-        :param name: Named command to run.
-        :type name: string
-        :param args: Arguments to pass on to the command.
-        :type args: list
-        :param delay: Time to wait before issuing the next command. Default=0
-        :type delay: integer
-        :param max_threads: Maximum number of threads to spawn at a time.
-        :type max_threads: integer
-        """
+        """Default constructor for the Command class."""
         self._lock = Lock()
 
         try:
@@ -129,30 +126,53 @@ class Command:
         self._workers = [CommandWorker(self) for i in range(num_threads)]
 
     def start(self):
-        """Starts the command."""
+        """Starts the command.
+
+        >>> cmd.start()
+
+        """
         for worker in self._workers:
             worker.start()
 
     def join(self):
-        """Waits for the command to finish."""
+        """Waits for the command to finish.
+
+        >>> cmd.join()
+
+        """
         for worker in self._workers:
             worker.join()
 
     def is_alive(self):
         """Tests to see if the command is alive.
 
+        >>> # Command is still in progress ... (i.e. has nodes still running it)
+        >>> cmd.is_alive()
+        True
+        >>> # Command has completed. (or failed)
+        >>> cmd.is_alive()
+        False
+
         :return: Whether or not the command is alive.
         :rtype: boolean
+
         """
         return any([x.is_alive() for x in self._workers])
 
     def get_results(self):
         """Gets the command results.
 
-        :raises: CommandFailedError
+        >>> cmd.get_results()
+        {<cxmanage_api.node.Node object at 0x7f8a99940cd0>:
+            ['fc:2f:40:3b:ec:40', 'fc:2f:40:3b:ec:41', 'fc:2f:40:3b:ec:42'],
+         <cxmanage_api.node.Node object at 0x7f8a99237a90>:
+            ['fc:2f:40:91:dc:40', 'fc:2f:40:91:dc:41', 'fc:2f:40:91:dc:42']}
 
         :return: Results of this commands.
         :rtype: dictionary
+
+        :raises CommandFailedError: If The command results contains ANY errors.
+
         """
         results, errors = {}, {}
         for worker in self._workers:
@@ -163,24 +183,27 @@ class Command:
         return results
 
     def get_status(self):
-        """ Get the status of this command.
+        """Gets the status of this command.
+
+        >>> status = cmd.get_status()
+        >>> status.successes
+        2
+        >>> status.errors
+        0
+        >>> status.nodes_left
+        0
 
         :return: The commands status.
         :rtype: CommandStatus
+
         """
+
+
         class CommandStatus:
             """Container for a commands status."""
 
             def __init__(self, successes, errors, nodes_left):
-                """Default constructor for the CommandStatus class.
-
-                :param successes: The successes/ip node map for this command.
-                :type successes: dictionary
-                :param errors: The errors/ip node map for this command.
-                :type errors: dictionary
-                :param nodes_left: The number of nodes left to execute the command.
-                :type nodes_left: integer
-                """
+                """Default constructor for the CommandStatus class."""
                 self.successes = successes
                 self.errors = errors
                 self.nodes_left = nodes_left

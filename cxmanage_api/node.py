@@ -466,6 +466,7 @@ class Node(object):
         >>> info = node.info_basic()
         >>> info
         <pyipmi.info.InfoBasicResult object at 0x2019b90>
+        >>> # Some useful information ...
         >>> info.a9boot_version
         'v2012.10.16'
         >>> info.cdb_version
