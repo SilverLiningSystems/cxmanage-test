@@ -33,21 +33,30 @@ import struct
 
 from cxmanage_api.simg import has_simg, get_simg_contents
 from cxmanage_api.crc32 import get_crc32
-from cxmanage_api.cx_exceptions import NoBootCmdDefaultError 
+from cxmanage_api.cx_exceptions import NoBootCmdDefaultError
 from cxmanage_api.cx_exceptions import UnknownBootCmdError
 
 
 ENVIRONMENT_SIZE = 8192
 
+
 class UbootEnv:
-    """ A uboot environment consisting of variables and their assignments. """
+    """Represents a U-Boot Environment.
+
+    >>> from cxmanage_api.ubootenv import UbootEnv
+    >>> uboot = UbootEnv()
+
+    :param contents: UBootEnvironment contnents.
+    :type contents: string
+
+    """
 
     def __init__(self, contents=None):
-        """ Load a uboot environment from a binary string """
+        """Default constructor for the UbootEnv class."""
         self.variables = {}
 
-        if contents != None:
-            if has_simg(contents):
+        if (contents != None):
+            if (has_simg(contents)):
                 contents = get_simg_contents(contents)
 
             contents = contents.rstrip("%c%c" % (chr(0), chr(255)))[4:]
@@ -57,27 +66,36 @@ class UbootEnv:
                 self.variables[part[0]] = part[2]
 
     def set_boot_order(self, boot_args):
-        """ Set the boot order specified in the uboot environment.
+        """Sets the boot order specified in the uboot environment.
 
-        Here are the valid boot arguments:
+        >>> uboot.set_boot_order(boot_args=['disk', 'pxe'])
 
-        pxe         boot from pxe server
-        disk        boot from default sata device
-        diskX       boot from sata device X
-        diskX:Y     boot from sata device X, partition Y
-        sd          boot from SD
-        retry       retry last boot device indefinitely
-        reset       reset A9
+        .. note::
+            * Valid Args:
+                             pxe     - boot from pxe server\n
+                             disk    - boot from default sata device\n
+                             diskX   - boot from sata device X\n
+                             diskX:Y - boot from sata device X, partition Y\n
+                             sd      - boot from SD\n
+                             retry   - retry last boot device indefinitely\n
+                             reset   - reset A9\n
+
+        :param boot_args: Boot args (boot order). A list of strings.
+        :type boot_args: list
+
+        :raises ValueError: If an invalid boot device is specified.
+        :raises ValueError: If 'retry' and 'reset' args are used together.
+
         """
         commands = []
         retry = False
         reset = False
         for arg in boot_args:
-            if arg == "pxe":
+            if (arg == "pxe"):
                 commands.append("run bootcmd_pxe")
-            elif arg == "disk":
+            elif (arg == "disk"):
                 commands.append("run bootcmd_sata")
-            elif arg.startswith("disk"):
+            elif (arg.startswith("disk")):
                 try:
                     dev, part = map(int, arg[4:].split(":"))
                     bootdevice = "%i:%i" % (dev, part)
@@ -88,83 +106,97 @@ class UbootEnv:
                         raise ValueError("Invalid boot device: %s" % arg)
                 commands.append("setenv bootdevice %s && run bootcmd_sata"
                         % bootdevice)
-            elif arg == "sd":
+            elif (arg == "sd"):
                 # TODO: enable this once it's working in u-boot
-                #commands.append("run bootcmd_mmc")
+                # commands.append("run bootcmd_mmc")
                 raise ValueError("Invalid boot device: %s" % arg)
-            elif arg == "retry":
+            elif (arg == "retry"):
                 retry = True
-            elif arg == "reset":
+            elif (arg == "reset"):
                 reset = True
             else:
                 raise ValueError("Invalid boot device: %s" % arg)
 
-        if retry and reset:
+        if (retry and reset):
             raise ValueError("retry and reset are mutually exclusive")
-        elif retry:
+        elif (retry):
             commands[-1] = "while true\ndo\n%s\nsleep 1\ndone" % commands[-1]
-        elif reset:
+        elif (reset):
             commands.append("reset")
 
         # Set bootcmd_default
         self.variables["bootcmd_default"] = "; ".join(commands)
 
     def get_boot_order(self):
-        """ Get the boot order specified in the uboot environment. """
+        """Gets the boot order specified in the uboot environment.
 
+        >>> uboot.get_boot_order()
+        ['disk', 'pxe']
+
+        :returns: Boot order for this U-Boot Environment.
+        :rtype: string
+
+        :raises NoBootCmdDefaultError: When no bootcmd_default exists.
+        :raises UnknownBootComdError: If a boot command is unrecognized.
+
+        """
         boot_args = []
-
-        if not "bootcmd_default" in self.variables:
+        if (not "bootcmd_default" in self.variables):
             raise NoBootCmdDefaultError("Variable bootcmd_default not found")
         commands = self.variables["bootcmd_default"].split("; ")
 
         retry = False
         for command in commands:
-            if command.startswith("while true"):
+            if (command.startswith("while true")):
                 retry = True
                 command = command.split("\n")[2]
-
-            if command == "run bootcmd_pxe":
+            if (command == "run bootcmd_pxe"):
                 boot_args.append("pxe")
-            elif command == "run bootcmd_sata":
+            elif (command == "run bootcmd_sata"):
                 boot_args.append("disk")
-            elif command == "run bootcmd_mmc":
+            elif (command == "run bootcmd_mmc"):
                 boot_args.append("sd")
-            elif command.startswith("setenv bootdevice"):
+            elif (command.startswith("setenv bootdevice")):
                 boot_args.append("disk%s" % command.split()[2])
-            elif command == "reset":
+            elif (command == "reset"):
                 boot_args.append("reset")
                 break
             else:
-                raise UnknownBootCmdError("Unrecognized boot command: %s" % 
+                raise UnknownBootCmdError("Unrecognized boot command: %s" %
                                           command)
-
-            if retry:
+            if (retry):
                 boot_args.append("retry")
                 break
 
-        if len(boot_args) == 0:
+        if (len(boot_args) == 0):
             boot_args.append("none")
-
         return boot_args
 
     def get_contents(self):
-        """ Return a raw string representation of the uboot environment """
+        """Returns a raw string representation of the uboot environment.
 
+        >>> uboot.get_contents()
+        'j4\x88\xb7bootcmd_default=run bootcmd_sata; run bootcmd_pxe ... '
+        >>> #
+        >>> # Output trimmed for brevity ...
+        >>> #
+
+        :returns: Raw string representation of the UBoot Environment.
+        :rtype: string
+
+        """
         contents = ""
-
         # Add variables
         for variable in self.variables:
             contents += "%s=%s\0" % (variable, self.variables[variable])
         contents += "\0"
-
         # Add padding to end
         contents += "".join([chr(255)
                 for _ in range(ENVIRONMENT_SIZE - len(contents) - 4)])
-
         # Add crc32 to beginning
         crc32 = get_crc32(contents, 0xFFFFFFFF) ^ 0xFFFFFFFF
         contents = struct.pack("<I", crc32) + contents
-
         return contents
 
+
+# End of file: ./ubootenv.py

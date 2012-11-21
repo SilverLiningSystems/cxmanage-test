@@ -5,6 +5,10 @@ class TimeoutError(Exception):
     """Raised when a timeout has been reached.
 
     >>> from cxmanage_api.cx_exceptions import TimeoutError
+    >>> raise TimeoutError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.TimeoutError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -26,6 +30,10 @@ class NoPartitionError(Exception):
     """Raised when a partition is not found.
 
     >>> from cxmanage_api.cx_exceptions import NoPartitionError
+    >>> raise NoPartitionError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.NoPartitionError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -47,6 +55,10 @@ class NoIpInfoError(Exception):
     """Raised when the Ip Info cannot be retrieved from a node.
 
     >>> from cxmanage_api.cx_exceptions import NoIpInfoError
+    >>> raise NoIpInfoError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.NoIpInfoError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -68,6 +80,10 @@ class NoMacAddressError(Exception):
     """Raised when MAC adresses cannot be retrieved from a node.
 
     >>> from cxmanage_api.cx_exceptions import NoMacAddressError
+    >>> raise NoMacAddressError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.NoMacAddressError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -89,6 +105,10 @@ class NoSensorError(Exception):
     """Raised when a sensor or sensors are not found.
 
     >>> from cxmanage_api.cx_exceptions import NoSensorError
+    >>> raise NoSensorError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.NoSensorError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -110,6 +130,10 @@ class NoFirmwareInfoError(Exception):
     """Raised when the firmware info cannot be obtained from a node.
 
     >>> from cxmanage_api.cx_exceptions import NoFirmwareInfoError
+    >>> raise NoFirmwareInfoError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.NoFirmwareInfoError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -131,6 +155,10 @@ class SocmanVersionError(Exception):
     """Raised when there is an error with the users socman version.
 
     >>> from cxmanage_api.cx_exceptions import SocmanVersionError
+    >>> raise SocmanVersionError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.SocmanVersionError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -152,6 +180,10 @@ class FirmwareConfigError(Exception):
     """Raised when there are slot/firmware version inconsistencies.
 
     >>> from cxmanage_api.cx_exceptions import FirmwareConfigError
+    >>> raise FirmwareConfigError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.FirmwareConfigError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -173,6 +205,10 @@ class PriorityIncrementError(Exception):
     """Raised when the Priority on a SIMG image cannot be altered.
 
     >>> from cxmanage_api.cx_exceptions import PriorityIncrementError
+    >>> raise PriorityIncrementError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.PriorityIncrementError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -194,6 +230,10 @@ class ImageSizeError(Exception):
     """Raised when the actual size of the image is not what is expected.
 
     >>> from cxmanage_api.cx_exceptions import ImageSizeError
+    >>> raise ImageSizeError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.ImageSizeError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -215,6 +255,10 @@ class TransferFailure(Exception):
     """Raised when the transfer of a file has failed.
 
     >>> from cxmanage_api.cx_exceptions import TransferFailure
+    >>> raise TransferFailure('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.TransferFailure: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -235,7 +279,11 @@ class TransferFailure(Exception):
 class InvalidImageError(Exception):
     """Raised when an image is not valid. (i.e. fails verification).
 
-     >>> from cxmanage_api.cx_exceptions import InvalidImageError
+    >>> from cxmanage_api.cx_exceptions import InvalidImageError
+    >>> raise InvalidImageError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.InvalidImageError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -256,7 +304,11 @@ class InvalidImageError(Exception):
 class NoBootCmdDefaultError(Exception):
     """Raised when there is no bootcmd_default arg in the boot order.
 
-     >>> from cxmanage_api.cx_exceptions import NoBootCmdDefaultError
+    >>> from cxmanage_api.cx_exceptions import NoBootCmdDefaultError
+    >>> raise NoBootCmdDefaultError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.NoBootCmdDefaultError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -278,7 +330,11 @@ class UnknownBootCmdError(Exception):
     """Raised when the boot command is not: run bootcmd_pxe, run bootcmd_sata,
        run bootcmd_mmc, setenv bootdevice, or reset.
 
-     >>> from cxmanage_api.cx_exceptions import UnknownBootCmdError
+    >>> from cxmanage_api.cx_exceptions import UnknownBootCmdError
+    >>> raise UnknownBootCmdError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.UnknownBootCmdError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
@@ -300,7 +356,11 @@ class UnknownBootCmdError(Exception):
 class CommandFailedError(Exception):
     """Raised when a command has failed.
 
-     >>> from cxmanage_api.cx_exceptions import CommandFailedError
+    >>> from cxmanage_api.cx_exceptions import CommandFailedError
+    >>> raise CommandFailedError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.CommandFailedError: My custom exception text!
 
     :param results: Command results. (map of nodes->results)
     :type results: dictionary

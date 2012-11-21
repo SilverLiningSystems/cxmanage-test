@@ -102,8 +102,12 @@ TABLE = [0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
 def get_crc32(string, crc=0):
     """Computes the crc32 value of the given string.
 
-    >> get_crc32(string='Foo Bar Baz')
+    >>> from cxmanage_api.crc32 import get_crc32
+    >>> get_crc32(string='Foo Bar Baz')
     3901333286
+    >>> #
+    >>> # With an optional offset ...
+    >>> #
     >>> get_crc32(string='Foo Bar Baz', crc=1)
     688341222
 

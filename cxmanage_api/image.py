@@ -27,7 +27,6 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-""" Image objects used by the cxmanage controller """
 
 
 import os
@@ -40,57 +39,75 @@ from cxmanage_api.cx_exceptions import InvalidImageError
 
 
 class Image:
-    """ An image consists of an image type, a filename, and any info needed
-    to build an SIMG out of it. """
+    """An Image consists of: an image type, a filename, and SIMG header info.
+
+    >>> from cxmanage_api.image import Image
+    >>> img = Image(filename='spi_highbank.bin', image_type='PACAKGE')
+
+    :param filename: Path to the image.
+    :type filename: string
+    :param image_type: Type of image. [CDB, BOOT_LOG, SOC_ELF]
+    :type image_type: string
+    :param simg: Path to the simg file.
+    :type simg: string
+    :param daddr: The daddr field in the SIMG Header.
+    :type daddr: integer
+    :param skip_crc32: Flag to skip (or not) CRC32 checking.
+    :type skip_crc32: boolean
+    :param version: Image version.
+    :type version: string
+
+    :raises ValueError: If the image file does not exist.
+    :raises InvalidImageError: If the file is NOT a valid image.
+
+    """
 
     def __init__(self, filename, image_type, simg=None, daddr=None,
                   skip_crc32=False, version=None):
-        """Default constructor for the Image class.
-
-        :param filename: Path to the image.
-        :type filename: string
-        :param image_type: Type of image.
-        :type image_type: string
-        :param simg: Path to the simg file.
-        :type simg: string
-        :param daddr: The daddr field in the SIMG Header.
-        :type daddr: integer
-        :param skip_crc32: Flag to skip (or not) CRC32 checking.
-        :type skip_crc32: boolean
-        :param version: Image version.
-        :type version: string
-        """
+        """Default constructor for the Image class."""
         self.filename = filename
         self.type = image_type
         self.daddr = daddr
         self.skip_crc32 = skip_crc32
         self.version = version
 
-        if not os.path.exists(filename):
+        if (not os.path.exists(filename)):
             raise ValueError("File %s does not exist" % filename)
-
-        if simg == None:
+        if (not self.verify()):
+            raise InvalidImageError("%s is not a valid %s image" %
+                                    (filename, image_type))
+        if (simg == None):
             contents = open(filename).read()
             self.simg = has_simg(contents)
         else:
             self.simg = simg
 
-        if not self.verify():
-            raise InvalidImageError("%s is not a valid %s image" %
-                                    (filename, image_type))
-
     def upload(self, tftp, priority, daddr):
-        """ Create and upload an SIMG file """
+        """Creates & upload an SIMG file.
+
+        >>> img.upload(tftp=i_tftp, priority=1, daddr=0)
+        >>> 'spi_highbank.bin'
+
+        :param tftp: TFTP server to facilitate file transfer.
+        :type tftp: `InternalTftp <tftp.html#cxmanage_api.tftp.InternalTftp>`_ | `ExternalTftp <tftp.html#cxmanage_api.tftp.ExternalTftp>`_
+        :param priority: SIMG header priority value.
+        :type priority: integer
+        :param daddr: SIMG daddr field value.
+        :type daddr: integer
+
+        :returns: The file name of the image.
+        :rtype: string
+
+        :raises InvalidImageError: If the SIMG image is not valid.
+
+        """
         filename = self.filename
-
         # Create new image if necessary
-        if not self.simg:
+        if (not self.simg):
             contents = open(filename).read()
-
             # Figure out daddr
-            if self.daddr != None:
+            if (self.daddr != None):
                 daddr = self.daddr
-
             # Create simg
             align = (self.type in ["CDB", "BOOT_LOG"])
             simg = create_simg(contents, priority=priority, daddr=daddr,
@@ -101,18 +118,25 @@ class Image:
                 f.write(simg)
 
         # Make sure the simg was built correctly
-        if not valid_simg(open(filename).read()):
+        if (not valid_simg(open(filename).read())):
             raise InvalidImageError("%s is not a valid SIMG" %
                     os.path.basename(self.filename))
-
         # Upload to tftp
         basename = os.path.basename(filename)
         tftp.put_file(src=filename, dest=basename)
         return basename
 
     def size(self):
-        """ Return the full size of this image (as an SIMG) """
-        if self.simg:
+        """Return the full size of this image (as an SIMG)
+
+        >>> img.size()
+        2174976
+
+        :returns: The size of the image file in bytes.
+        :rtype: integer
+
+        """
+        if (self.simg):
             return os.path.getsize(self.filename)
         else:
             contents = open(self.filename).read()
@@ -121,28 +145,38 @@ class Image:
             return len(simg)
 
     def verify(self):
-        """ Return true if the image is valid, false otherwise """
+        """Returns true if the image is valid, false otherwise.
+
+        >>> img.verify()
+        True
+
+        :returns: Whether or not the image file is valid.
+        :rtype: boolean
+
+        """
         try:
             file_process = subprocess.Popen(["file", self.filename],
                                             stdout=subprocess.PIPE)
             file_type = file_process.communicate()[0].split()[1]
 
-            if self.type == "SOC_ELF":
-                if file_type != "ELF":
+            if (self.type == "SOC_ELF"):
+                if (file_type != "ELF"):
                     return False
-            elif file_type != "data":
+            elif (file_type != "data"):
                 return False
-
         except OSError:
             # "file" tool wasn't found, just continue without it
+            # typically located: /usr/bin/file
             pass
 
-        if self.type in ["CDB", "BOOT_LOG"]:
+        if (self.type in ["CDB", "BOOT_LOG"]):
             # Look for "CDBH"
             contents = open(self.filename).read()
-            if self.simg:
+            if (self.simg):
                 contents = get_simg_contents(contents)
-            if contents[:4] != "CDBH":
+            if (contents[:4] != "CDBH"):
                 return False
-
         return True
+
+
+# End of file: ./image.py

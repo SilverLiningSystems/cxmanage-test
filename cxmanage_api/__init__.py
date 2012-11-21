@@ -28,19 +28,24 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-import atexit
+
 import os
+import atexit
 import shutil
 import tempfile
 
+
 WORK_DIR = tempfile.mkdtemp(prefix="cxmanage_api-")
 atexit.register(lambda: shutil.rmtree(WORK_DIR))
+
 
 def temp_file():
     """
     Create a temporary file that will be cleaned up at exit.
 
-    Returns the filename.
+    :returns: File name of the temporary file created.
+    :rtype: string
+
     """
     fd, filename = tempfile.mkstemp(dir=WORK_DIR)
     os.close(fd)
@@ -50,8 +55,11 @@ def temp_dir():
     """
     Create a temporary directory that will be cleaned up at exit.
 
-    Returns the directory name.
+    :returns: Path to the temporary directory created.
+    :rtype: string
+
     """
     return tempfile.mkdtemp(dir=WORK_DIR)
+
 
 # End of file:./__init__.py

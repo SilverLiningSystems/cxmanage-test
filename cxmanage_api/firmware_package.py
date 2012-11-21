@@ -27,7 +27,7 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-"""Firmware Package class description."""
+
 
 import os
 import tarfile
@@ -37,16 +37,25 @@ import pkg_resources
 from cxmanage_api import temp_dir
 from cxmanage_api.image import Image
 
+
 class FirmwarePackage:
-    """ A firmware update package containing multiple images and version info
+    """A firmware update package contains multiple images & version information.
+
+    .. note::
+        * Valid firmware packages are in tar.gz format.
+
+    >>> from cxmanage_api.firmware_package import FirmwarePackage
+    >>> fwpkg = FirmwarePackage('/path/to/ECX-1000_update-v1.7.1-dirty.tar.gz')
+
+    :param filename: The file to extract and read.
+    :type filename: string
+
+    :raises ValueError: If cxmanage version is too old.
+
     """
 
     def __init__(self, filename=None):
-        """Default constructor for the FirmwarePackage class.
-
-        :param filename: The file to extract and read.
-        :type filename: string
-        """
+        """Default constructor for the FirmwarePackage class."""
         self.images = []
         self.version = None
         self.config = None
@@ -61,6 +70,7 @@ class FirmwarePackage:
                 raise ValueError("%s is not a valid tar.gz file"
                         % os.path.basename(filename))
             config = ConfigParser.SafeConfigParser()
+
             if len(config.read(self.work_dir + "/MANIFEST")) == 0:
                 raise ValueError("%s is not a valid firmware package"
                         % os.path.basename(filename))
@@ -108,7 +118,19 @@ class FirmwarePackage:
                         skip_crc32, version))
 
     def save_package(self, filename):
-        """ Save all images as a firmware package """
+        """Save all images as a firmware package.
+
+        .. note::
+            * Supports tar .gz and .bz2 file extensions.
+
+        >>> from cxmanage_api.firmware_package import FirmwarePackage
+        >>> fwpkg = FirmwarePackage()
+        >>> fwpkg.save_package(filename='my_fw_update_pkg.tar.gz')
+
+        :param filename: Name (or path) of of the file you wish to save.
+        :type filename: string
+
+        """
         # Create the manifest
         config = ConfigParser.SafeConfigParser()
         for image in self.images:
@@ -124,6 +146,7 @@ class FirmwarePackage:
                 config.set(section, "skip_crc32", str(image.skip_crc32))
             if image.version != None:
                 config.set(section, "versionstr", image.version)
+
         manifest = open("%s/MANIFEST" % self.work_dir, "w")
         config.write(manifest)
         manifest.close()
@@ -135,7 +158,11 @@ class FirmwarePackage:
             tar = tarfile.open(filename, "w:bz2")
         else:
             tar = tarfile.open(filename, "w")
+
         tar.add("%s/MANIFEST" % self.work_dir, "MANIFEST")
         for image in self.images:
             tar.add(image.filename, os.path.basename(image.filename))
         tar.close()
+
+
+# End of file: ./firmware_package.py
