@@ -264,6 +264,28 @@ class NodeTest(unittest.TestCase):
                     "soc_version"]:
                 self.assertTrue(hasattr(result, attr))
 
+    def test_get_fabric_ipinfo(self):
+        """ Test node.get_fabric_ipinfo method """
+        for node in self.nodes:
+            result = node.get_fabric_ipinfo()
+
+            self.assertEqual(node.bmc.executed, ["get_fabric_ipinfo"])
+            self.assertEqual(result, dict([(i, ADDRESSES[i])
+                    for i in range(NUM_NODES)]))
+
+    def test_get_fabric_macaddrs(self):
+        """ Test node.get_fabric_macaddrs method """
+        for node in self.nodes:
+            result = node.get_fabric_macaddrs()
+
+            self.assertEqual(node.bmc.executed, ["get_fabric_macaddrs"])
+            self.assertEqual(len(result), NUM_NODES)
+            for node_id in xrange(NUM_NODES):
+                self.assertEqual(len(result[node_id]), 3)
+                for port in xrange(3):
+                    expected_macaddr = "00:00:00:00:%x:%x" % (node_id, port)
+                    self.assertEqual(result[node_id][port], expected_macaddr)
+
 
 class DummyBMC(LanBMC):
     """ Dummy BMC for the node tests """
@@ -279,26 +301,6 @@ class DummyBMC(LanBMC):
                 Partition(5, 11, 1376256, 12288),               # ubootenv
                 Partition(6, 11, 1388544, 12288)                # ubootenv
         ]
-
-    def get_fabric_ipinfo(self, filename, tftp_address):
-        """ Upload an ipinfo file from the node to TFTP"""
-        self.executed.append("get_fabric_ipinfo")
-
-        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
-
-        # Create IP info file
-        ipinfo = open("%s/%s" % (work_dir, filename), "w")
-        for i in range(len(ADDRESSES)):
-            ipinfo.write("Node %i: %s\n" % (i, ADDRESSES[i]))
-        ipinfo.close()
-
-        # Upload to tftp
-        address, port = tftp_address.split(":")
-        port = int(port)
-        tftp = ExternalTftp(address, port)
-        tftp.put_file("%s/%s" % (work_dir, filename), filename)
-
-        shutil.rmtree(work_dir)
 
     def set_chassis_power(self, mode):
         """ Set chassis power """
@@ -427,6 +429,48 @@ class DummyBMC(LanBMC):
                 self.type = "TestBoard"
                 self.revision = "0"
         return Result()
+
+    def get_fabric_ipinfo(self, filename, tftp_address):
+        """ Upload an ipinfo file from the node to TFTP"""
+        self.executed.append("get_fabric_ipinfo")
+
+        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
+
+        # Create IP info file
+        ipinfo = open("%s/%s" % (work_dir, filename), "w")
+        for i in range(len(ADDRESSES)):
+            ipinfo.write("Node %i: %s\n" % (i, ADDRESSES[i]))
+        ipinfo.close()
+
+        # Upload to tftp
+        address, port = tftp_address.split(":")
+        port = int(port)
+        tftp = ExternalTftp(address, port)
+        tftp.put_file("%s/%s" % (work_dir, filename), filename)
+
+        shutil.rmtree(work_dir)
+
+    def get_fabric_macaddrs(self, filename, tftp_address):
+        """ Upload a macaddrs file from the node to TFTP"""
+        self.executed.append("get_fabric_macaddrs")
+
+        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
+
+        # Create macaddrs file
+        macaddrs = open("%s/%s" % (work_dir, filename), "w")
+        for i in range(len(ADDRESSES)):
+            for port in range(3):
+                macaddr = "00:00:00:00:%x:%x" % (i, port)
+                macaddrs.write("Node %i, Port %i: %s\n" % (i, port, macaddr))
+        macaddrs.close()
+
+        # Upload to tftp
+        address, port = tftp_address.split(":")
+        port = int(port)
+        tftp = ExternalTftp(address, port)
+        tftp.put_file("%s/%s" % (work_dir, filename), filename)
+
+        shutil.rmtree(work_dir)
 
 
 class Partition:

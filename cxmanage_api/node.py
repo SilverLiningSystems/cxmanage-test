@@ -587,7 +587,6 @@ class Node(object):
             raise IpmiError(self._parse_ipmierror(err))
 
         if (hasattr(result, "error")):
-            print 'came is the result.error'
             raise Exception(result.error)
 
         # Wait for file
@@ -607,14 +606,68 @@ class Node(object):
             if (line.startswith("Node")):
                 elements = line.split()
                 node_id = int(elements[1].rstrip(":"))
-                node_address = elements[2]
-                if (node_address != "0.0.0.0"):
-                    results[node_id] = node_address
+                node_ip_address = elements[2]
+
+                # Old boards used to return 0.0.0.0 sometimes -- might not be
+                # an issue anymore.
+                if (node_ip_address != "0.0.0.0"):
+                    results[node_id] = node_ip_address
 
         # Make sure we found something
         if (not results):
             raise NoIpInfoError("Node failed to reach TFTP server")
         return results
+
+    def get_fabric_macaddrs(self):
+        """Gets what macaddr information THIS node knows about the Fabric.
+
+        :return: Returns a map of node_ids->list of mac_addresses.
+        :rtype: dictionary
+
+        :raises NoMacAddressError: If no results are returned.
+        :raises Exception: If there are errors within the command response.
+        :raises IOError: If the TFTP file to read from does not exist.
+
+        """
+        filename = temp_file()
+        basename = os.path.basename(filename)
+        try:
+            result = self.bmc.get_fabric_macaddrs(basename, self.tftp_address)
+        except IpmiError as err:
+            raise IpmiError(self._parse_ipmierror(err))
+
+        if (hasattr(result, "error")):
+            raise Exception(result.error)
+
+        # Wait for file
+        deadline = time.time() + 10
+        while time.time() < deadline:
+            try:
+                time.sleep(1)
+                self.tftp.get_file(src=basename, dest=filename)
+                if (os.path.getsize(filename) > 0):
+                    break
+            except (TftpException, IOError):
+                pass
+
+        # Parse addresses from ipinfo file
+        results = {}
+        for line in open(filename):
+            if (line.startswith("Node")):
+                elements = line.split()
+                node_id = int(elements[1].rstrip(","))
+                node_mac_address = elements[4]
+
+                if not node_id in results:
+                    results[node_id] = []
+                results[node_id].append(node_mac_address)
+
+        # Make sure we found something
+        if (not results):
+            raise NoMacAddressError("Node failed to reach TFTP server")
+        return results
+
+############################### Private methods ###############################
 
     def _get_partition(self, fwinfo, image_type, partition_arg):
         """Get a partition for this image type based on the argument."""

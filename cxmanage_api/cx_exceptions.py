@@ -77,7 +77,7 @@ class NoIpInfoError(Exception):
 
 
 class NoMacAddressError(Exception):
-    """Raised when MAC adresses cannot be retrieved from a node.
+    """Raised when MAC addresses cannot be retrieved from a node.
 
     >>> from cxmanage_api.cx_exceptions import NoMacAddressError
     >>> raise NoMacAddressError('My custom exception text!')
