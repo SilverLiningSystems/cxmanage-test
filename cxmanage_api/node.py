@@ -632,7 +632,7 @@ class Node(object):
         filename = temp_file()
         basename = os.path.basename(filename)
         try:
-            result = self.bmc.get_fabric_macaddrs(basename, self.tftp_address)
+            result = self.bmc.get_fabric_macaddresses(basename, self.tftp_address)
         except IpmiError as err:
             raise IpmiError(self._parse_ipmierror(err))
 

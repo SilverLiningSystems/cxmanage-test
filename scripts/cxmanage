@@ -762,19 +762,22 @@ def ipinfo_command(args):
 
 def macaddrs_command(args):
     """get mac addresses from a cluster or host"""
+    args.all_nodes = False
+
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
     if not args.quiet:
         print "Getting MAC addresses..."
-    results, errors = _run_command(args, nodes, "get_mac_addresses")
+    results, errors = _run_command(args, nodes, "get_fabric_macaddrs")
 
     for node in nodes:
         if node in results:
             print "MAC addresses from %s" % node.ip_address
-            for i in xrange(len(results[node])):
-                print "Port %i: %s" % (i, results[node][i])
-            print
+            for node_id, mac_addresses in results[node].iteritems():
+                for port in xrange(len(mac_addresses)):
+                    mac_address = mac_addresses[port]
+                    print "Node %i, Port %i: %s" % (node_id, port, mac_address)
 
     if not args.quiet and errors:
         print "Some errors occured during the command.\n"

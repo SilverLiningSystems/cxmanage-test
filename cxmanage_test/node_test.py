@@ -450,7 +450,7 @@ class DummyBMC(LanBMC):
 
         shutil.rmtree(work_dir)
 
-    def get_fabric_macaddrs(self, filename, tftp_address):
+    def get_fabric_macaddresses(self, filename, tftp_address):
         """ Upload a macaddrs file from the node to TFTP"""
         self.executed.append("get_fabric_macaddrs")
 
