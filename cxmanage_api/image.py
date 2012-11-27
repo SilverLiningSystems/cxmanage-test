@@ -73,14 +73,16 @@ class Image:
 
         if (not os.path.exists(filename)):
             raise ValueError("File %s does not exist" % filename)
-        if (not self.verify()):
-            raise InvalidImageError("%s is not a valid %s image" %
-                                    (filename, image_type))
+
         if (simg == None):
             contents = open(filename).read()
             self.simg = has_simg(contents)
         else:
             self.simg = simg
+
+        if (not self.verify()):
+            raise InvalidImageError("%s is not a valid %s image" %
+                                    (filename, image_type))
 
     def upload(self, tftp, priority, daddr):
         """Creates & upload an SIMG file.
