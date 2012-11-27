@@ -42,7 +42,6 @@ from cxmanage_api.simg import create_simg
 from cxmanage_api.node import Node
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.ubootenv import UbootEnv
-from cxmanage_api.cx_exceptions import SocmanVersionError, FirmwareConfigError
 from cxmanage_api.firmware_package import FirmwarePackage
 
 
@@ -278,11 +277,11 @@ class NodeTest(unittest.TestCase):
         for node in self.nodes:
             result = node.get_fabric_macaddrs()
 
-            self.assertEqual(node.bmc.executed, ["get_fabric_macaddrs"])
+            self.assertEqual(node.bmc.executed, ["get_fabric_macaddresses"])
             self.assertEqual(len(result), NUM_NODES)
             for node_id in xrange(NUM_NODES):
                 self.assertEqual(len(result[node_id]), 3)
-                for port in xrange(3):
+                for port in result[node_id]:
                     expected_macaddr = "00:00:00:00:%x:%x" % (node_id, port)
                     self.assertEqual(result[node_id][port], expected_macaddr)
 
@@ -452,7 +451,7 @@ class DummyBMC(LanBMC):
 
     def get_fabric_macaddresses(self, filename, tftp_address):
         """ Upload a macaddrs file from the node to TFTP"""
-        self.executed.append("get_fabric_macaddrs")
+        self.executed.append("get_fabric_macaddresses")
 
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 

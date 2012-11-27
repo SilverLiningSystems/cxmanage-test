@@ -47,7 +47,7 @@ from cxmanage_api.infodump import get_info_dump
 from cxmanage_api.cx_exceptions import NoIpInfoError, TimeoutError, \
         NoSensorError, NoFirmwareInfoError, SocmanVersionError, \
         FirmwareConfigError, PriorityIncrementError, NoPartitionError, \
-        TransferFailure, ImageSizeError
+        TransferFailure, ImageSizeError, NoMacAddressError
 
 
 class Node(object):
@@ -621,7 +621,7 @@ class Node(object):
     def get_fabric_macaddrs(self):
         """Gets what macaddr information THIS node knows about the Fabric.
 
-        :return: Returns a map of node_ids->list of mac_addresses.
+        :return: Returns a map of node_ids->ports->mac_addresses.
         :rtype: dictionary
 
         :raises NoMacAddressError: If no results are returned.
@@ -656,11 +656,12 @@ class Node(object):
             if (line.startswith("Node")):
                 elements = line.split()
                 node_id = int(elements[1].rstrip(","))
-                node_mac_address = elements[4]
+                port = int(elements[3].rstrip(":"))
+                mac_address = elements[4]
 
                 if not node_id in results:
-                    results[node_id] = []
-                results[node_id].append(node_mac_address)
+                    results[node_id] = {}
+                results[node_id][port] = mac_address
 
         # Make sure we found something
         if (not results):
