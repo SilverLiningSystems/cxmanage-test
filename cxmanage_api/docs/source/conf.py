@@ -24,12 +24,12 @@ sys.path.insert(0, os.path.abspath('..'))
 # todo_include_todos = True
 
 # If your documentation needs a minimal Sphinx version, state it here.
-# needs_sphinx = '1.0'
+# needs_sp hinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-sphinx_extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.todo',
-                     'sphinx.ext.autosummary']
+sphinx_extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode',
+                     'sphinx.ext.todo', 'sphinx.ext.autosummary']
 cloud_sptheme_extensions = ['cloud_sptheme.ext.index_styling',
                             'cloud_sptheme.ext.relbar_toc',
                             'cloud_sptheme.ext.autodoc_sections',
@@ -74,7 +74,7 @@ release = '1.0.0'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = ['_build', '_static']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 # default_role = None
@@ -88,10 +88,10 @@ add_module_names = False
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
-# show_authors = False
+show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-# pygments_style = 'sphinx' # Default
+# pygments_style = 'sphinx'  # Default
 pygments_style = 'tango'
 
 # A list of ignored prefixes for module index sorting.

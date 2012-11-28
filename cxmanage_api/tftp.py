@@ -101,18 +101,6 @@ class InternalTftp(object):
             self.port = int(a_fd.readline())
         atexit.register(self.kill)
 
-    def get_port(self):
-        """Returns the listening port of this server.
-
-        >>> i_tftp.get_port()
-        40865
-
-        :return: The listening port of this Internal TFTP server.
-        :rtype: integer
-
-        """
-        return self.port
-
     def get_address(self, relative_host=None):
         """Returns the ipv4 address of this server.
         If a relative_host is specified, then we discover our address to them.
@@ -231,18 +219,6 @@ class ExternalTftp(object):
         """
         del relative_host  # Needed only for function signature.
         return self.ip_address
-
-    def get_port(self):
-        """Return the listening port of this server.
-
-        >>> e_tftp.get_port()
-        69
-
-        :returns: The port of the external TFTP server connection.
-        :rtype: integer
-
-        """
-        return self.port
 
     def get_file(self, src, dest):
         """Download a file from the ExternalTftp Server.

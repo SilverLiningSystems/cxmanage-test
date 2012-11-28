@@ -56,7 +56,7 @@ class Fabric(object):
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
-                  tftp=None, max_threads=1, command_delay=0, verbose=False,
+                  tftp=None, max_threads=48, command_delay=0, verbose=False,
                   node=None):
         """Default constructor for the Fabric class."""
         self._tftp = tftp
@@ -410,11 +410,11 @@ class Fabric(object):
     def info_dump(self, async=False):
         """Dumps info from all nodes.
 
-        .. note::
-            * Output condensed for brevity.
-
         >>> fabric.info_dump()
         >>> {0: n0dump, 1: n1dump, 2: n2dump, 3: n3dump}
+        >>> #
+        >>> # Output condensed for brevity ...
+        >>> #
 
         .. seealso::
             `Info Dump <node.html#cxmanage_api.node.Node.info_dump>`_
@@ -472,5 +472,6 @@ class Fabric(object):
         else:
             command.join()
             return command.get_results()
+
 
 # End of file: ./fabric.py

@@ -79,10 +79,6 @@ class InternalTftpTest(unittest.TestCase):
         self.assertEqual(open(filename).read(), contents)
         os.remove(filename)
 
-    def test_get_port(self):
-        """Tests the get_port() function."""
-        self.assertEqual(self.tftp1.port, self.tftp1.get_port())
-
     def test_get_address_no_relative_host(self):
         """Tests the get_address(relative_host) function with NO relative
         host defined.
@@ -98,7 +94,7 @@ class InternalTftpTest(unittest.TestCase):
         try:
             # RFC863 defines port 9 as the UDP discard port, so we use it to
             # find out our local ip to pass as a relative_host
-            sock.connect((socket.gethostname(),9))
+            sock.connect((socket.gethostname(), 9))
             relative_host = sock.getsockname()[0]
 
         except socket.error:
@@ -121,7 +117,7 @@ class ExternalTftpTest(unittest.TestCase):
         self.itftp = InternalTftp(ip_address='127.0.0.250')
         self.etftp = ExternalTftp(
                      self.itftp.get_address(relative_host=_get_relative_host()),
-                     self.itftp.get_port())
+                     self.itftp.port)
 
     def test_put_and_get(self):
         """Test the put_file(src, dest) function. Test the get_file(src,dest)

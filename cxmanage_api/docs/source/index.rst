@@ -143,10 +143,15 @@ Getting Started
 So you have the Cxmanage Python API properly installed, so now what?
 
 The Cxmanage Python API Docs will give you information on how to use Calxeda
-classes and functions. Optionally, you can view the API source for even more
-clarity on the internals.
+classes and functions. 
 
-``API Docs``
+You can view the API source for even more clarity on the internals. Or jump
+right into the Code Examples.
+
+API Docs & Code Examples
+------------------------
+
+``API Documentation``
 
 .. toctree::
 
@@ -161,14 +166,10 @@ clarity on the internals.
     Internal/External TFTP <tftp>
     SIMG <simg>
     U-Boot Environment <ubootenv>
-    
-PyUnit Test Integration
------------------------
 
-Documentation about:
-    * Calxeda Test Case
-    * Pyunit Test writing
+``Code Examples``
+
+.. toctree::
     
-Sample Code
------------
-Helpful scripts, and/or tests.
+    Fabric Basics <fab_basics>
+

@@ -120,7 +120,7 @@ class Node(object):
 
         """
         return '%s:%s' % (self.tftp.get_address(relative_host=self.ip_address),
-                self.tftp.get_port())
+                          self.tftp.port)
 
     def get_mac_addresses(self):
         """Gets a list of MAC addresses for this node.
