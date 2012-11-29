@@ -85,10 +85,10 @@ class InternalTftp(object):
             thread = PortThread()
             thread.start()
             try:
-                if (self.verbose):
+                if not self.verbose:
                     setLogLevel(logging.CRITICAL)
                 # Start accepting connections ...
-                server.listen(ip_address, port)
+                server.listen(listenport=port)
             except KeyboardInterrupt:
                 # User @ keyboard cancelled server ...
                 if (self.verbose):
@@ -115,8 +115,10 @@ class InternalTftp(object):
         :rtype: string
 
         """
-        if ((self.ip_address != None) or (relative_host == None)):
+        if (self.ip_address != None):
             return self.ip_address
+        elif (relative_host == None):
+            return "localhost"
         else:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.connect((relative_host, self.port))

@@ -79,13 +79,6 @@ class InternalTftpTest(unittest.TestCase):
         self.assertEqual(open(filename).read(), contents)
         os.remove(filename)
 
-    def test_get_address_no_relative_host(self):
-        """Tests the get_address(relative_host) function with NO relative
-        host defined.
-        """
-        self.assertEqual(self.tftp1.ip_address,
-                         self.tftp1.get_address(relative_host=None))
-
     def test_get_address_with_relative_host(self):
         """Tests the get_address(relative_host) function with a relative_host
         specified.
