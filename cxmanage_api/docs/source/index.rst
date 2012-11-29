@@ -2,7 +2,7 @@
 Cxmanage Python API Documentation
 =================================
 
-The Cxmanage Python API provides a way for client code to access a Calxeda 
+The Cxmanage Python API provides a way for client code to access a Calxeda
 System on a Chip (SoC).
 
 The Cxmanage Python API focuses on the connectivity between the issuing client
@@ -27,12 +27,12 @@ Requirements
 ------------
 ``Operating Systems``
    **Ubuntu** 12.04 LTS (or greater)
-   
+
    **Windows** 7 (or greater)
 
 ``Python``
     Python version 2.6
-    
+
 .. note::
     * Windows requires `Cygwin <http://cygwin.com>`_
     * For Cygwin compatibility, Python version 2.6 is adhered to.
@@ -50,32 +50,32 @@ Usage
 =====
 API Quick Start Guide
 ---------------------
-Once properly installed, using the API is fairly trivial. As long as the 
-cxmanage_api library is in your PYTHONPATH (or in the virtual enviroment 
+Once properly installed, using the API is fairly trivial. As long as the
+cxmanage_api library is in your PYTHONPATH (or in the virtual enviroment
 PYTHONPATH) you can simply declare and use Calxeda objects.
 
 The following is just a small excerpt of how to use the Cxmanage Python API.
-More extensive examples and sample code can be found in the development 
-tutorials and Getting Started guide. 
+More extensive examples and sample code can be found in the development
+tutorials and Getting Started guide.
 
 
 .. note::
     * If you're using a Virtual Environment, be sure to:
         workon <VirtualEnvironment Name>
-        
+
 
 Example code::
-    
+
     #
     # Import the essentials!
     #
     from cxmanage_api.node import Node
     from cxmanage_api.fabric import Fabric
-    #    
+    #
     # A list of some Node capabilities
     #
     for i in [x for x in dir(Node) if not x.startswith('_')]: print i
-    ... 
+    ...
     check_firmware
     config_reset
     get_boot_order
@@ -94,29 +94,29 @@ Example code::
     set_power
     set_power_policy
     update_firmware
-    
+
     #
     # The easiest way to create a Node is to just give the ip address to the
     # constructor ... But there are other parameters that can be set ...
     #
     my_node = Node('10.20.1.9')
-    
+
     #
     # Get the Node's MAC Addresses
-    # 
+    #
     my_node.get_macaddrs()
     ['fc:2f:40:3b:ec:40', 'fc:2f:40:3b:ec:41', 'fc:2f:40:3b:ec:42']
-            
+
     #
     # Define a Fabric by simply using an ip address of ANY Node on that Fabric.
-    # 
+    #
     my_fabric = Fabric(ip_address=my_node.ip_address)
-    
+
     #
     # Get the MAC Addresses of ALL the nodes on the Fabric ...
-    # 
-    my_fabric.get_macaddrs()  
-    
+    #
+    my_fabric.get_macaddrs()
+
     #
     # Output
     #
@@ -132,9 +132,9 @@ Example code::
      3 : ['fc:2f:40:88:b3:6c',
           'fc:2f:40:88:b3:6d',
           'fc:2f:40:88:b3:6e']}
-    
+
     #
-    # Fabric objects have the same function identities as Nodes. Fabrics simply 
+    # Fabric objects have the same function identities as Nodes. Fabrics simply
     # facilitate Node functions to many Nodes in a multi-threaded fashion.
     #
 
@@ -143,7 +143,7 @@ Getting Started
 So you have the Cxmanage Python API properly installed, so now what?
 
 The Cxmanage Python API Docs will give you information on how to use Calxeda
-classes and functions. 
+classes and functions.
 
 You can view the API source for even more clarity on the internals. Or jump
 right into the Code Examples.
@@ -170,6 +170,6 @@ API Docs & Code Examples
 ``Code Examples``
 
 .. toctree::
-    
+
     Fabric Basics <fab_basics>
 
