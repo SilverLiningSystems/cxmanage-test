@@ -156,20 +156,18 @@ class Image:
         :rtype: boolean
 
         """
-        try:
-            file_process = subprocess.Popen(["file", self.filename],
-                                            stdout=subprocess.PIPE)
-            file_type = file_process.communicate()[0].split()[1]
+        if (self.type == "SOC_ELF"):
+            try:
+                file_process = subprocess.Popen(["file", self.filename],
+                                                stdout=subprocess.PIPE)
+                file_type = file_process.communicate()[0].split()[1]
 
-            if (self.type == "SOC_ELF"):
                 if (file_type != "ELF"):
                     return False
-            elif (file_type != "data"):
-                return False
-        except OSError:
-            # "file" tool wasn't found, just continue without it
-            # typically located: /usr/bin/file
-            pass
+            except OSError:
+                # "file" tool wasn't found, just continue without it
+                # typically located: /usr/bin/file
+                pass
 
         if (self.type in ["CDB", "BOOT_LOG"]):
             # Look for "CDBH"
