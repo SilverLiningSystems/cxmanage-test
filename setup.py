@@ -40,7 +40,13 @@ setup(
     description='Calxeda Management Utility',
     # NOTE: As of right now, the pyipmi version requirement needs to be updated
     # at the top of scripts/cxmanage as well.
-    install_requires=['tftpy', 'pyipmi>=0.5.2', 'argparse'],
+    install_requires=[
+                        'tftpy',
+                        'pyipmi>=0.5.2',
+                        'argparse',
+                        'sphinx',
+                        'cloud_sptheme'
+    ],
     classifiers=[
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 2.7']
