@@ -685,11 +685,10 @@ def sensor_command(args):
     results, errors = _run_command(args, nodes, "get_sensors",
             args.sensor_name)
 
-    # Get sensor names
+    # Get sensor names across all nodes
     sensor_names = []
     for node in results:
-        for sensor in results[node]:
-            sensor_name = sensor.sensor_name
+        for sensor_name in results[node]:
             if not sensor_name in sensor_names:
                 sensor_names.append(sensor_name)
 
@@ -702,8 +701,7 @@ def sensor_command(args):
         for node in nodes:
             if node in results:
                 try:
-                    sensor = [x for x in results[node]
-                            if x.sensor_name == sensor_name][0]
+                    sensor = results[node][sensor_name]
                     reading = sensor.sensor_reading.replace(
                             "(+/- 0) ", "")
 

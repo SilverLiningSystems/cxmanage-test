@@ -263,7 +263,7 @@ class Node(object):
             else:
                 raise NoSensorError("No sensors containing \"%s\" were " +
                                     "found" % name)
-        return sensors
+        return dict((x.sensor_name, x) for x in sensors)
 
     def get_firmware_info(self):
         """Gets firmware info from the node.
