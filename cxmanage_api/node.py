@@ -248,7 +248,7 @@ class Node(object):
         :type name: string
 
         :return: Sensor information.
-        :rtype: list
+        :rtype: dict
 
         """
         try:

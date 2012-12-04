@@ -46,10 +46,6 @@ class Fabric(object):
     :type username: string
     :param password: The login password credential. [Default admin]
     :type password: string
-    :param max_threads: Maximum number of threads to run at a time.
-    :type max_threads: integer
-    :param command_delay: Seconds to wait before sending multi-threaded commands.
-    :type command_delay: integer
     :param verbose: Flag to turn on verbose output (cmd/response).
     :type verbose: boolean
     :param node: Node type, for dependency integration.
