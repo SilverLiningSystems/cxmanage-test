@@ -28,9 +28,10 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage_api.command import Command
+from cxmanage_api.tasks import DEFAULT_TASK_QUEUE
 from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.node import Node as NODE
+from cxmanage_api.cx_exceptions import CommandFailedError
 
 
 class Fabric(object):
@@ -56,25 +57,24 @@ class Fabric(object):
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
-                  tftp=None, max_threads=48, command_delay=0, verbose=False,
+                  tftp=None, task_queue=DEFAULT_TASK_QUEUE, verbose=False,
                   node=None):
         """Default constructor for the Fabric class."""
-        self._tftp = tftp
-        self.max_threads = max_threads
-        self.command_delay = command_delay
-        self.verbose = verbose
-        self.node = node
         self.ip_address = ip_address
         self.username = username
         self.password = password
+        self._tftp = tftp
+        self.task_queue = task_queue
+        self.verbose = verbose
+        self.node = node
 
         self._nodes = {}
 
         if (not self.node):
             self.node = NODE
 
-        if (not self.tftp):
-            self.tftp = InternalTftp()
+        if (not self._tftp):
+            self._tftp = InternalTftp()
 
     def __eq__(self, other):
         """__eq__() override."""
@@ -463,15 +463,24 @@ class Fabric(object):
 
     def _run_command(self, async, name, *args):
         """Start a command on the given nodes."""
-        command = Command(self.nodes, name, args, self.command_delay,
-                          self.max_threads)
-        command.start()
+        tasks = {}
+        for node_id, node in self.nodes.iteritems():
+            tasks[node_id] = self.task_queue.put(getattr(node, name), *args)
 
         if async:
-            return command
+            return tasks
         else:
-            command.join()
-            return command.get_results()
+            results = {}
+            errors = {}
+            for node_id, task in tasks.iteritems():
+                task.join()
+                if task.status == "Completed":
+                    results[node_id] = task.result
+                else:
+                    errors[node_id] = task.errors
+            if errors:
+                raise CommandFailedError(results, errors)
+            return results
 
 
 # End of file: ./fabric.py
