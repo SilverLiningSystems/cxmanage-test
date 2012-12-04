@@ -30,26 +30,38 @@
 
 
 from collections import deque
-from threading import Thread, Lock
+from threading import Thread, Lock, Event
 from time import sleep
 
 
 class Task(object):
     """ A task object representing some unit of work to be done. """
     def __init__(self, method, *args):
+        self.status = "Queued"
+
         self._method = method
         self._args = args
-
-        self.status = "Queued"
+        self._finished = Event()
 
     def join(self):
         """ Wait for this task to finish """
-        while self.is_alive():
-            pass # TODO: don't busy wait here
+        self._finished.wait()
 
     def is_alive(self):
         """ Return true if this task hasn't been finished """
-        return not self.status in ["Completed", "Failed"]
+        return not self._finished.is_set()
+
+    def _run(self):
+        """ Execute this task. Should only be called by TaskWorker. """
+        self.status = "In Progress"
+        try:
+            self.result = self._method(*self._args)
+            self.status = "Completed"
+        except Exception as e:
+            self.error = e
+            self.status = "Failed"
+
+        self._finished.set()
 
 
 class TaskQueue(object):
@@ -122,13 +134,7 @@ class TaskWorker(Thread):
             while True:
                 sleep(self._delay)
                 task = self._task_queue.get()
-                task.status = "In Progress"
-                try:
-                    task.result = task._method(*task._args)
-                    task.status = "Completed"
-                except Exception as e:
-                    task.error = e
-                    task.status = "Failed"
+                task._run()
         except:
             self._task_queue._remove_worker()
 
