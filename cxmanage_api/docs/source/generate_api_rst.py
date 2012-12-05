@@ -43,7 +43,7 @@ SRC_FILES = {  # Package
              'cxmanage_api' :
              {
              # Python src file  : rst doc title
-             'command'          : 'Command',
+             'tasks'            : 'Tasks',
              'crc32'            : 'CRC32',
              'cx_exceptions'    : 'Cxmanage Exceptions',
              'fabric'           : 'Fabric',

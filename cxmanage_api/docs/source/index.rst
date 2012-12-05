@@ -157,7 +157,7 @@ API Docs & Code Examples
 
     Node <node>
     Fabric <fabric>
-    Command <command>
+    Tasks <tasks>
     CRC32 <crc32>
     Cxmanage API Exceptions <cx_exceptions>
     Firmware Package <firmware_package>

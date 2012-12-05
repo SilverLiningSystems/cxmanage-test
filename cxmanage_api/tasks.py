@@ -35,8 +35,15 @@ from time import sleep
 
 
 class Task(object):
-    """ A task object representing some unit of work to be done. """
+    """A task object represents some unit of work to be done.
+
+    :param method: Named method to run.
+    :type method: string
+    :param args: Arguments to pass to the named method to run.
+    :type args: list
+    """
     def __init__(self, method, *args):
+        """Default constructor for the Task class."""
         self.status = "Queued"
 
         self._method = method
@@ -44,15 +51,20 @@ class Task(object):
         self._finished = Event()
 
     def join(self):
-        """ Wait for this task to finish """
+        """Wait for this task to finish."""
         self._finished.wait()
 
     def is_alive(self):
-        """ Return true if this task hasn't been finished """
+        """Return true if this task hasn't been finished.
+
+        :returns: Whether or not the task is still alive.
+        :rtype: boolean
+
+        """
         return not self._finished.is_set()
 
     def _run(self):
-        """ Execute this task. Should only be called by TaskWorker. """
+        """Execute this task. Should only be called by TaskWorker."""
         self.status = "In Progress"
         try:
             self.result = self._method(*self._args)
@@ -65,9 +77,15 @@ class Task(object):
 
 
 class TaskQueue(object):
-    """ A task queue, consisting of a queue and a number of workers. """
+    """A task queue, consisting of a queue and a number of workers.
+
+    :param threads: Number of threads to create (if needed).
+    :type threads: integer
+    :param delay: Time to wait between
+    """
 
     def __init__(self, threads=48, delay=0):
+        """Default constructor for the TaskQueue class."""
         self.threads = threads
         self.delay = delay
 
@@ -76,14 +94,16 @@ class TaskQueue(object):
         self._workers = 0
 
     def put(self, method, *args):
-        """
-        Add a task to the task queue, and spawn a worker if we're not full.
+        """Add a task to the task queue, and spawn a worker if we're not full.
 
-        method: a method to call
-        args: args to pass to the method
+        :param method: Named method to run.
+        :type method: string
+        :param args: Arguments to pass to the named method to run.
+        :type args: list
 
-        returns: a Task object that will be executed by a worker at a later
-        time.
+        :returns: A Task that will be executed by a worker at a later time.
+        :rtype: Task
+
         """
         self._lock.acquire()
 
@@ -101,8 +121,11 @@ class TaskQueue(object):
         """
         Get a task from the task queue. Mainly used by workers.
 
-        returns: a Task object that hasn't been executed yet.
-        raises: IndexError if there are no tasks in the queue.
+        :returns: A Task object that hasn't been executed yet.
+        :rtype: Task
+
+        :raises IndexError: If there are no tasks in the queue.
+
         """
         self._lock.acquire()
         try:
@@ -111,14 +134,20 @@ class TaskQueue(object):
             self._lock.release()
 
     def _remove_worker(self):
-        """ Decrement the worker count. Should only be used by TaskWorker. """
+        """Decrement the worker count. Should only be used by TaskWorker."""
         self._lock.acquire()
         self._workers -= 1
         self._lock.release()
 
 
 class TaskWorker(Thread):
-    """ A worker thread that runs tasks from a TaskQueue. """
+    """A worker thread that runs tasks from a TaskQueue.
+
+    :param task_queue: Task queue to get tasks from.
+    :type task_queue: TaskQueue
+    :param delay: Time to wait in-between execution.
+
+    """
     def __init__(self, task_queue, delay=0):
         super(TaskWorker, self).__init__()
         self.daemon = True
@@ -129,7 +158,7 @@ class TaskWorker(Thread):
         self.start()
 
     def run(self):
-        """ Repeatedly get tasks from the TaskQueue and execute them. """
+        """Repeatedly get tasks from the TaskQueue and execute them."""
         try:
             while True:
                 sleep(self._delay)
@@ -139,3 +168,5 @@ class TaskWorker(Thread):
             self._task_queue._remove_worker()
 
 DEFAULT_TASK_QUEUE = TaskQueue()
+
+# End of file: ./tasks.py
