@@ -45,7 +45,7 @@ import time
 
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.node import Node
-from cxmanage_api.command import Command, CommandFailedError
+from cxmanage_api.tasks import TaskQueue
 from cxmanage_api.image import Image
 from cxmanage_api.firmware_package import FirmwarePackage
 from cxmanage_api.ubootenv import UbootEnv
@@ -685,11 +685,10 @@ def sensor_command(args):
     results, errors = _run_command(args, nodes, "get_sensors",
             args.sensor_name)
 
-    # Get sensor names
+    # Get sensor names across all nodes
     sensor_names = []
     for node in results:
-        for sensor in results[node]:
-            sensor_name = sensor.sensor_name
+        for sensor_name in results[node]:
             if not sensor_name in sensor_names:
                 sensor_names.append(sensor_name)
 
@@ -702,8 +701,7 @@ def sensor_command(args):
         for node in nodes:
             if node in results:
                 try:
-                    sensor = [x for x in results[node]
-                            if x.sensor_name == sensor_name][0]
+                    sensor = results[node][sensor_name]
                     reading = sensor.sensor_reading.replace(
                             "(+/- 0) ", "")
 
@@ -974,39 +972,40 @@ def ipmitool_command(args):
 
 
 def _run_command(args, nodes, name, *method_args):
-    command = Command(nodes, name, method_args, args.command_delay,
-                    args.threads)
-    command.start()
+    task_queue = TaskQueue(threads=args.threads, delay=args.command_delay)
+    tasks = {}
+    for node in nodes:
+        tasks[node] = task_queue.put(getattr(node, name), *method_args)
 
     results = {}
     errors = {}
     try:
         counter = 0
-        while command.is_alive():
+        while any(x.is_alive() for x in tasks.values()):
             if not args.quiet:
-                _print_command_status(command, counter)
+                _print_command_status(tasks, counter)
                 counter += 1
             time.sleep(0.25)
 
-        try:
-            results = command.get_results()
-        except CommandFailedError as e:
-            results = e.results
-            errors = e.errors
+        for node, task in tasks.iteritems():
+            if task.status == "Completed":
+                results[node] = task.result
+            else:
+                errors[node] = task.error
 
     except KeyboardInterrupt:
         args.retry = 0
-        try:
-            results = command.get_results()
-        except CommandFailedError as e:
-            results = e.results
-            errors = e.errors
-        for node in nodes:
-            if not (node.ip_address in results or node.ip_address in errors):
-                errors[nodes.ip_address] = "Aborted by keyboard interrupt"
+
+        for node, task in tasks.iteritems():
+            if task.status == "Completed":
+                results[node] = task.result
+            elif task.status == "Failed":
+                errors[node] = task.error
+            else:
+                errors[node] = KeyboardInterrupt("Aborted by keyboard interrupt")
 
     if not args.quiet:
-        _print_command_status(command, counter)
+        _print_command_status(tasks, counter)
         print "\n"
 
     # Handle errors
@@ -1051,13 +1050,14 @@ def _print_errors(nodes, errors):
         print
 
 
-def _print_command_status(command, counter):
+def _print_command_status(tasks, counter):
     """ Print the status of a command """
     message = "\r%i successes  |  %i errors  |  %i nodes left  |  %s"
-    status = command.get_status()
+    successes = len([x for x in tasks.values() if x.status == "Completed"])
+    errors = len([x for x in tasks.values() if x.status == "Failed"])
+    nodes_left = len(tasks) - successes - errors
     dots = "".join(["." for x in range(counter % 4)]).ljust(3)
-    sys.stdout.write(message % (status.successes, status.errors,
-            status.nodes_left, dots))
+    sys.stdout.write(message % (successes, errors, nodes_left, dots))
     sys.stdout.flush()
 
 

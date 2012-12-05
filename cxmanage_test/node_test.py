@@ -107,10 +107,8 @@ class NodeTest(unittest.TestCase):
             self.assertEqual(node.bmc.executed, ["sdr_list"])
 
             self.assertEqual(len(result), 2)
-            self.assertEqual(result[0].sensor_name, "Node Power")
-            self.assertTrue(result[0].sensor_reading.endswith("Watts"))
-            self.assertEqual(result[1].sensor_name, "Board Temp")
-            self.assertTrue(result[1].sensor_reading.endswith("degrees C"))
+            self.assertTrue(result["Node Power"].sensor_reading.endswith("Watts"))
+            self.assertTrue(result["Board Temp"].sensor_reading.endswith("degrees C"))
 
     def test_is_updatable(self):
         """ Test node.is_updatable method """

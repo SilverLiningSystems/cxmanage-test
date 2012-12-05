@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -30,20 +28,44 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-
 import unittest
+import time
 
-from cxmanage_test import tftp_test, image_test, node_test, fabric_test, \
-        tasks_test
-test_modules = [tftp_test, image_test, node_test, fabric_test, tasks_test]
+from cxmanage_api.tasks import TaskQueue
 
-def main():
-    """ Load and run tests """
-    loader = unittest.TestLoader()
-    suite = unittest.TestSuite()
-    for module in test_modules:
-        suite.addTest(loader.loadTestsFromModule(module))
-    unittest.TextTestRunner(verbosity=2).run(suite)
+class TaskTest(unittest.TestCase):
+    def test_task_queue(self):
+        """ Test the task queue """
+        task_queue = TaskQueue()
+        counters = [Counter() for x in xrange(128)]
+        tasks = [task_queue.put(counters[i].add, i) for i in xrange(128)]
 
-if __name__ == "__main__":
-    main()
+        for task in tasks:
+            task.join()
+
+        for i in xrange(128):
+            self.assertEqual(counters[i].value, i)
+
+    def test_sequential_delay(self):
+        """ Test that a single thread delays between tasks """
+        task_queue = TaskQueue(threads=1, delay=0.25)
+        counters = [Counter() for x in xrange(8)]
+
+        start = time.time()
+
+        tasks = [task_queue.put(x.add, 1) for x in counters]
+        for task in tasks:
+            task.join()
+
+        finish = time.time()
+
+        self.assertGreaterEqual(finish - start, 2.0)
+
+class Counter(object):
+    """ Simple counter object for testing purposes """
+    def __init__(self):
+        self.value = 0
+
+    def add(self, value):
+        """ Increment this counter's value by some amount """
+        self.value += value
