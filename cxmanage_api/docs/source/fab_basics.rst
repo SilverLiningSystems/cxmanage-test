@@ -4,8 +4,6 @@ Fabric Basics
 Overview
 ========
 
-This tutorial assumes basic Object Oriented Programming knowledge.
-
 Constructing a Fabric object in Python is **VERY** easy. You simply need to
 know the ip address of *ANY* Node in your configuration ...
 Thats it. The API will do the rest!
@@ -17,13 +15,18 @@ What purpose do Fabric objects in Python do for me as a user?
     * Gathering real time information from the Fabric (statistics, topology,
       software versions, etc.)
 
+.. note::
+    * This tutorial assumes:
+        * Basic Object Oriented Programming knowledge
+        * Basic Python language syntax and data structures
+    
 Example
 =======
 
 **Lets start by stating what the end goals of this example will be:**
-    1. Construct a Fabric object using the Cxmanage API in Python.
-    2. Query the Fabric object for **basic** information from each node.
-    3. Print out the information.
+    1. Construct a Fabric object using the Cxmanage API.
+    #. Query the Fabric object for **basic** information from each node.
+    #. Print out the information.
 
 .. seealso:: `Fabric Info Basic <fabric.html#cxmanage_api.fabric.Fabric.info_basic>`_ & `Node Info Basic <node.html#cxmanage_api.node.Node.info_basic>`_ for more details on the function(s) we'll be using.
 

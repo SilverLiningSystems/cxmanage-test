@@ -172,4 +172,5 @@ API Docs & Code Examples
 .. toctree::
 
     Fabric Basics <fab_basics>
+    Firmware Installation Basics <fw_install.rst>
 
