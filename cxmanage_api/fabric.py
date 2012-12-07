@@ -46,6 +46,10 @@ class Fabric(object):
     :type username: string
     :param password: The login password credential. [Default admin]
     :type password: string
+    :param tftp: Tftp server to facilitate IPMI command responses.
+    :type tftp: `Tftp <tftp.html>`_
+    :param task_queue: TaskQueue to use for sending commands.
+    :type task_queue: `TaskQueue <tasks.html#cxmanage_api.tasks.TaskQueue>`_
     :param verbose: Flag to turn on verbose output (cmd/response).
     :type verbose: boolean
     :param node: Node type, for dependency integration.
@@ -53,7 +57,7 @@ class Fabric(object):
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
-                  tftp=None, task_queue=DEFAULT_TASK_QUEUE, verbose=False,
+                  tftp=None, task_queue=None, verbose=False,
                   node=None):
         """Default constructor for the Fabric class."""
         self.ip_address = ip_address
@@ -68,6 +72,9 @@ class Fabric(object):
 
         if (not self.node):
             self.node = NODE
+
+        if (not self.task_queue):
+            self.task_queue = DEFAULT_TASK_QUEUE
 
         if (not self._tftp):
             self._tftp = InternalTftp()
@@ -439,7 +446,7 @@ class Fabric(object):
         }
 
         .. seealso::
-            `Info Basic <node.html#cxmanage_api.node.Node.get_versions>`_
+            `Node.get_versions() <node.html#cxmanage_api.node.Node.get_versions>`_
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Command object (can get status, etc.).
@@ -478,7 +485,7 @@ class Fabric(object):
         }
 
         .. seealso::
-            `Info Basic Dict <node.html#cxmanage_api.node.Node.get_versions_dict>`_
+            `Node.get_versions_dict() <node.html#cxmanage_api.node.Node.get_versions_dict>`_
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
