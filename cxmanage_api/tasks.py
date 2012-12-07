@@ -37,11 +37,12 @@ from time import sleep
 class Task(object):
     """A task object represents some unit of work to be done.
 
-    :param method: Named method to run.
-    :type method: string
+    :param method: The actual method (function) to execute.
+    :type method: function
     :param args: Arguments to pass to the named method to run.
     :type args: list
     """
+
     def __init__(self, method, *args):
         """Default constructor for the Task class."""
         self.status = "Queued"

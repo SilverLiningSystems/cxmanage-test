@@ -107,11 +107,13 @@ class Fabric(object):
     def nodes(self):
         """List of nodes in this fabric.
 
-        >>> f.nodes
-        {0: <cxmanage_api.node.Node object at 0x2052710>,
+        >>> fabric.nodes
+        {
+         0: <cxmanage_api.node.Node object at 0x2052710>,
          1: <cxmanage_api.node.Node object at 0x2052790>,
          2: <cxmanage_api.node.Node object at 0x2052850>,
-         3: <cxmanage_api.node.Node object at 0x2052910>}
+         3: <cxmanage_api.node.Node object at 0x2052910>
+        }
 
         .. note::
             * Fabric nodes are lazily initialized.
@@ -128,17 +130,19 @@ class Fabric(object):
         """Gets MAC addresses from all nodes.
 
         >>> fabric.get_mac_addresses()
-        {0: ['fc:2f:40:3b:ec:40', 'fc:2f:40:3b:ec:41', 'fc:2f:40:3b:ec:42'],
+        {
+         0: ['fc:2f:40:3b:ec:40', 'fc:2f:40:3b:ec:41', 'fc:2f:40:3b:ec:42'],
          1: ['fc:2f:40:91:dc:40', 'fc:2f:40:91:dc:41', 'fc:2f:40:91:dc:42'],
          2: ['fc:2f:40:ab:f7:14', 'fc:2f:40:ab:f7:15', 'fc:2f:40:ab:f7:16'],
-         3: ['fc:2f:40:88:b3:6c', 'fc:2f:40:88:b3:6d', 'fc:2f:40:88:b3:6e']}
+         3: ['fc:2f:40:88:b3:6c', 'fc:2f:40:88:b3:6d', 'fc:2f:40:88:b3:6e']
+        }
 
         :param async: Flag that determines if the command result (dictionary)
-                      is returned or a Command object (can get status, etc.).
+                      is returned or a Task object (can get status, etc.).
         :type async: boolean
 
         :return: The MAC addresses for each node.
-        :rtype: dictionary or `Command <command.html>`_
+        :rtype: dictionary or `Task <tasks.html>`_
 
         """
         return self._run_command(async, "get_mac_addresses")
@@ -154,7 +158,7 @@ class Fabric(object):
         :type async: boolean
 
         :return: The power status of each node.
-        :rtype: dictionary or `Command <command.html>`_
+        :rtype: dictionary or `Task <tasks.html>`_
 
         """
         return self._run_command(async, "get_power")
@@ -163,11 +167,11 @@ class Fabric(object):
         """Send an IPMI power command to all nodes.
 
         >>> # On ...
-        >>> f.set_power(mode='on')
+        >>> fabric.set_power(mode='on')
         >>> # Off ...
-        >>> f.set_power(mode='off')
+        >>> fabric.set_power(mode='off')
         >>> # Sanity check ...
-        >>> f.get_power()
+        >>> fabric.get_power()
         {0: False, 1: False, 2: False, 3: False}
 
         :param mode: Mode to set the power to (for all nodes).
@@ -190,7 +194,7 @@ class Fabric(object):
         :type async: boolean
 
         :return: The power policy for all nodes on this fabric.
-        :rtype: dictionary or `Command <command.html>`_
+        :rtype: dictionary or `Task <tasks.html>`_
 
         """
         return self._run_command(async, "get_power_policy")
@@ -198,9 +202,9 @@ class Fabric(object):
     def set_power_policy(self, state, async=False):
         """Sets the power policy on all nodes.
 
-        >>> f.set_power_policy(state='always-off')
+        >>> fabric.set_power_policy(state='always-off')
         >>> # Check to see if it took ...
-        >>> f.get_power_policy()
+        >>> fabric.get_power_policy()
         {0: 'always-off', 1: 'always-off', 2: 'always-off', 3: 'always-off'}
 
         :param state: State to set the power policy to for all nodes.
@@ -215,7 +219,7 @@ class Fabric(object):
     def mc_reset(self, async=False):
         """Resets the management controller on all nodes.
 
-        >>> f.mc_reset()
+        >>> fabric.mc_reset()
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Command object (can get status, etc.).
@@ -224,14 +228,36 @@ class Fabric(object):
         """
         self._run_command(async, "mc_reset")
 
-    def get_sensors(self, name="", async=False):
+    def get_sensors(self, search="", async=False):
         """Gets sensors from all nodes.
 
         >>> fabric.get_sensors()
-        {0: [<pyipmi.sdr.AnalogSdr object at 0x27e5790>, ...],
-         1: [<pyipmi.sdr.AnalogSdr object at 0x27ec190>, ...],
-         2: [<pyipmi.sdr.AnalogSdr object at 0x27ec6d0>, ...],
-         3: [<pyipmi.sdr.AnalogSdr object at 0x27e5950>, ...]}
+        {
+         0: {
+             'DRAM VDD Current' : <pyipmi.sdr.AnalogSdr object at 0x1a1eb50>,
+             'DRAM VDD Voltage' : <pyipmi.sdr.AnalogSdr object at 0x1a1ef10>,
+             'MP Temp 0'        : <pyipmi.sdr.AnalogSdr object at 0x1a1ec90>,
+             'Node Power'       : <pyipmi.sdr.AnalogSdr object at 0x1a1ed90>,
+             'TOP Temp 0'       : <pyipmi.sdr.AnalogSdr object at 0x1a1ecd0>,
+             'TOP Temp 1'       : <pyipmi.sdr.AnalogSdr object at 0x1a1ed50>,
+             'TOP Temp 2'       : <pyipmi.sdr.AnalogSdr object at 0x1a1edd0>,
+             'Temp 0'           : <pyipmi.sdr.AnalogSdr object at 0x1a1ead0>,
+             'Temp 1'           : <pyipmi.sdr.AnalogSdr object at 0x1a1ebd0>,
+             'Temp 2'           : <pyipmi.sdr.AnalogSdr object at 0x1a1ec10>,
+             'Temp 3'           : <pyipmi.sdr.AnalogSdr object at 0x1a1ec50>,
+             'V09 Current'      : <pyipmi.sdr.AnalogSdr object at 0x1a1ef90>,
+             'V09 Voltage'      : <pyipmi.sdr.AnalogSdr object at 0x1a1ee90>,
+             'V18 Current'      : <pyipmi.sdr.AnalogSdr object at 0x1a1ef50>,
+             'V18 Voltage'      : <pyipmi.sdr.AnalogSdr object at 0x1a1ee50>,
+             'VCORE Current'    : <pyipmi.sdr.AnalogSdr object at 0x1a1efd0>,
+             'VCORE Power'      : <pyipmi.sdr.AnalogSdr object at 0x1a1ee10>,
+             'VCORE Voltage'    : <pyipmi.sdr.AnalogSdr object at 0x1a1eed0>
+            },
+            #
+            # Output trimmed for brevity ... The output would be the same
+            # (format) for the remaining 3 ECMEs on this system.
+            #
+        },
 
         .. note::
             * Output condensed for brevity.
@@ -244,29 +270,70 @@ class Fabric(object):
         :type async: boolean
 
         """
-        return self._run_command(async, "get_sensors", name)
+        return self._run_command(async, "get_sensors", search)
 
     def get_firmware_info(self, async=False):
         """Gets the firmware info from all nodes.
 
         >>> fabric.get_firmware_info()
-        {0: [<pyipmi.fw.FWInfo object at 0x2808110>, ...],
+        {
+         0: [<pyipmi.fw.FWInfo object at 0x2808110>, ...],
          1: [<pyipmi.fw.FWInfo object at 0x28080d0>, ...],
          2: [<pyipmi.fw.FWInfo object at 0x2808090>, ...],
-         3: [<pyipmi.fw.FWInfo object at 0x7f35540660d0>, ...]}
-
-        .. note::
-            * Output condensed for brevity.
+         3: [<pyipmi.fw.FWInfo object at 0x7f35540660d0>, ...]
+        }
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Command object (can get status, etc.).
         :type async: boolean
 
         :return: THe firmware info for all nodes.
-        :rtype: dictionary or `Command <command.html>`_
+        :rtype: dictionary or `Task <tasks.html>`_
 
         """
         return self._run_command(async, "get_firmware_info")
+
+    def get_firmware_info_dict(self, async=False):
+        """Gets the firmware info from all nodes.
+
+        >>> fabric.get_firmware_info_dict()
+        {0:
+           [
+            #
+            # Each dictionary (in order) in this list represents the
+            # corresponding partition information
+            #
+             {# Partition 0
+              'daddr'     : '20029000',
+              'flags'     : 'fffffffd',
+              'in_use'    : 'Unknown',
+              'offset'    : '00000000',
+              'partition' : '00',
+              'priority'  : '0000000c',
+              'size'      : '00005000',
+              'type'      : '02 (S2_ELF)',
+              'version'   : 'v0.9.1'
+             },
+             # Partitions 1 - 17
+           ],
+         #
+         # Output trimmed for brevity ... The remaining Nodes in the Fabric
+         # would display all the partition format in the same manner.
+         #
+        }
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Command object (can get status, etc.).
+        :type async: boolean
+
+        :return: THe firmware info for all nodes.
+        :rtype: dictionary or `Task <tasks.html>`_
+
+        """
+        results = {}
+        for node_number, info in self.get_firmware_info(async=async).items():
+            results[node_number] = [vars(partition) for partition in info]
+        return results
 
     def is_updatable(self, package, partition_arg="INACTIVE", priority=None,
                        async=False):
@@ -287,7 +354,7 @@ class Fabric(object):
 
         :return: Whether or not a node can be updated with the specified
                  firmware package.
-        :rtype: dictionary or `Command <command.html>`_
+        :rtype: dictionary or `Task <tasks.html>`_
 
         """
         return self._run_command(async, "is_updatable", package,
@@ -328,7 +395,7 @@ class Fabric(object):
     def set_boot_order(self, boot_args, async=False):
         """Sets the boot order on all nodes.
 
-        >>> f.set_boot_order(boot_args=['pxe', 'disk'])
+        >>> fabric.set_boot_order(boot_args=['pxe', 'disk'])
 
         :param boot_args: Boot order list.
         :type boot_args: list
@@ -343,17 +410,19 @@ class Fabric(object):
         """Gets the boot order from all nodes.
 
         >>> fabric.get_boot_order()
-        {0: ['disk', 'pxe'],
+        {
+         0: ['disk', 'pxe'],
          1: ['disk', 'pxe'],
          2: ['disk', 'pxe'],
-         3: ['disk', 'pxe']}
+         3: ['disk', 'pxe']
+        }
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Command object (can get status, etc.).
         :type async: boolean
 
         :returns: The boot order of each node on this fabric.
-        :rtype: dictionary or `Command <command.html>`_
+        :rtype: dictionary or `Task <tasks.html>`_
 
         """
         return self._run_command(async, "get_boot_order")
@@ -363,10 +432,12 @@ class Fabric(object):
         """Gets the version info from all nodes.
 
         >>> fabric.info_basic()
-        {0: <pyipmi.info.InfoBasicResult object at 0x1f74150>,
+        {
+         0: <pyipmi.info.InfoBasicResult object at 0x1f74150>,
          1: <pyipmi.info.InfoBasicResult object at 0x1f745d0>,
          2: <pyipmi.info.InfoBasicResult object at 0x1f743d0>,
-         3: <pyipmi.info.InfoBasicResult object at 0x1f74650>}
+         3: <pyipmi.info.InfoBasicResult object at 0x1f74650>
+        }
 
         .. seealso::
             `Info Basic <node.html#cxmanage_api.node.Node.info_basic>`_
@@ -376,24 +447,70 @@ class Fabric(object):
         :type async: boolean
 
         :returns: The basic SoC info for all nodes.
-        :rtype: dictionary or `Command <command.html>`_
+        :rtype: dictionary or `Task <tasks.html>`_
 
         """
         return self._run_command(async, "info_basic")
+
+    def info_basic_dict(self, async=False):
+        """Gets the version info from all nodes.
+
+        >>> fabric.info_basic_dict()
+        {0:
+            {
+             'a9boot_version'   : 'v2012.10.16',
+             'bootlog_version'  : 'v0.9.1-39-g7e10987',
+             'build_number'     : '7E10987C',
+             'card'             : 'EnergyCard X02',
+             'cdb_version'      : 'v0.9.1-39-g7e10987',
+             'dtb_version'      : 'v3.6-rc1_cx_2012.10.02',
+             'header'           : 'Calxeda SoC (0x0096CD)',
+             'soc_version'      : 'v0.9.1',
+             'stage2_version'   : 'v0.9.1',
+             'timestamp'        : '1352911670',
+             'uboot_version'    : 'v2012.07_cx_2012.10.29',
+             'ubootenv_version' : 'v2012.07_cx_2012.10.29',
+             'version'          : 'ECX-1000-v1.7.1'
+            },
+         #
+         # Output trimmed for brevity ... Each remaining Nodes info_basic
+         # dictionary would be printed.
+         #
+        }
+
+        .. seealso::
+            `Info Basic Dict <node.html#cxmanage_api.node.Node.info_basic_dict>`_
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Task object (can get status, etc.).
+        :type async: boolean
+
+        :returns: The basic SoC info for all nodes.
+        :rtype: dictionary or `Task <tasks.html>`_
+
+        """
+        results = {}
+        for node_number, info in self.info_basic(async=async).items():
+            results[node_number] = vars(info)
+        return results
 
     def ipmitool_command(self, ipmitool_args, asynchronous=False):
         """Run an arbitrary IPMItool command on all nodes.
 
         >>> # Gets eth0's MAC Address for each node ...
-        >>> f.ipmitool_command(['cxoem', 'fabric', 'get', 'macaddr', 'interface', '0'])
-        {0: 'fc:2f:40:3b:ec:40',
+        >>> fabric.ipmitool_command(['cxoem', 'fabric', 'get', 'macaddr',
+        >>> ...'interface', '0'])
+        {
+         0: 'fc:2f:40:3b:ec:40',
          1: 'fc:2f:40:91:dc:40',
          2: 'fc:2f:40:ab:f7:14',
-         3: 'fc:2f:40:88:b3:6c'}
+         3: 'fc:2f:40:88:b3:6c'
+        }
 
         :param ipmitool_args: Arguments to pass on to the ipmitool command.
         :type ipmitool_args: list
-        :param async: Flag that determines if the command result (dictionary) is returned or a Command object (can get status, etc.).
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Task object (can get status, etc.).
         :type async: boolean
 
         :returns: IPMI command response.
@@ -416,11 +533,11 @@ class Fabric(object):
             `Info Dump <node.html#cxmanage_api.node.Node.info_dump>`_
 
         :param async: Flag that determines if the command result (dictionary)
-                      is returned or a Command object (can get status, etc.).
+                      is returned or a Task object (can get status, etc.).
         :type async: boolean
 
         :returns: Info dump for each node. (quite large)
-        :rtype: dictionary or Command object
+        :rtype: dictionary or Task object
 
         """
         return self._run_command(async, "info_dump")
@@ -428,18 +545,20 @@ class Fabric(object):
     def get_ubootenv(self, async=False):
         """Gets the u-boot environment from all nodes.
 
-        >>> f.get_ubootenv()
-        {0: <cxmanage_api.ubootenv.UbootEnv instance at 0x7fc2d4058098>,
+        >>> fabric.get_ubootenv()
+        {
+         0: <cxmanage_api.ubootenv.UbootEnv instance at 0x7fc2d4058098>,
          1: <cxmanage_api.ubootenv.UbootEnv instance at 0x7fc2d4058908>,
          2: <cxmanage_api.ubootenv.UbootEnv instance at 0x7fc2d40582d8>,
-         3: <cxmanage_api.ubootenv.UbootEnv instance at 0x7fc2d40589e0>}
+         3: <cxmanage_api.ubootenv.UbootEnv instance at 0x7fc2d40589e0>
+        }
 
         :param async: Flag that determines if the command result (dictionary)
-                      is returned or a Command object (can get status, etc.).
+                      is returned or a Task object (can get status, etc.).
         :type async: boolean
 
         :returns: UBootEnvironment objects for all nodes.
-        :rtype: dictionary or `Command <command.html>`_
+        :rtype: dictionary or `Task <command.html>`_
 
         """
         return self._run_command(async, "get_ubootenv")

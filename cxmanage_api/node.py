@@ -232,41 +232,198 @@ class Node(object):
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
-    def get_sensors(self, name=""):
-        """Get a list of sensors from this target.
+    def get_sensors(self, search=""):
+        """Get a list of sensor objects that match search criteria.
 
         .. note::
             * If no sensor name is specified, ALL sensors will be returned.
 
+        >>> # Get ALL sensors ...
         >>> node.get_sensors()
-        [<pyipmi.sdr.AnalogSdr object at 0x12d9450>,
-         <pyipmi.sdr.AnalogSdr object at 0x12d9490>,
-         <pyipmi.sdr.AnalogSdr object at 0x12d9510>, ... ]
+        {
+         'MP Temp 0'        : <pyipmi.sdr.AnalogSdr object at 0x1e63890>,
+         'Temp 0'           : <pyipmi.sdr.AnalogSdr object at 0x1e63410>,
+         'Temp 1'           : <pyipmi.sdr.AnalogSdr object at 0x1e638d0>,
+         'Temp 2'           : <pyipmi.sdr.AnalogSdr object at 0x1e63690>,
+         'Temp 3'           : <pyipmi.sdr.AnalogSdr object at 0x1e63950>,
+         'VCORE Voltage'    : <pyipmi.sdr.AnalogSdr object at 0x1e63bd0>,
+         'TOP Temp 2'       : <pyipmi.sdr.AnalogSdr object at 0x1e63ad0>,
+         'TOP Temp 1'       : <pyipmi.sdr.AnalogSdr object at 0x1e63a50>,
+         'TOP Temp 0'       : <pyipmi.sdr.AnalogSdr object at 0x1e639d0>,
+         'VCORE Current'    : <pyipmi.sdr.AnalogSdr object at 0x1e63710>,
+         'V18 Voltage'      : <pyipmi.sdr.AnalogSdr object at 0x1e63b50>,
+         'V09 Current'      : <pyipmi.sdr.AnalogSdr object at 0x1e63990>,
+         'Node Power'       : <pyipmi.sdr.AnalogSdr object at 0x1e63cd0>,
+         'DRAM VDD Current' : <pyipmi.sdr.AnalogSdr object at 0x1e63910>,
+         'DRAM VDD Voltage' : <pyipmi.sdr.AnalogSdr object at 0x1e634d0>,
+         'V18 Current'      : <pyipmi.sdr.AnalogSdr object at 0x1e63c50>,
+         'VCORE Power'      : <pyipmi.sdr.AnalogSdr object at 0x1e63c90>,
+         'V09 Voltage'      : <pyipmi.sdr.AnalogSdr object at 0x1e63b90>
+        }
+        >>> # Get ANY sensor that 'contains' the substring of search in it ...
+        >>> node.get_sensors(search='Temp 0')
+        {
+         'MP Temp 0'  : <pyipmi.sdr.AnalogSdr object at 0x1e63810>,
+         'TOP Temp 0' : <pyipmi.sdr.AnalogSdr object at 0x1e63850>,
+         'Temp 0'     : <pyipmi.sdr.AnalogSdr object at 0x1e63510>
+        }
 
-
-        :param name: Name of the sensor you wish to get.
-        :type name: string
+        :param search: Name of the sensor you wish to search for.
+        :type search: string
 
         :return: Sensor information.
-        :rtype: dict
+        :rtype: dictionary of pyipmi objects
 
         """
         try:
             sensors = [x for x in self.bmc.sdr_list()
-                        if name.lower() in x.sensor_name.lower()]
+                        if search.lower() in x.sensor_name.lower()]
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
         if (len(sensors) == 0):
-            if (name == ""):
+            if (search == ""):
                 raise NoSensorError("No sensors were found")
             else:
                 raise NoSensorError("No sensors containing \"%s\" were " +
-                                    "found" % name)
+                                    "found" % search)
         return dict((x.sensor_name, x) for x in sensors)
 
+    def get_sensors_dict(self, search=""):
+        """Get a list of sensor dictionaries that match search criteria.
+
+        >>> node.get_sensors_dict()
+        {
+         'DRAM VDD Current':
+            {
+             'entity_id'              : '7.1',
+             'event_message_control'  : 'Per-threshold',
+             'lower_critical'         : '34.200',
+             'lower_non_critical'     : '34.200',
+             'lower_non_recoverable'  : '34.200',
+             'maximum_sensor_range'   : 'Unspecified',
+             'minimum_sensor_range'   : 'Unspecified',
+             'negative_hysteresis'    : '0.800',
+             'nominal_reading'        : '50.200',
+             'normal_maximum'         : '34.200',
+             'normal_minimum'         : '34.200',
+             'positive_hysteresis'    : '0.800',
+             'sensor_name'            : 'DRAM VDD Current',
+             'sensor_reading'         : '1.200 (+/- 0) Amps',
+             'sensor_type'            : 'Current',
+             'status'                 : 'ok',
+             'upper_critical'         : '34.200',
+             'upper_non_critical'     : '34.200',
+             'upper_non_recoverable'  : '34.200'
+            },
+             ... #
+             ... # Output trimmed for brevity ... many more sensors ...
+             ... #
+         'VCORE Voltage':
+             {
+              'entity_id'             : '7.1',
+              'event_message_control' : 'Per-threshold',
+              'lower_critical'        : '1.100',
+              'lower_non_critical'    : '1.100',
+              'lower_non_recoverable' : '1.100',
+              'maximum_sensor_range'  : '0.245',
+              'minimum_sensor_range'  : 'Unspecified',
+              'negative_hysteresis'   : '0.020',
+              'nominal_reading'       : '1.000',
+              'normal_maximum'        : '1.410',
+              'normal_minimum'        : '0.720',
+              'positive_hysteresis'   : '0.020',
+              'sensor_name'           : 'VCORE Voltage',
+              'sensor_reading'        : '0 (+/- 0) Volts',
+              'sensor_type'           : 'Voltage',
+              'status'                : 'ok',
+              'upper_critical'        : '0.675',
+              'upper_non_critical'    : '0.695',
+              'upper_non_recoverable' : '0.650'
+             }
+        }
+        >>> # Get ANY sensor name that has the string 'Temp 0' in it ...
+        >>> node.get_sensors_dict(search='Temp 0')
+        {
+         'MP Temp 0':
+            {
+             'entity_id'              : '7.1',
+             'event_message_control'  : 'Per-threshold',
+             'lower_critical'         : '2.000',
+             'lower_non_critical'     : '5.000',
+             'lower_non_recoverable'  : '0.000',
+             'maximum_sensor_range'   : 'Unspecified',
+             'minimum_sensor_range'   : 'Unspecified',
+             'negative_hysteresis'    : '4.000',
+             'nominal_reading'        : '25.000',
+             'positive_hysteresis'    : '4.000',
+             'sensor_name'            : 'MP Temp 0',
+             'sensor_reading'         : '0 (+/- 0) degrees C',
+             'sensor_type'            : 'Temperature',
+             'status'                 : 'ok',
+             'upper_critical'         : '70.000',
+             'upper_non_critical'     : '55.000',
+             'upper_non_recoverable'  : '75.000'
+            },
+         'TOP Temp 0':
+             {
+              'entity_id'             : '7.1',
+              'event_message_control' : 'Per-threshold',
+              'lower_critical'        : '2.000',
+              'lower_non_critical'    : '5.000',
+              'lower_non_recoverable' : '0.000',
+              'maximum_sensor_range'  : 'Unspecified',
+              'minimum_sensor_range'  : 'Unspecified',
+              'negative_hysteresis'   : '4.000',
+              'nominal_reading'       : '25.000',
+              'positive_hysteresis'   : '4.000',
+              'sensor_name'           : 'TOP Temp 0',
+              'sensor_reading'        : '33 (+/- 0) degrees C',
+              'sensor_type'           : 'Temperature',
+              'status'                : 'ok',
+              'upper_critical'        : '70.000',
+              'upper_non_critical'    : '55.000',
+              'upper_non_recoverable' : '75.000'
+             },
+         'Temp 0':
+             {
+              'entity_id'             : '3.1',
+              'event_message_control' : 'Per-threshold',
+              'lower_critical'        : '2.000',
+              'lower_non_critical'    : '5.000',
+              'lower_non_recoverable' : '0.000',
+              'maximum_sensor_range'  : 'Unspecified',
+              'minimum_sensor_range'  : 'Unspecified',
+              'negative_hysteresis'   : '4.000',
+              'nominal_reading'       : '25.000',
+              'positive_hysteresis'   : '4.000',
+              'sensor_name'           : 'Temp 0',
+              'sensor_reading'        : '0 (+/- 0) degrees C',
+              'sensor_type'           : 'Temperature',
+              'status'                : 'ok',
+              'upper_critical'        : '70.000',
+              'upper_non_critical'    : '55.000',
+              'upper_non_recoverable' : '75.000'
+             }
+        }
+
+        .. note::
+            * This function is the same as get_sensors(), only a dictionary of
+              **{sensor : {attributes :values}}** is returned instead of an
+              resultant pyipmi object.
+
+        :param search: Name of the sensor you wish to search for.
+        :type search: string
+
+        :return: Sensor information.
+        :rtype: dictionary of dictionaries
+
+        """
+        return dict((key, vars(value))
+                    for key, value in self.get_sensors(search=search).items())
+
     def get_firmware_info(self):
-        """Gets firmware info from the node.
+        """Gets firmware info for each partition on the Node.
 
         >>> node.get_firmware_info()
         [<pyipmi.fw.FWInfo object at 0x2019850>,
@@ -304,6 +461,48 @@ class Node(object):
             return fwinfo
         except IpmiError as error_details:
             raise IpmiError(self._parse_ipmierror(error_details))
+
+    def get_firmware_info_dict(self):
+        """Gets firmware info for each partition on the Node.
+
+        .. note::
+            * This function is the same as get_firmware_info(), only a
+            dictionary of **{attributes : values}** is returned instead of an
+            resultant FWInfo object.
+
+        >>> node.get_firmware_info_dict()
+        [
+            {'daddr'     : '20029000',
+             'in_use'    : 'Unknown',
+             'partition' : '00',
+             'priority'  : '0000000c',
+             'version'   : 'v0.9.1',
+             'flags'     : 'fffffffd',
+             'offset'    : '00000000',
+             'type'      : '02 (S2_ELF)',
+             'size'      : '00005000'},
+             .... # Output trimmed for brevity.
+             .... # partitions
+             .... # 1 - 16
+            {'daddr'     : '20029000',
+             'in_use'    : 'Unknown',
+             'partition' : '17',
+             'priority'  : '0000000b',
+             'version'   : 'v0.9.1',
+             'flags'     : 'fffffffd',
+             'offset'    : '00005000',
+             'type'      : '02 (S2_ELF)',
+             'size'      : '00005000'}
+        ]
+
+        :return: Returns a list of FWInfo objects for each
+        :rtype: list
+
+        :raises NoFirmwareInfoError: If no fw info exists for any partition.
+        :raises IpmiError: If errors in the command occur with BMC communication.
+
+        """
+        return [vars(info) for info in self.get_firmware_info()]
 
     def is_updatable(self, package, partition_arg="INACTIVE", priority=None):
         """Checks to see if the node can be updated with this firmware package.
@@ -463,8 +662,7 @@ class Node(object):
     def info_basic(self):
         """Get basic SoC info from this node.
 
-        >>> info = node.info_basic()
-        >>> info
+        >>> node.info_basic()
         <pyipmi.info.InfoBasicResult object at 0x2019b90>
         >>> # Some useful information ...
         >>> info.a9boot_version
@@ -477,6 +675,7 @@ class Node(object):
 
         :raises IpmiError: If errors in the command occur with BMC communication.
         :raises Exception: If there are errors within the command response.
+
         """
         result = self.bmc.get_info_basic()
         if (hasattr(result, "error")):
@@ -508,6 +707,39 @@ class Node(object):
             # to continue gracefully if socman is out of date.
             setattr(result, "card", "Unknown")
         return result
+
+    def info_basic_dict(self):
+        """Get basic SoC info from this node.
+
+        .. note::
+            * This function is the same as info_basic(), only a dictionary of
+              **{attributes : values}** is returned instead of an resultant
+              pyipmi object.
+
+        >>> n.info_basic_dict()
+        {'soc_version'      : 'v0.9.1',
+         'build_number'     : '7E10987C',
+         'uboot_version'    : 'v2012.07_cx_2012.10.29',
+         'ubootenv_version' : 'v2012.07_cx_2012.10.29',
+         'timestamp'        : '1352911670',
+         'cdb_version'      : 'v0.9.1-39-g7e10987',
+         'header'           : 'Calxeda SoC (0x0096CD)',
+         'version'          : 'ECX-1000-v1.7.1',
+         'bootlog_version'  : 'v0.9.1-39-g7e10987',
+         'a9boot_version'   : 'v2012.10.16',
+         'stage2_version'   : 'v0.9.1',
+         'dtb_version'      : 'v3.6-rc1_cx_2012.10.02',
+         'card'             : 'EnergyCard X02'
+        }
+
+        :returns: The results of IPMI info basic command.
+        :rtype: dictionary
+
+        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises Exception: If there are errors within the command response.
+
+        """
+        return vars(self.info_basic())
 
     def info_dump(self):
         """Returns an info dump from this target.
