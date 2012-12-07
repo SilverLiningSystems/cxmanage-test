@@ -427,11 +427,10 @@ class Fabric(object):
         """
         return self._run_command(async, "get_boot_order")
 
-    # TODO: should this be called get_versions?
-    def info_basic(self, async=False):
+    def get_versions(self, async=False):
         """Gets the version info from all nodes.
 
-        >>> fabric.info_basic()
+        >>> fabric.get_versions()
         {
          0: <pyipmi.info.InfoBasicResult object at 0x1f74150>,
          1: <pyipmi.info.InfoBasicResult object at 0x1f745d0>,
@@ -440,7 +439,7 @@ class Fabric(object):
         }
 
         .. seealso::
-            `Info Basic <node.html#cxmanage_api.node.Node.info_basic>`_
+            `Info Basic <node.html#cxmanage_api.node.Node.get_versions>`_
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Command object (can get status, etc.).
@@ -450,12 +449,12 @@ class Fabric(object):
         :rtype: dictionary or `Task <tasks.html>`_
 
         """
-        return self._run_command(async, "info_basic")
+        return self._run_command(async, "get_versions")
 
-    def info_basic_dict(self, async=False):
+    def get_versions_dict(self, async=False):
         """Gets the version info from all nodes.
 
-        >>> fabric.info_basic_dict()
+        >>> fabric.get_versions_dict()
         {0:
             {
              'a9boot_version'   : 'v2012.10.16',
@@ -473,13 +472,13 @@ class Fabric(object):
              'version'          : 'ECX-1000-v1.7.1'
             },
          #
-         # Output trimmed for brevity ... Each remaining Nodes info_basic
+         # Output trimmed for brevity ... Each remaining Nodes get_versions
          # dictionary would be printed.
          #
         }
 
         .. seealso::
-            `Info Basic Dict <node.html#cxmanage_api.node.Node.info_basic_dict>`_
+            `Info Basic Dict <node.html#cxmanage_api.node.Node.get_versions_dict>`_
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
@@ -490,7 +489,7 @@ class Fabric(object):
 
         """
         results = {}
-        for node_number, info in self.info_basic(async=async).items():
+        for node_number, info in self.get_versions(async=async).items():
             results[node_number] = vars(info)
         return results
 

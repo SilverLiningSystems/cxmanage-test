@@ -250,12 +250,12 @@ class NodeTest(unittest.TestCase):
 
             self.assertEqual(result, ["disk", "pxe"])
 
-    def test_info_basic(self):
-        """ Test node.info_basic method """
+    def test_get_versions(self):
+        """ Test node.get_versions method """
         for node in self.nodes:
-            result = node.info_basic()
+            result = node.get_versions()
 
-            self.assertEqual(node.bmc.executed, ["info_basic",
+            self.assertEqual(node.bmc.executed, ["get_info_basic",
                     "get_firmware_info", "info_card"])
             for attr in ["header", "version", "build_number", "timestamp",
                     "soc_version"]:
@@ -407,7 +407,7 @@ class DummyBMC(LanBMC):
 
     def get_info_basic(self):
         """ Get basic SoC info from this node """
-        self.executed.append("info_basic")
+        self.executed.append("get_info_basic")
 
         class Result:
             def __init__(self):

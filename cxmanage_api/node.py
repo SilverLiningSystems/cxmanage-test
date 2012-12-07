@@ -659,10 +659,10 @@ class Node(object):
         """
         return self.get_ubootenv().get_boot_order()
 
-    def info_basic(self):
-        """Get basic SoC info from this node.
+    def get_versions(self):
+        """Get version info from this node.
 
-        >>> node.info_basic()
+        >>> node.get_versions()
         <pyipmi.info.InfoBasicResult object at 0x2019b90>
         >>> # Some useful information ...
         >>> info.a9boot_version
@@ -708,15 +708,15 @@ class Node(object):
             setattr(result, "card", "Unknown")
         return result
 
-    def info_basic_dict(self):
-        """Get basic SoC info from this node.
+    def get_versions_dict(self):
+        """Get version info from this node.
 
         .. note::
-            * This function is the same as info_basic(), only a dictionary of
+            * This function is the same as get_versions(), only a dictionary of
               **{attributes : values}** is returned instead of an resultant
               pyipmi object.
 
-        >>> n.info_basic_dict()
+        >>> n.get_versions_dict()
         {'soc_version'      : 'v0.9.1',
          'build_number'     : '7E10987C',
          'uboot_version'    : 'v2012.07_cx_2012.10.29',
@@ -739,7 +739,7 @@ class Node(object):
         :raises Exception: If there are errors within the command response.
 
         """
-        return vars(self.info_basic())
+        return vars(self.get_versions())
 
     def info_dump(self):
         """Returns an info dump from this target.
@@ -1025,7 +1025,7 @@ class Node(object):
 
     def _check_firmware(self, package, partition_arg="INACTIVE", priority=None):
         """Check if this host is ready for an update."""
-        info = self.info_basic()
+        info = self.get_versions()
         fwinfo = self.get_firmware_info()
         # Check socman version
         if (package.required_socman_version):

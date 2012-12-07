@@ -116,11 +116,11 @@ class FabricTest(unittest.TestCase):
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_boot_order"])
 
-    def test_info_basic(self):
-        """ Test info_basic command """
-        self.fabric.info_basic()
+    def test_get_versions(self):
+        """ Test get_versions command """
+        self.fabric.get_versions()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["info_basic"])
+            self.assertEqual(node.executed, ["get_versions"])
 
     def test_info_dump(self):
         """ Test info_dump command """
@@ -207,8 +207,8 @@ class DummyNode:
         self.executed.append("get_boot_order")
         return ["disk", "pxe"]
 
-    def info_basic(self):
-        self.executed.append("info_basic")
+    def get_versions(self):
+        self.executed.append("get_versions")
 
         class Result:
             def __init__(self):

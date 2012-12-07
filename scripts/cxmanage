@@ -878,7 +878,7 @@ def info_basic_command(args):
 
     if not args.quiet:
         print "Getting info..."
-    results, errors = _run_command(args, nodes, "info_basic")
+    results, errors = _run_command(args, nodes, "get_versions")
 
     # Print results
     for node in nodes:
