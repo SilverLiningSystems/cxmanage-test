@@ -213,13 +213,12 @@ class DummyNode:
         class Result:
             def __init__(self):
                 self.header = "Calxeda SoC (0x0096CD)"
-                self.card = "TestBoard X00"
-                self.version = "v0.0.0"
-                self.build_number = "00000000"
-                self.timestamp = "0"
-                self.soc_version = "0.0.0"
-                self.a9boot_version = "0.0.0"
-                self.uboot_version = "0.0.0"
+                self.hardware_version = "TestBoard X00"
+                self.firmware_version = "v0.0.0"
+                self.ecme_version = "v0.0.0"
+                self.ecme_timestamp = "0"
+                self.a9boot_version = "v0.0.0"
+                self.uboot_version = "v0.0.0"
         return Result()
 
     def info_dump(self):

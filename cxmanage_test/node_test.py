@@ -257,8 +257,8 @@ class NodeTest(unittest.TestCase):
 
             self.assertEqual(node.bmc.executed, ["get_info_basic",
                     "get_firmware_info", "info_card"])
-            for attr in ["header", "version", "build_number", "timestamp",
-                    "soc_version"]:
+            for attr in ["iana", "firmware_version", "ecme_version",
+                    "ecme_timestamp"]:
                 self.assertTrue(hasattr(result, attr))
 
     def test_get_fabric_ipinfo(self):
@@ -411,11 +411,10 @@ class DummyBMC(LanBMC):
 
         class Result:
             def __init__(self):
-                self.header = "Calxeda SoC (0x0096CD)"
-                self.version = "v0.0.0"
-                self.soc_version = "0.0.0"
-                self.build_number = "00000000"
-                self.timestamp = "0"
+                self.iana = int("0x0096CD", 16)
+                self.firmware_version = "v0.0.0"
+                self.ecme_version = "v0.0.0"
+                self.ecme_timestamp = 0
         return Result()
 
     def get_info_card(self):

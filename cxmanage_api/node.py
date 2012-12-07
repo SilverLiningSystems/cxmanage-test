@@ -681,7 +681,6 @@ class Node(object):
         if (hasattr(result, "error")):
             raise Exception(result.error)
 
-        result.soc_version = "v%s" % result.soc_version
         fwinfo = self.get_firmware_info()
         components = [("cdb_version", "CDB"),
                       ("stage2_version", "S2_ELF"),
@@ -698,14 +697,14 @@ class Node(object):
                 pass
         try:
             card = self.bmc.get_info_card()
-            setattr(result, "card", "%s X%02i" %
+            setattr(result, "hardware_version", "%s X%02i" %
                     (card.type, int(card.revision)))
         except IpmiError as err:
             if (self.verbose):
                 print str(err)
-            # Should raise a cxmanage error, but we want to allow the command
-            # to continue gracefully if socman is out of date.
-            setattr(result, "card", "Unknown")
+            # Should raise an error, but we want to allow the command
+            # to continue gracefully if the ECME is out of date.
+            setattr(result, "hardware_version", "Unknown")
         return result
 
     def get_versions_dict(self):
@@ -1027,25 +1026,30 @@ class Node(object):
         """Check if this host is ready for an update."""
         info = self.get_versions()
         fwinfo = self.get_firmware_info()
+
         # Check socman version
         if (package.required_socman_version):
-            soc_version = info.soc_version.lstrip("v")
+            ecme_version = info.ecme_version.lstrip("v")
             required_version = package.required_socman_version.lstrip("v")
             if ((package.required_socman_version and
-                 parse_version(soc_version)) <
+                 parse_version(ecme_version)) <
                  parse_version(required_version)):
                 raise SocmanVersionError(
                         "Update requires socman version %s (found %s)"
-                        % (required_version, soc_version))
+                        % (required_version, ecme_version))
 
         # Check firmware config
-        if ((info.version != "Unknown") and (len(info.version) < 32)):
-            if ((package.config == "default") and ("slot2" in info.version)):
+        if (package.config and info.firmware_version != "Unknown" and
+                len(info.firmware_version) < 32):
+            if "slot2" in info.firmware_version:
+                firmware_config = "slot2"
+            else:
+                firmware_config = "default"
+
+            if (package.config != firmware_config):
                 raise FirmwareConfigError(
-                "Refusing to upload a \'default\' package to a \'slot2\' host")
-            if ((package.config == "slot2") and (not "slot2" in info.version)):
-                raise FirmwareConfigError(
-                "Refusing to upload a \'slot2\' package to a \'default\' host")
+                        "Refusing to upload a \'%s\' package to a \'%s\' host"
+                        % (package.config, firmware_config))
 
         # Check that the priority can be bumped
         if (priority == None):

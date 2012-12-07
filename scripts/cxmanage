@@ -863,7 +863,7 @@ def info_command(args):
 def info_basic_command(args):
     """Print basic info"""
     components = [
-        ("soc_version", "ECME version"),
+        ("ecme_version", "ECME version"),
         ("cdb_version", "CDB version"),
         ("stage2_version", "Stage2boot version"),
         ("bootlog_version", "Bootlog version"),
@@ -885,8 +885,8 @@ def info_basic_command(args):
         if node in results:
             result = results[node]
             print "[ Info from %s ]" % node.ip_address
-            print "Hardware version   : %s" % result.card
-            print "Firmware version   : %s" % result.version
+            print "Hardware version   : %s" % result.hardware_version
+            print "Firmware version   : %s" % result.firmware_version
             for var, string in components:
                 if hasattr(result, var):
                     version = getattr(result, var)
