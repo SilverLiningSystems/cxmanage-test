@@ -149,7 +149,7 @@ class Fabric(object):
         :type async: boolean
 
         :return: The MAC addresses for each node.
-        :rtype: dictionary or `Task <tasks.html>`_
+        :rtype: dictionary or `Task <tasks.html>`__
 
         """
         return self._run_command(async, "get_mac_addresses")
@@ -165,7 +165,7 @@ class Fabric(object):
         :type async: boolean
 
         :return: The power status of each node.
-        :rtype: dictionary or `Task <tasks.html>`_
+        :rtype: dictionary or `Task <tasks.html>`__
 
         """
         return self._run_command(async, "get_power")
@@ -201,7 +201,7 @@ class Fabric(object):
         :type async: boolean
 
         :return: The power policy for all nodes on this fabric.
-        :rtype: dictionary or `Task <tasks.html>`_
+        :rtype: dictionary or `Task <tasks.html>`__
 
         """
         return self._run_command(async, "get_power_policy")
@@ -295,7 +295,7 @@ class Fabric(object):
         :type async: boolean
 
         :return: THe firmware info for all nodes.
-        :rtype: dictionary or `Task <tasks.html>`_
+        :rtype: dictionary or `Task <tasks.html>`__
 
         """
         return self._run_command(async, "get_firmware_info")
@@ -334,7 +334,7 @@ class Fabric(object):
         :type async: boolean
 
         :return: THe firmware info for all nodes.
-        :rtype: dictionary or `Task <tasks.html>`_
+        :rtype: dictionary or `Task <tasks.html>`__
 
         """
         results = {}
@@ -361,7 +361,7 @@ class Fabric(object):
 
         :return: Whether or not a node can be updated with the specified
                  firmware package.
-        :rtype: dictionary or `Task <tasks.html>`_
+        :rtype: dictionary or `Task <tasks.html>`__
 
         """
         return self._run_command(async, "is_updatable", package,
@@ -429,7 +429,7 @@ class Fabric(object):
         :type async: boolean
 
         :returns: The boot order of each node on this fabric.
-        :rtype: dictionary or `Task <tasks.html>`_
+        :rtype: dictionary or `Task <tasks.html>`__
 
         """
         return self._run_command(async, "get_boot_order")
@@ -453,7 +453,7 @@ class Fabric(object):
         :type async: boolean
 
         :returns: The basic SoC info for all nodes.
-        :rtype: dictionary or `Task <tasks.html>`_
+        :rtype: dictionary or `Task <tasks.html>`__
 
         """
         return self._run_command(async, "get_versions")
@@ -492,7 +492,7 @@ class Fabric(object):
         :type async: boolean
 
         :returns: The basic SoC info for all nodes.
-        :rtype: dictionary or `Task <tasks.html>`_
+        :rtype: dictionary or `Task <tasks.html>`__
 
         """
         results = {}
