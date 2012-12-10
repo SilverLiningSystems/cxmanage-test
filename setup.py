@@ -42,7 +42,7 @@ setup(
     # at the top of scripts/cxmanage as well.
     install_requires=[
                         'tftpy',
-                        'pyipmi>=0.6.0',
+                        'pyipmi>=0.6.1',
                         'argparse',
                         'sphinx',
                         'cloud_sptheme'

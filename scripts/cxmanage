@@ -50,7 +50,7 @@ from cxmanage_api.image import Image
 from cxmanage_api.firmware_package import FirmwarePackage
 from cxmanage_api.ubootenv import UbootEnv
 
-PYIPMI_VERSION = '0.6.0'
+PYIPMI_VERSION = '0.6.1'
 IPMITOOL_VERSION = '1.8.11.0-cx3'
 
 # Load plugins
