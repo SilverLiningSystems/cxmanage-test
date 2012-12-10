@@ -8,13 +8,72 @@
 
 import os
 import sys
+import glob
 
+# #
+# The actual NAME of your API, as if you were to import it.
+API_NAME = 'cxmanage_api'
 
-SRC_FILES = {}
+# #
+# SRC_DIR is one directory level up from the docs dir
+# assuming a file structure like:
+# +--API/
+#       |---src_file1.py
+#       |---src_fileN.py
+#       +---docs/
+#               |--Makefile
+#               +--generate_api_rst.py
 SRC_DIR = os.path.dirname(os.path.abspath('.'))
-RST_DIR = os.path.dirname(os.path.abspath(__file__))
-BLACKLIST = []
+RST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'source')
 
+# #
+# Any files you don't want docs generated for (no extension needed)
+#
+# EXAMPLE: To exclude foo.py and bar.py ...
+# BLACK_LIST = ['foo', 'bar']
+#
+BLACKLIST = ['__init__']
+
+# #
+# Add any custom title you want for a specific python source file.
+#
+# EXAMPLE:
+# TITLES = {'some_obscure_script_name.py' : 'Some Less Obscure Title'}
+#
+TITLES = {
+          'simg' : 'SIMG',
+          'crc32' : 'CRC32',
+          'infodump' : 'Info Dump',
+          'ubootenv' : 'U-Boot Environment',
+         }
+
+def get_source(source_dir):
+    """Iterates recursively over dirs and gets all of the <filename>.py files.
+
+
+    :param source_dir: The (absolute) path to the source directory.
+    :type source_dir: string
+
+    :return: A mapping of file names to filename Titles.
+    :rtype: dictionary
+    """
+    if (not source_dir.endswith('/')):
+        source_dir += '/'
+
+    source = {API_NAME : {}}
+    paths = glob.glob(os.path.join(source_dir, '*.py'))
+    for path in paths:
+        f_path, f_ext = os.path.splitext(path)
+        f_name = f_path.split(source_dir)[1]
+        if (not f_name in BLACKLIST):
+            if TITLES.has_key(f_name):
+                source[API_NAME][f_name] = TITLES[f_name]
+            else:
+                source[API_NAME][f_name] = f_name.title()
+        else:
+            print 'Skipping docgen for source file: %s' % path
+
+    return source
 
 def parse_source(src_file):
     """Parses a given source file to get class and function names.
@@ -26,7 +85,7 @@ def parse_source(src_file):
 
     """
     def _get_object_name(line):
-        """Takes a class, function or method declaration and get the name."""
+        """Takes a class, function or method declaration and gets the name."""
         name = line.split()[1].split('(')[0].strip()
         return name.rstrip(':')
 
@@ -53,15 +112,17 @@ def parse_source(src_file):
 
     for class_name, function_names in classes.items():
         classes[class_name] = sorted(list(set(function_names)))
-    return classes, sorted(list(set(functions)))
 
+    return classes, sorted(list(set(functions)))
 
 def main():
     """Entry point for this script."""
-    for package, module in SRC_FILES.items():
+    src_files = get_source(SRC_DIR)
+    for package, module in src_files.items():
         for module_name, module_title in module.items():
             doc = os.path.join(RST_DIR, '%s.rst' % module_name)
             with open('%s' % doc, 'w') as rst_file:
+                print 'Generating Sphinx Docs for: %s' % doc
                 py_src = os.path.join(SRC_DIR, '%s.py' % module_name)
                 classes, functions = parse_source(py_src)
                 rst_file.write(module_title + '\n')
