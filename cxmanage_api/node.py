@@ -132,13 +132,16 @@ class Node(object):
         :rtype: list
 
         """
-        i = 0
         result = []
-        macaddr = self.bmc.get_fabric_macaddr(iface=i)
-        while (macaddr):
-            result.append(macaddr)
-            i += 1
-            macaddr = self.bmc.get_fabric_macaddr(iface=i)
+        try:
+            i = 0
+            while True:
+                result.append(self.bmc.get_fabric_macaddr(iface=i))
+                i += 1
+        except IpmiError as e:
+            if not "record not found" in str(e):
+                raise IpmiError(self._parse_ipmierror(e))
+
         return result
 
     def get_power(self):
@@ -1085,9 +1088,9 @@ class Node(object):
             error = str(error_details).lstrip().splitlines()[0].rstrip()
             if (error.startswith('Error: ')):
                 error = error[7:]
-            return 'IPMItool ERROR: %s' % error
+            return error
         except IndexError:
-            return 'IPMITool encountered an error.'
+            return 'Unknown IPMItool error.'
 
 
 # End of file: ./node.py
