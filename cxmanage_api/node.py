@@ -467,8 +467,9 @@ class Node(object):
 
         .. note::
             * This function is the same as get_firmware_info(), only a
-            dictionary of **{attributes : values}** is returned instead of an
-            resultant FWInfo object.
+              dictionary of **{attributes : values}** is returned instead of an
+              resultant FWInfo object.
+
 
         >>> node.get_firmware_info_dict()
         [
