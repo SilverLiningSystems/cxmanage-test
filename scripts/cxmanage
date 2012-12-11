@@ -37,7 +37,6 @@
 
 import argparse
 import os
-import pkgutil
 import sys
 import subprocess
 import pkg_resources
@@ -53,99 +52,92 @@ from cxmanage_api.ubootenv import UbootEnv
 PYIPMI_VERSION = '0.6.1'
 IPMITOOL_VERSION = '1.8.11.0-cx3'
 
-# Load plugins
-PREFIX = 'cxmanage_plugin'
-PLUGINS = [__import__(x[1]) for x in pkgutil.iter_modules()
-        if x[1].startswith(PREFIX)]
-
 def build_parser():
     """setup the argparse parser"""
-    p = {}
-
-    p['parser'] = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
             description='Calxeda Server Management Utility')
 
     #global arguments
-    p['parser'].add_argument('-V', '--version', action='store_true',
+    parser.add_argument('-V', '--version', action='store_true',
             help='Show version information')
-    p['parser'].add_argument('-u', '--user', default='admin',
+    parser.add_argument('-u', '--user', default='admin',
             help='Username for login')
-    p['parser'].add_argument('-p', '--password', default='admin',
+    parser.add_argument('-p', '--password', default='admin',
             help='Password for login')
-    p['parser'].add_argument('-a', '--all-nodes', action='store_true',
+    parser.add_argument('-a', '--all-nodes', action='store_true',
             help='Send command to all nodes reported by fabric')
-    p['parser'].add_argument('--threads', type=int, default=4,
+    parser.add_argument('--threads', type=int, default=4,
             metavar='THREAD_COUNT', help='Number of threads to use')
-    p['parser'].add_argument('--command_delay', type=float,
+    parser.add_argument('--command_delay', type=float,
             metavar='SECONDS', default=0.0,
             help='Per thread time to delay between issuing commands')
-    p['parser'].add_argument('--force', action='store_true',
+    parser.add_argument('--force', action='store_true',
             help='Force the command to run')
-    p['parser'].add_argument('--retry', help='Retry command on multiple times',
+    parser.add_argument('--retry', help='Retry command on multiple times',
             type=int, default=None, metavar='COUNT')
-    p['parser'].add_argument('--ipmipath', help='Path to ipmitool command',
+    parser.add_argument('--ipmipath', help='Path to ipmitool command',
             default=None)
-    p['verbosity'] = p['parser'].add_mutually_exclusive_group()
-    p['verbosity'].add_argument('-v', '--verbose', action='store_true',
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument('-v', '--verbose', action='store_true',
             help='Verbose output')
-    p['verbosity'].add_argument('-q', '--quiet', action='store_true',
+    verbosity.add_argument('-q', '--quiet', action='store_true',
             help='Quiet output')
-    p['tftp_type'] = p['parser'].add_mutually_exclusive_group()
-    p['tftp_type'].add_argument('--internal-tftp', metavar='IP:PORT',
+    tftp_type = parser.add_mutually_exclusive_group()
+    tftp_type.add_argument('--internal-tftp', metavar='IP:PORT',
             help='Host an internal TFTP server listening on ip:port')
-    p['tftp_type'].add_argument('--external-tftp', metavar='IP:PORT',
+    tftp_type.add_argument('--external-tftp', metavar='IP:PORT',
             help='Connect to remote TFTP server at ip:port')
 
-    p['subparsers'] = p['parser'].add_subparsers()
+    subparsers = parser.add_subparsers()
 
     #power command
-    p['power'] = p['subparsers'].add_parser('power',
+    power = subparsers.add_parser('power',
         help='control a9 power')
-    p['power_subs'] = p['power'].add_subparsers()
+    power_subs = power.add_subparsers()
 
-    p['power_on'] = p['power_subs'].add_parser('on', help='boot the a9')
-    p['power_on'].set_defaults(power_mode='on', func=power_command)
+    power_on = power_subs.add_parser('on', help='boot the a9')
+    power_on.set_defaults(power_mode='on', func=power_command)
 
-    p['power_off'] = p['power_subs'].add_parser('off', help='shut the a9 off')
-    p['power_off'].set_defaults(power_mode='off', func=power_command)
+    power_off = power_subs.add_parser('off', help='shut the a9 off')
+    power_off.set_defaults(power_mode='off', func=power_command)
 
-    p['power_reset'] = p['power_subs'].add_parser('reset', help='reset the a9')
-    p['power_reset'].set_defaults(power_mode='reset', func=power_command)
+    power_reset = power_subs.add_parser('reset', help='reset the a9')
+    power_reset.set_defaults(power_mode='reset', func=power_command)
 
-    p['power_status'] = p['power_subs'].add_parser('status',
+    power_status = power_subs.add_parser('status',
             help='get a9 power status')
-    p['power_status'].set_defaults(func=power_status_command)
+    power_status.set_defaults(func=power_status_command)
 
-    p['power_policy'] = p['power_subs'].add_parser('policy',
+    power_policy = power_subs.add_parser('policy',
             help='set a9 power policy')
-    p['power_policy_subs'] = p['power_policy'].add_subparsers()
+    power_policy_subs = power_policy.add_subparsers()
 
-    p['power_policy_always-on'] = p['power_policy_subs'].add_parser(
+    power_policy_always_on = power_policy_subs.add_parser(
             'always-on', help='always boot the a9 by default')
-    p['power_policy_always-on'].set_defaults(policy='always-on',
+    power_policy_always_on.set_defaults(policy='always-on',
             func=power_policy_command)
-    p['power_policy_always-off'] = p['power_policy_subs'].add_parser(
+    power_policy_always_off = power_policy_subs.add_parser(
             'always-off', help='never boot the a9 by default')
-    p['power_policy_always-off'].set_defaults(policy='always-off',
+    power_policy_always_off.set_defaults(policy='always-off',
             func=power_policy_command)
-    p['power_policy_previous'] = p['power_policy_subs'].add_parser(
+    power_policy_previous = power_policy_subs.add_parser(
             'previous', help='return to previous power state by default')
-    p['power_policy_previous'].set_defaults(policy='previous',
+    power_policy_previous.set_defaults(policy='previous',
             func=power_policy_command)
-    p['power_policy_status'] = p['power_policy_subs'].add_parser(
+    power_policy_status = power_policy_subs.add_parser(
             'status', help='get the current power policy')
-    p['power_policy_status'].set_defaults(func=power_policy_status_command)
+    power_policy_status.set_defaults(func=power_policy_status_command)
 
     #mcreset command
-    p['mcreset'] = p['subparsers'].add_parser('mcreset',
+    mcreset = subparsers.add_parser('mcreset',
             help='reset the management controller')
-    p['mcreset'].set_defaults(func=mcreset_command)
+    mcreset.set_defaults(func=mcreset_command)
 
     #fwupdate command
-    p['fwupdate'] = p['subparsers'].add_parser(
+    fwupdate = subparsers.add_parser(
                 'fwupdate', help='update firmware')
 
-    p['fwupdate'].add_argument('image_type', metavar='IMAGE_TYPE',
+    fwupdate.add_argument('image_type', metavar='IMAGE_TYPE',
             help='type of image to update', type=lambda string: string.upper(),
             choices = list(sorted([
                 'DEL',
@@ -166,8 +158,8 @@ def build_parser():
                 'DIAG_ELF',
                 'PACKAGE'
             ])))
-    p['fwupdate'].add_argument('filename', help='path to file to upload')
-    p['fwupdate'].add_argument('--partition',
+    fwupdate.add_argument('filename', help='path to file to upload')
+    fwupdate.add_argument('--partition',
             help='Specify partition to update', default='INACTIVE',
             type=lambda string: string.upper(),
             choices = list([
@@ -178,87 +170,83 @@ def build_parser():
                 'NEWEST',
                 'INACTIVE'
             ]))
-    p['simg_args'] = p['fwupdate'].add_mutually_exclusive_group()
-    p['simg_args'].add_argument('--force-simg',
+    simg_args = fwupdate.add_mutually_exclusive_group()
+    simg_args.add_argument('--force-simg',
             help='Force addition of SIMG header',
             default=False, action='store_true')
-    p['simg_args'].add_argument('--skip-simg',
+    simg_args.add_argument('--skip-simg',
             help='Skip addition of SIMG header',
             default=False, action='store_true')
-    p['fwupdate'].add_argument('--priority',
+    fwupdate.add_argument('--priority',
             help='Priority for SIMG header', default=None, type=int)
-    p['fwupdate'].add_argument('-d', '--daddr',
+    fwupdate.add_argument('-d', '--daddr',
             help='Destination address for SIMG',
             default=None, type=lambda x : int(x, 16))
-    p['fwupdate'].add_argument('--skip-crc32',
+    fwupdate.add_argument('--skip-crc32',
             help='Skip crc32 calculation for SIMG',
             default=False, action='store_true')
-    p['fwupdate'].add_argument('--version', dest='fw_version',
+    fwupdate.add_argument('--version', dest='fw_version',
             help='Version for SIMG header', default=None)
-    p['fwupdate'].set_defaults(func=fwupdate_command)
+    fwupdate.set_defaults(func=fwupdate_command)
 
     #fwinfo command
-    p['fwinfo'] = p['subparsers'].add_parser('fwinfo', help='get FW info')
-    p['fwinfo'].set_defaults(func=fwinfo_command)
+    fwinfo = subparsers.add_parser('fwinfo', help='get FW info')
+    fwinfo.set_defaults(func=fwinfo_command)
 
     #sensor command
-    p['sensor'] = p['subparsers'].add_parser('sensor',
+    sensor = subparsers.add_parser('sensor',
             help='read sensor value')
-    p['sensor'].add_argument('sensor_name', help='Sensor name to read',
+    sensor.add_argument('sensor_name', help='Sensor name to read',
             nargs='?', default='')
-    p['sensor'].set_defaults(func=sensor_command)
+    sensor.set_defaults(func=sensor_command)
 
     #ipinfo command
-    p['ipinfo'] = p['subparsers'].add_parser('ipinfo', help='get IP info')
-    p['ipinfo'].set_defaults(func=ipinfo_command)
+    ipinfo = subparsers.add_parser('ipinfo', help='get IP info')
+    ipinfo.set_defaults(func=ipinfo_command)
 
     #macaddrs command
-    p['macaddrs'] = p['subparsers'].add_parser('macaddrs',
+    macaddrs = subparsers.add_parser('macaddrs',
             help='get mac addresses')
-    p['macaddrs'].set_defaults(func=macaddrs_command)
+    macaddrs.set_defaults(func=macaddrs_command)
 
     #config command
-    p['config'] = p['subparsers'].add_parser('config', help='configure hosts')
-    p['config_subs'] = p['config'].add_subparsers()
+    config = subparsers.add_parser('config', help='configure hosts')
+    config_subs = config.add_subparsers()
 
-    p['reset'] = p['config_subs'].add_parser('reset',
+    reset = config_subs.add_parser('reset',
             help='reset to factory default')
-    p['reset'].set_defaults(func=config_reset_command)
+    reset.set_defaults(func=config_reset_command)
 
-    p['boot'] = p['config_subs'].add_parser('boot',
+    boot = config_subs.add_parser('boot',
             help='set A9 boot order')
-    p['boot'].add_argument('boot_order', help='boot order to use', default=[],
+    boot.add_argument('boot_order', help='boot order to use', default=[],
             type=lambda x: [] if x == 'none' else x.split(','))
-    p['boot'].set_defaults(func=config_boot_command)
+    boot.set_defaults(func=config_boot_command)
 
     #info command
-    p['info'] = p['subparsers'].add_parser('info', help='get host info')
-    p['info'].add_argument('info_type', metavar='INFO_TYPE', nargs='?',
+    info = subparsers.add_parser('info', help='get host info')
+    info.add_argument('info_type', metavar='INFO_TYPE', nargs='?',
             help='info type to get', type=lambda string: string.lower(),
             choices=list(sorted([
                 'basic',
                 'ubootenv',
                 'dump'
             ])))
-    p['info'].set_defaults(func=info_command)
+    info.set_defaults(func=info_command)
 
     #ipmitool command
-    p['ipmitool'] = p['subparsers'].add_parser('ipmitool',
+    ipmitool = subparsers.add_parser('ipmitool',
             help='run an arbitrary ipmitool command')
-    p['ipmitool'].add_argument('-l', '--lanplus',
+    ipmitool.add_argument('-l', '--lanplus',
             action='store_true', default=False,
             help='use lanplus')
-    p['ipmitool'].add_argument('ipmitool_args', nargs='+',
+    ipmitool.add_argument('ipmitool_args', nargs='+',
             help='ipmitool arguments')
-    p['ipmitool'].set_defaults(func=ipmitool_command)
+    ipmitool.set_defaults(func=ipmitool_command)
 
-    p['parser'].add_argument('hostname', help='hostname to target')
+    parser.add_argument('hostname', help='hostname to target')
 
-    #plugin commands
-    for plugin in PLUGINS:
-        plugin.add_args(p)
-
-    return p['parser']
+    return parser
 
 
 def validate_args(args):
