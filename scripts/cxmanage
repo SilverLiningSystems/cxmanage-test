@@ -77,6 +77,8 @@ def build_parser():
             type=int, default=None, metavar='COUNT')
     parser.add_argument('--ipmipath', help='Path to ipmitool command',
             default=None)
+    parser.add_argument('-n', '--nodes', metavar='COUNT', type=int,
+            help='Expected number of nodes')
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', action='store_true',
             help='Verbose output')
@@ -368,7 +370,7 @@ def get_tftp(args):
     return InternalTftp()
 
 
-def get_nodes(args, tftp):
+def get_nodes(args, tftp, verify_prompt=False):
     """Get nodes"""
     hosts = []
     for entry in args.hostname.split(','):
@@ -393,19 +395,29 @@ def get_nodes(args, tftp):
                     if not new_node in all_nodes:
                         all_nodes.append(new_node)
 
-        if not args.quiet:
+        if not args.quiet and all_nodes:
             print "Discovered the following IP addresses:"
             for node in all_nodes:
                 print node.ip_address
             print
 
         if errors:
-            print "ERROR: Failed to get IP addresses. Aborting."
+            print "ERROR: Failed to get IP addresses. Aborting.\n"
             sys.exit(1)
 
+        if args.nodes:
+            if len(all_nodes) != args.nodes:
+                print ("ERROR: Discovered %i nodes, expected %i. Aborting.\n"
+                        % (len(all_nodes), args.nodes))
+                sys.exit(1)
+        elif verify_prompt and not args.force:
+            if not prompt_yes("Discovered %i nodes. Continue?"
+                    % len(all_nodes)):
+                sys.exit(1)
+
         return all_nodes
-    else:
-        return nodes
+
+    return nodes
 
 
 def parse_host_entry(entry, hostfiles=set()):
@@ -470,6 +482,19 @@ def parse_ip_range_entry(entry):
         raise ValueError('%s is not an IP range' % entry)
 
     return addresses
+
+
+def prompt_yes(prompt):
+    sys.stdout.write("%s (y/n) " % prompt)
+    sys.stdout.flush()
+    while True:
+        command = raw_input().strip().lower()
+        if command in ['y', 'yes']:
+            print
+            return True
+        elif command in ['n', 'no']:
+            print
+            return False
 
 
 def power_command(args):
@@ -591,23 +616,16 @@ def fwupdate_command(args):
 
     # Print all_nodes warning/confirmation
     if not args.all_nodes:
-        sys.stdout.write('WARNING: Updating firmware without --all-nodes is dangerous.')
         if args.force:
-            sys.stdout.write('\n\n')
-            sys.stdout.flush()
+            print 'WARNING: Updating firmware without --all-nodes is dangerous.'
         else:
-            sys.stdout.write(' Continue? (y/n) ')
-            sys.stdout.flush()
-            while True:
-                command = raw_input().strip().lower()
-                if command in ['y', 'yes']:
-                    print
-                    break
-                elif command in ['n', 'no']:
-                    return 1
+            if not prompt_yes(
+                    'WARNING: Updating firmware without --all-nodes is dangerous. Continue?'):
+                return 1
+
 
     tftp = get_tftp(args)
-    nodes = get_nodes(args, tftp)
+    nodes = get_nodes(args, tftp, verify_prompt=True)
 
     if not args.force:
         if not args.quiet:
@@ -763,7 +781,7 @@ def macaddrs_command(args):
 def config_reset_command(args):
     """reset to factory default settings"""
     tftp = get_tftp(args)
-    nodes = get_nodes(args, tftp)
+    nodes = get_nodes(args, tftp, verify_prompt=True)
 
     if not args.quiet:
         print "Sending config reset command..."
