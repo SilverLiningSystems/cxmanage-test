@@ -673,48 +673,36 @@ def sensor_command(args):
     results, errors = _run_command(args, nodes, "get_sensors",
             args.sensor_name)
 
-    # Get sensor names across all nodes
-    sensor_names = []
+    sensors = {}
     for node in results:
-        for sensor_name in results[node]:
-            if not sensor_name in sensor_names:
-                sensor_names.append(sensor_name)
+        for sensor_name, sensor in results[node].iteritems():
+            if not sensor_name in sensors:
+                sensors[sensor_name] = []
 
-    # Print all sensors
-    for sensor_name in sensor_names:
+            reading = sensor.sensor_reading.replace("(+/- 0) ", "")
+            try:
+                value = float(reading.split()[0])
+                suffix = reading.lstrip("%f " % value)
+                sensors[sensor_name].append((node, value, suffix))
+            except ValueError:
+                sensors[sensor_name].append((node, reading, ""))
+
+    for sensor_name, readings in sensors.iteritems():
         print sensor_name
 
-        count = 0
-        average = 0.0
-        for node in nodes:
-            if node in results:
-                try:
-                    sensor = results[node][sensor_name]
-                    reading = sensor.sensor_reading.replace(
-                            "(+/- 0) ", "")
+        for node, reading, suffix in readings:
+            print "%s: %.2f %s" % (node.ip_address.ljust(16), reading, suffix)
 
-                    # Add to average and print
-                    try:
-                        value = float(reading.split()[0])
-                        if average != None:
-                            count += 1
-                            average += value
-                            suffix = reading.lstrip("%f " % value)
-                        print "%s: %.2f %s" % (node.ip_address.ljust(16),
-                                value, suffix)
-                    except ValueError:
-                        average = None
-                        print "%s: %s" % (node.ip_address.ljust(16),
-                                reading)
-
-                except IndexError:
-                    pass
-
-        # Print average
-        if count > 1 and average != None:
-            average /= count
-            print "%s: %.2f %s" % ("Average".ljust(16),
-                    average, suffix)
+        try:
+            if all(suffix == x[2] for x in readings):
+                minimum = min(x[1] for x in readings)
+                maximum = max(x[1] for x in readings)
+                average = sum(x[1] for x in readings) / len(readings)
+                print "Minimum         : %.2f %s" % (minimum, suffix)
+                print "Maximum         : %.2f %s" % (maximum, suffix)
+                print "Average         : %.2f %s" % (average, suffix)
+        except ValueError:
+            pass
 
         print
 
