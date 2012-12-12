@@ -28,26 +28,32 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+from cxmanage import get_tftp, get_nodes, run_command
 
-from setuptools import setup
 
-setup(
-    name='cxmanage',
-    version='0.6.1',
-    packages=['cxmanage', 'cxmanage_api'],
-    scripts=['scripts/cxmanage', 'scripts/cxpackage'],
-    package_data={'cxmanage_api': ['data/cids', 'data/registers']},
-    description='Calxeda Management Utility',
-    # NOTE: As of right now, the pyipmi version requirement needs to be updated
-    # at the top of scripts/cxmanage as well.
-    install_requires=[
-                        'tftpy',
-                        'pyipmi>=0.6.1',
-                        'argparse',
-                        'sphinx',
-                        'cloud_sptheme'
-    ],
-    classifiers=[
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2.7']
-)
+def ipmitool_command(args):
+    """run arbitrary ipmitool command"""
+    if args.lanplus:
+        ipmitool_args = ['-I', 'lanplus'] + args.ipmitool_args
+    else:
+        ipmitool_args = args.ipmitool_args
+
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Running IPMItool command..."
+    results, errors = run_command(args, nodes, "ipmitool_command",
+            ipmitool_args)
+
+    # Print results
+    for node in nodes:
+        if node in results and results[node] != "":
+            print "[ IPMItool output from %s ]" % node.ip_address
+            print results[node]
+            print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) > 0

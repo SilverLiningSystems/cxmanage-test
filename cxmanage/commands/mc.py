@@ -28,26 +28,20 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+from cxmanage import get_tftp, get_nodes, run_command
 
-from setuptools import setup
 
-setup(
-    name='cxmanage',
-    version='0.6.1',
-    packages=['cxmanage', 'cxmanage_api'],
-    scripts=['scripts/cxmanage', 'scripts/cxpackage'],
-    package_data={'cxmanage_api': ['data/cids', 'data/registers']},
-    description='Calxeda Management Utility',
-    # NOTE: As of right now, the pyipmi version requirement needs to be updated
-    # at the top of scripts/cxmanage as well.
-    install_requires=[
-                        'tftpy',
-                        'pyipmi>=0.6.1',
-                        'argparse',
-                        'sphinx',
-                        'cloud_sptheme'
-    ],
-    classifiers=[
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2.7']
-)
+def mcreset_command(args):
+    """reset the management controllers of a cluster or host"""
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print 'Sending MC reset command...'
+
+    results, errors = run_command(args, nodes, 'mc_reset')
+
+    if not args.quiet and not errors:
+        print 'Command completed successfully.\n'
+
+    return len(errors) > 0

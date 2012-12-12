@@ -27,27 +27,3 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-
-
-from setuptools import setup
-
-setup(
-    name='cxmanage',
-    version='0.6.1',
-    packages=['cxmanage', 'cxmanage_api'],
-    scripts=['scripts/cxmanage', 'scripts/cxpackage'],
-    package_data={'cxmanage_api': ['data/cids', 'data/registers']},
-    description='Calxeda Management Utility',
-    # NOTE: As of right now, the pyipmi version requirement needs to be updated
-    # at the top of scripts/cxmanage as well.
-    install_requires=[
-                        'tftpy',
-                        'pyipmi>=0.6.1',
-                        'argparse',
-                        'sphinx',
-                        'cloud_sptheme'
-    ],
-    classifiers=[
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2.7']
-)
