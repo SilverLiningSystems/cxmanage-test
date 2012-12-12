@@ -65,8 +65,8 @@ def build_parser():
             help='Password for login')
     parser.add_argument('-a', '--all-nodes', action='store_true',
             help='Send command to all nodes reported by fabric')
-    parser.add_argument('--threads', type=int, default=4,
-            metavar='THREAD_COUNT', help='Number of threads to use')
+    parser.add_argument('--threads', type=int, metavar='THREAD_COUNT',
+            help='Number of threads to use')
     parser.add_argument('--command_delay', type=float,
             metavar='SECONDS', default=0.0,
             help='Per thread time to delay between issuing commands')
@@ -252,7 +252,7 @@ def build_parser():
 
 def validate_args(args):
     """ Bail out if the arguments don't make sense"""
-    if args.threads < 1:
+    if args.threads != None and args.threads < 1:
         sys.exit('ERROR: --threads must be at least 1')
     if args.func == fwupdate_command:
         if args.skip_simg and args.priority:

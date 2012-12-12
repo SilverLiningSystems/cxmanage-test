@@ -122,7 +122,11 @@ def get_nodes(args, tftp, verify_prompt=False):
 
 
 def run_command(args, nodes, name, *method_args):
-    task_queue = TaskQueue(threads=args.threads, delay=args.command_delay)
+    if args.threads != None:
+        task_queue = TaskQueue(threads=args.threads, delay=args.command_delay)
+    else:
+        task_queue = TaskQueue(delay=args.command_delay)
+
     tasks = {}
     for node in nodes:
         tasks[node] = task_queue.put(getattr(node, name), *method_args)
