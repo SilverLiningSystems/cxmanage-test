@@ -38,7 +38,7 @@ BLACKLIST = ['__init__']
 # Add any custom title you want for a specific python source file.
 #
 # EXAMPLE:
-# TITLES = {'some_obscure_script_name.py' : 'Some Less Obscure Title'}
+# TITLES = {'some_obscure_script_name' : 'Some Less Obscure Title'}
 #
 TITLES = {
           'simg' : 'SIMG',

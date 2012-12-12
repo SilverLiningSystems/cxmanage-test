@@ -23,6 +23,7 @@ This Python API provides a mechanism for (at a high level):
 
 Installation
 ============
+
 Requirements
 ------------
 ``Operating Systems``
@@ -36,7 +37,6 @@ Requirements
 .. note::
     * Windows requires `Cygwin <http://cygwin.com>`_
     * For Cygwin compatibility, Python version 2.6 is adhered to.
-
 
 Installation Steps
 ------------------
@@ -173,4 +173,4 @@ API Docs & Code Examples
 
     Fabric Basics <fab_basics>
     Firmware Installation Basics <fw_install.rst>
-
+    Index <contents>
