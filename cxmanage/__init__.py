@@ -69,7 +69,7 @@ def get_tftp(args):
         return ExternalTftp(ip_address=ip_address, port=port,
                 verbose=args.verbose)
 
-    return InternalTftp()
+    return InternalTftp(verbose=args.verbose)
 
 
 def get_nodes(args, tftp, verify_prompt=False):
