@@ -1,5 +1,8 @@
 """Defines the custom exceptions used by the cxmanage_api project."""
 
+from pyipmi import IpmiError
+from tftpy.TftpShared import TftpException
+
 
 class TimeoutError(Exception):
     """Raised when a timeout has been reached.
@@ -44,56 +47,6 @@ class NoPartitionError(Exception):
     def __init__(self, msg):
         """Default constructor for the NoPartitionError class."""
         super(NoPartitionError, self).__init__()
-        self.msg = msg
-
-    def __str__(self):
-        """String representation of this Exception class."""
-        return self.msg
-
-
-class NoIpInfoError(Exception):
-    """Raised when the Ip Info cannot be retrieved from a node.
-
-    >>> from cxmanage_api.cx_exceptions import NoIpInfoError
-    >>> raise NoIpInfoError('My custom exception text!')
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-    cxmanage_api.cx_exceptions.NoIpInfoError: My custom exception text!
-
-    :param msg: Exceptions message and details to return to the user.
-    :type msg: string
-    :raised: When the Ip Info cannot be retrieved from a node.
-
-    """
-
-    def __init__(self, msg):
-        """Default constructor for the NoIpInfo class."""
-        super(NoIpInfoError, self).__init__()
-        self.msg = msg
-
-    def __str__(self):
-        """String representation of this Exception class."""
-        return self.msg
-
-
-class NoMacAddressError(Exception):
-    """Raised when MAC addresses cannot be retrieved from a node.
-
-    >>> from cxmanage_api.cx_exceptions import NoMacAddressError
-    >>> raise NoMacAddressError('My custom exception text!')
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-    cxmanage_api.cx_exceptions.NoMacAddressError: My custom exception text!
-
-    :param msg: Exceptions message and details to return to the user.
-    :type msg: string
-    :raised: When MAC adresses cannot be retrieved from a node.
-
-    """
-
-    def __init__(self, msg):
-        """Default constructor for the NoAddressError class."""
-        super(NoMacAddressError, self).__init__()
         self.msg = msg
 
     def __str__(self):

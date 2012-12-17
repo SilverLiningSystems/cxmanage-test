@@ -34,6 +34,7 @@ import time
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.node import Node
 from cxmanage_api.tasks import TaskQueue
+from cxmanage_api.cx_exceptions import TftpException
 
 
 def get_tftp(args):
@@ -279,6 +280,12 @@ def _print_errors(nodes, errors):
                 print "%s: %s" % (node.ip_address.ljust(16),
                         errors[node])
         print
+
+        # Print a special message for TFTP errors
+        if all(isinstance(x, TftpException) for x in errors.itervalues()):
+            print "There may be networking issues (when behind NAT) between the host (where"
+            print "cxmanage is running) and the Calxeda node when establishing a TFTP session."
+            print "Please refer to the documentation for more information.\n"
 
 
 def _print_command_status(tasks, counter):

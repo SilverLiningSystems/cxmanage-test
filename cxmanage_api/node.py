@@ -44,10 +44,10 @@ from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.infodump import get_info_dump
-from cxmanage_api.cx_exceptions import NoIpInfoError, TimeoutError, \
-        NoSensorError, NoFirmwareInfoError, SocmanVersionError, \
-        FirmwareConfigError, PriorityIncrementError, NoPartitionError, \
-        TransferFailure, ImageSizeError, NoMacAddressError
+from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
+        NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
+        PriorityIncrementError, NoPartitionError, TransferFailure, \
+        ImageSizeError
 
 
 class Node(object):
@@ -809,9 +809,8 @@ class Node(object):
         :return: Returns a map of node_ids->ip_addresses.
         :rtype: dictionary
 
-        :raises NoIpInfoError: If no results are returned.
-        :raises Exception: If there are errors within the command response.
-        :raises IOError: If the TFTP file to read from does not exist.
+        :raises IpmiError: If the IPMI command fails.
+        :raises TftpException: If the TFTP transfer fails.
 
         """
         filename = temp_file()
@@ -820,9 +819,8 @@ class Node(object):
             result = self.bmc.get_fabric_ipinfo(basename, self.tftp_address)
         except IpmiError as err:
             raise IpmiError(self._parse_ipmierror(err))
-
         if (hasattr(result, "error")):
-            raise Exception(result.error)
+            raise IpmiError(result.error)
 
         # Wait for file
         deadline = time.time() + 10
@@ -850,7 +848,8 @@ class Node(object):
 
         # Make sure we found something
         if (not results):
-            raise NoIpInfoError("Node failed to reach TFTP server")
+            raise TftpException("Node failed to reach TFTP server")
+
         return results
 
     def get_fabric_macaddrs(self):
@@ -859,9 +858,8 @@ class Node(object):
         :return: Returns a map of node_ids->ports->mac_addresses.
         :rtype: dictionary
 
-        :raises NoMacAddressError: If no results are returned.
-        :raises Exception: If there are errors within the command response.
-        :raises IOError: If the TFTP file to read from does not exist.
+        :raises IpmiError: If the IPMI command fails.
+        :raises TftpException: If the TFTP transfer fails.
 
         """
         filename = temp_file()
@@ -870,9 +868,8 @@ class Node(object):
             result = self.bmc.get_fabric_macaddresses(basename, self.tftp_address)
         except IpmiError as err:
             raise IpmiError(self._parse_ipmierror(err))
-
         if (hasattr(result, "error")):
-            raise Exception(result.error)
+            raise IpmiError(result.error)
 
         # Wait for file
         deadline = time.time() + 10
@@ -900,7 +897,8 @@ class Node(object):
 
         # Make sure we found something
         if (not results):
-            raise NoMacAddressError("Node failed to reach TFTP server")
+            raise TftpException("Node failed to reach TFTP server")
+
         return results
 
 ############################### Private methods ###############################
