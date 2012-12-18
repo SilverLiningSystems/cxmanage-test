@@ -42,18 +42,19 @@ def sensor_command(args):
             args.sensor_name)
 
     sensors = {}
-    for node in results:
-        for sensor_name, sensor in results[node].iteritems():
-            if not sensor_name in sensors:
-                sensors[sensor_name] = []
+    for node in nodes:
+        if node in results:
+            for sensor_name, sensor in results[node].iteritems():
+                if not sensor_name in sensors:
+                    sensors[sensor_name] = []
 
-            reading = sensor.sensor_reading.replace("(+/- 0) ", "")
-            try:
-                value = float(reading.split()[0])
-                suffix = reading.lstrip("%f " % value)
-                sensors[sensor_name].append((node, value, suffix))
-            except ValueError:
-                sensors[sensor_name].append((node, reading, ""))
+                reading = sensor.sensor_reading.replace("(+/- 0) ", "")
+                try:
+                    value = float(reading.split()[0])
+                    suffix = reading.lstrip("%f " % value)
+                    sensors[sensor_name].append((node, value, suffix))
+                except ValueError:
+                    sensors[sensor_name].append((node, reading, ""))
 
     for sensor_name, readings in sensors.iteritems():
         print sensor_name
