@@ -46,6 +46,8 @@ class Task(object):
     def __init__(self, method, *args):
         """Default constructor for the Task class."""
         self.status = "Queued"
+        self.result = None
+        self.error = None
 
         self._method = method
         self._args = args

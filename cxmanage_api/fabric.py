@@ -598,7 +598,7 @@ class Fabric(object):
                 if task.status == "Completed":
                     results[node_id] = task.result
                 else:
-                    errors[node_id] = task.errors
+                    errors[node_id] = task.error
             if errors:
                 raise CommandFailedError(results, errors)
             return results

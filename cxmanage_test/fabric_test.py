@@ -36,6 +36,7 @@ from cxmanage_api.fabric import Fabric
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.firmware_package import FirmwarePackage
 from cxmanage_api.ubootenv import UbootEnv
+from cxmanage_api.cx_exceptions import CommandFailedError
 from cxmanage_test import TestSensor
 
 NUM_NODES = 128
@@ -141,8 +142,19 @@ class FabricTest(unittest.TestCase):
         for node in self.nodes:
             self.assertEqual(node.executed, [("ipmitool_command", ipmitool_args)])
 
+    def test_failed_command(self):
+        """ Test a failed command """
+        fail_nodes = [DummyFailNode(x) for x in ADDRESSES]
+        self.fabric._nodes = dict((i, fail_nodes[i]) for i in xrange(NUM_NODES))
+        try:
+            self.fabric.get_power()
+            self.fail()
+        except CommandFailedError:
+            for node in fail_nodes:
+                self.assertEqual(node.executed, ["get_power"])
 
-class DummyNode:
+
+class DummyNode(object):
     """ Dummy node for the nodemanager tests """
     def __init__(self, ip_address, username="admin", password="admin",
             tftp=None, *args, **kwargs):
@@ -238,6 +250,17 @@ class DummyNode:
 
     def get_fabric_ipinfo(self):
         return {}
+
+
+class DummyFailNode(DummyNode):
+    """ Dummy node that should fail on some commands """
+
+    class DummyFailError(Exception):
+        pass
+
+    def get_power(self):
+        self.executed.append("get_power")
+        raise DummyFailNode.DummyFailError
 
 class DummyImage:
     def __init__(self, filename, image_type, *args):
