@@ -108,6 +108,9 @@ class Node(object):
     def __hash__(self):
         return hash(self.ip_address)
 
+    def __str__(self):
+        return 'Node: %s' % self.ip_address
+
     @property
     def tftp_address(self):
         """Returns the tftp_address (ip:port) that this node is using.

@@ -87,6 +87,11 @@ class Fabric(object):
         """__hash__() override."""
         return hash(tuple(self.nodes.iteritems()))
 
+    def __str__(self):
+        """__str__() override."""
+        return 'Fabric Node 0: %s (%d nodes)' % (self.nodes[0].ip_address,
+                                                 len(self.nodes))
+
     @property
     def tftp(self):
         """Returns the tftp server for this Fabric.
