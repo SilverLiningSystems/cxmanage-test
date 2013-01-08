@@ -358,8 +358,7 @@ class CommandFailedError(Exception):
         self.results = results
         self.errors = errors
 
-    def __str__(self):
-        """String representation of this Exception class."""
+    def __repr__(self):
         return 'Results: %s Errors: %s' % (self.results, self.errors)
 
 
