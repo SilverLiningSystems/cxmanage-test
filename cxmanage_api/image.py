@@ -84,14 +84,12 @@ class Image:
             raise InvalidImageError("%s is not a valid %s image" %
                                     (filename, image_type))
 
-    def upload(self, tftp, priority, daddr):
-        """Creates & upload an SIMG file.
+    def render_to_simg(self, priority, daddr):
+        """Creates a SIMG file.
 
-        >>> img.upload(tftp=i_tftp, priority=1, daddr=0)
+        >>> img.render_to_simg(priority=1, daddr=0)
         >>> 'spi_highbank.bin'
 
-        :param tftp: TFTP server to facilitate file transfer.
-        :type tftp: `InternalTftp <tftp.html#cxmanage_api.tftp.InternalTftp>`_ | `ExternalTftp <tftp.html#cxmanage_api.tftp.ExternalTftp>`_
         :param priority: SIMG header priority value.
         :type priority: integer
         :param daddr: SIMG daddr field value.
@@ -123,10 +121,8 @@ class Image:
         if (not valid_simg(open(filename).read())):
             raise InvalidImageError("%s is not a valid SIMG" %
                     os.path.basename(self.filename))
-        # Upload to tftp
-        basename = os.path.basename(filename)
-        tftp.put_file(src=filename, dest=basename)
-        return basename
+
+        return filename
 
     def size(self):
         """Return the full size of this image (as an SIMG)

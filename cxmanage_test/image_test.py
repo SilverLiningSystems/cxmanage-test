@@ -52,7 +52,7 @@ class ImageTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.work_dir)
 
-    def test_upload(self):
+    def test_render_to_simg(self):
         """ Test image creation and upload """
         imglen = 1024
         priority = 1
@@ -63,15 +63,8 @@ class ImageTest(unittest.TestCase):
         contents = open(filename).read()
         image = TestImage(filename, "RAW")
 
-        # Upload image and delete file
-        image_filename = image.upload(self.tftp, priority, daddr)
-        os.remove(filename)
-
-        # Download image
-        filename = "%s/%s" % (self.work_dir, image_filename)
-        self.tftp.get_file(image_filename, filename)
-
-        # Examine image
+        # Render and examine image
+        filename = image.render_to_simg(priority, daddr)
         simg = open(filename).read()
         header = get_simg_header(simg)
         self.assertEqual(header.priority, priority)
@@ -83,11 +76,11 @@ class ImageTest(unittest.TestCase):
         """ Test to make sure FDs are being closed """
         # Create image
         filename = random_file(1024)
-        contents = open(filename).read()
         image = TestImage(filename, "RAW")
 
         for x in xrange(2048):
-            image.upload(self.tftp, 0, 0)
+            image.render_to_simg(0, 0)
+
         os.remove(filename)
 
 # End of file: ./image_test.py

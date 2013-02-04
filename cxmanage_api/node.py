@@ -31,7 +31,6 @@
 
 import os
 import time
-import traceback
 import subprocess
 
 from pkg_resources import parse_version
@@ -963,26 +962,22 @@ class Node(object):
                     image.type, partition_id)
 
         # Upload image to tftp server
-        filename = image.upload(self.tftp, priority, daddr)
-        while (True):
-            try:
-                # Update the firmware
-                result = self.bmc.update_firmware(filename,
-                                                  partition_id, image.type,
-                                                  self.tftp_address)
-                if (not hasattr(result, "tftp_handle_id")):
-                    raise AttributeError("Failed to start firmware upload")
-                self._wait_for_transfer(result.tftp_handle_id)
-                # Verify crc and activate
-                result = self.bmc.check_firmware(partition_id)
-                if ((not hasattr(result, "crc32")) or (result.error != None)):
-                    raise AttributeError("Node reported crc32 check failure")
-                self.bmc.activate_firmware(partition_id)
-                break
-            except Exception:
-                if (self.verbose):
-                    traceback.format_exc()
-                raise
+        filename = image.render_to_simg(priority, daddr)
+        basename = os.path.basename(filename)
+        self.tftp.put_file(filename, basename)
+        
+        # Update the firmware
+        result = self.bmc.update_firmware(filename, partition_id, image.type,
+                self.tftp_address)
+        if (not hasattr(result, "tftp_handle_id")):
+            raise AttributeError("Failed to start firmware upload")
+        self._wait_for_transfer(result.tftp_handle_id)
+
+        # Verify crc and activate
+        result = self.bmc.check_firmware(partition_id)
+        if ((not hasattr(result, "crc32")) or (result.error != None)):
+            raise AttributeError("Node reported crc32 check failure")
+        self.bmc.activate_firmware(partition_id)
 
     def _download_image(self, partition):
         """Download an image from the target."""
@@ -991,18 +986,11 @@ class Node(object):
         basename = os.path.basename(filename)
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
-        while (True):
-            try:
-                result = self.bmc.retrieve_firmware(basename, partition_id,
-                        image_type, self.tftp_address)
-                if (not hasattr(result, "tftp_handle_id")):
-                    raise AttributeError("Failed to start firmware download")
-                self._wait_for_transfer(result.tftp_handle_id)
-                break
-            except Exception:
-                if (self.verbose):
-                    traceback.format_exc()
-                raise
+        result = self.bmc.retrieve_firmware(basename, partition_id,
+                image_type, self.tftp_address)
+        if (not hasattr(result, "tftp_handle_id")):
+            raise AttributeError("Failed to start firmware download")
+        self._wait_for_transfer(result.tftp_handle_id)
 
         self.tftp.get_file(basename, filename)
         return self.image(filename=filename, image_type=image_type,
