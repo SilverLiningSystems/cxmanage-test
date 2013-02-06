@@ -267,7 +267,8 @@ class NodeTest(unittest.TestCase):
         for node in self.nodes:
             result = node.get_fabric_ipinfo()
 
-            self.assertEqual(node.bmc.executed, ["get_fabric_ipinfo"])
+            for x in node.bmc.executed:
+                self.assertEqual(x, "get_fabric_ipinfo")
             self.assertEqual(result, dict([(i, ADDRESSES[i])
                     for i in range(NUM_NODES)]))
 
@@ -276,7 +277,8 @@ class NodeTest(unittest.TestCase):
         for node in self.nodes:
             result = node.get_fabric_macaddrs()
 
-            self.assertEqual(node.bmc.executed, ["get_fabric_macaddresses"])
+            for x in node.bmc.executed:
+                self.assertEqual(x, "get_fabric_macaddresses")
             self.assertEqual(len(result), NUM_NODES)
             for node_id in xrange(NUM_NODES):
                 self.assertEqual(len(result[node_id]), 3)
@@ -437,9 +439,12 @@ class DummyBMC(LanBMC):
                 self.revision = "0"
         return Result()
 
-    def get_fabric_ipinfo(self, filename, tftp_address):
+    def get_fabric_ipinfo(self, filename, tftp_address=None):
         """ Upload an ipinfo file from the node to TFTP"""
         self.executed.append("get_fabric_ipinfo")
+
+        if tftp_address == None:
+            raise IpmiError()
 
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 
@@ -457,9 +462,12 @@ class DummyBMC(LanBMC):
 
         shutil.rmtree(work_dir)
 
-    def get_fabric_macaddresses(self, filename, tftp_address):
+    def get_fabric_macaddresses(self, filename, tftp_address=None):
         """ Upload a macaddrs file from the node to TFTP"""
         self.executed.append("get_fabric_macaddresses")
+
+        if tftp_address == None:
+            raise IpmiError()
 
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 

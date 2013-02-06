@@ -818,23 +818,30 @@ class Node(object):
         """
         filename = temp_file()
         basename = os.path.basename(filename)
-        try:
-            result = self.bmc.get_fabric_ipinfo(basename, self.tftp_address)
-        except IpmiError as err:
-            raise IpmiError(self._parse_ipmierror(err))
-        if (hasattr(result, "error")):
-            raise IpmiError(result.error)
 
-        # Wait for file
-        deadline = time.time() + 10
-        while time.time() < deadline:
+        try:
+            result = self.bmc.get_fabric_ipinfo(basename)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+            self.node_tftp.get_file(basename, filename)
+        except (IpmiError, TftpException):
+            # Fall back and use our tftp server
             try:
-                time.sleep(1)
-                self.tftp.get_file(src=basename, dest=filename)
-                if (os.path.getsize(filename) > 0):
-                    break
-            except (TftpException, IOError):
-                pass
+                result = self.bmc.get_fabric_ipinfo(basename, self.tftp_address)
+            except IpmiError as e:
+                raise self._parse_ipmierror(e)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+        
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                try:
+                    time.sleep(1)
+                    self.tftp.get_file(src=basename, dest=filename)
+                    if (os.path.getsize(filename) > 0):
+                        break
+                except (TftpException, IOError):
+                    pass
 
         # Parse addresses from ipinfo file
         results = {}
@@ -867,24 +874,32 @@ class Node(object):
         """
         filename = temp_file()
         basename = os.path.basename(filename)
+
         try:
-            result = self.bmc.get_fabric_macaddresses(basename, self.tftp_address)
-        except IpmiError as err:
-            raise IpmiError(self._parse_ipmierror(err))
-        if (hasattr(result, "error")):
-            raise IpmiError(result.error)
-
-        # Wait for file
-        deadline = time.time() + 10
-        while time.time() < deadline:
+            result = self.bmc.get_fabric_macaddresses(basename)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+            self.node_tftp.get_file(basename, filename)
+        except (IpmiError, TftpException):
+            # Fall back and use our tftp server
             try:
-                time.sleep(1)
-                self.tftp.get_file(src=basename, dest=filename)
-                if (os.path.getsize(filename) > 0):
-                    break
-            except (TftpException, IOError):
-                pass
-
+                result = self.bmc.get_fabric_macaddresses(basename,
+                        self.tftp_address)
+            except IpmiError as e:
+                raise self._parse_ipmierror(e)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+        
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                try:
+                    time.sleep(1)
+                    self.tftp.get_file(src=basename, dest=filename)
+                    if (os.path.getsize(filename) > 0):
+                        break
+                except (TftpException, IOError):
+                    pass
+    
         # Parse addresses from ipinfo file
         results = {}
         for line in open(filename):
