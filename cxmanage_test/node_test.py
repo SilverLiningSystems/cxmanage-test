@@ -35,6 +35,7 @@ import shutil
 import tempfile
 import unittest
 
+from pyipmi import IpmiError
 from pyipmi.bmc import LanBMC
 
 from cxmanage_test import TestImage, TestSensor
@@ -366,6 +367,16 @@ class DummyBMC(LanBMC):
             def __init__(self):
                 self.tftp_handle_id = 0
         return Result()
+
+    def register_firmware_read(self, filename, partition, image_type):
+        self.executed.append(("register_firmware_read", filename, partition,
+                image_type))
+        raise IpmiError()
+
+    def register_firmware_write(self, filename, partition, image_type):
+        self.executed.append(("register_firmware_write", filename, partition,
+                image_type))
+        raise IpmiError()
 
     def get_firmware_status(self, handle):
         self.executed.append("get_firmware_status")

@@ -39,7 +39,7 @@ from pyipmi.bmc import LanBMC as BMC
 from tftpy.TftpShared import TftpException
 
 from cxmanage_api import temp_file
-from cxmanage_api.tftp import InternalTftp
+from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.infodump import get_info_dump
@@ -94,6 +94,7 @@ class Node(object):
         self.username = username
         self.password = password
         self.tftp = tftp
+        self.node_tftp = ExternalTftp(ip_address, 5001)
         self.verbose = verbose
 
         self.bmc = make_bmc(bmc, hostname=ip_address, username=username,
@@ -961,17 +962,20 @@ class Node(object):
             raise ImageSizeError("%s image is too large for partition %i" %
                     image.type, partition_id)
 
-        # Upload image to tftp server
         filename = image.render_to_simg(priority, daddr)
         basename = os.path.basename(filename)
-        self.tftp.put_file(filename, basename)
         
-        # Update the firmware
-        result = self.bmc.update_firmware(filename, partition_id, image.type,
-                self.tftp_address)
-        if (not hasattr(result, "tftp_handle_id")):
-            raise AttributeError("Failed to start firmware upload")
-        self._wait_for_transfer(result.tftp_handle_id)
+        try:
+            self.bmc.register_firmware_write(basename, partition_id, image.type)
+            self.node_tftp.put_file(filename, basename)
+        except (IpmiError, TftpException):
+            # Fall back and use TFTP server
+            self.tftp.put_file(filename, basename)
+            result = self.bmc.update_firmware(basename, partition_id, image.type,
+                    self.tftp_address)
+            if (not hasattr(result, "tftp_handle_id")):
+                raise AttributeError("Failed to start firmware upload")
+            self._wait_for_transfer(result.tftp_handle_id)
 
         # Verify crc and activate
         result = self.bmc.check_firmware(partition_id)
@@ -981,18 +985,23 @@ class Node(object):
 
     def _download_image(self, partition):
         """Download an image from the target."""
-        # Download the image
         filename = temp_file()
         basename = os.path.basename(filename)
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
-        result = self.bmc.retrieve_firmware(basename, partition_id,
-                image_type, self.tftp_address)
-        if (not hasattr(result, "tftp_handle_id")):
-            raise AttributeError("Failed to start firmware download")
-        self._wait_for_transfer(result.tftp_handle_id)
-
-        self.tftp.get_file(basename, filename)
+        
+        try:
+            self.bmc.register_firmware_read(basename, partition_id, image_type)
+            self.node_tftp.get_file(basename, filename)
+        except (IpmiError, TftpException):
+            # Fall back and use TFTP server
+            result = self.bmc.retrieve_firmware(basename, partition_id,
+                    image_type, self.tftp_address)
+            if (not hasattr(result, "tftp_handle_id")):
+                raise AttributeError("Failed to start firmware download")
+            self._wait_for_transfer(result.tftp_handle_id)
+            self.tftp.get_file(basename, filename)
+            
         return self.image(filename=filename, image_type=image_type,
                           daddr=int(partition.daddr, 16),
                           version=partition.version)
