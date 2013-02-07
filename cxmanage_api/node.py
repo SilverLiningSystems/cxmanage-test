@@ -975,7 +975,7 @@ class Node(object):
         # Check image size
         if (image.size() > int(partition.size, 16)):
             raise ImageSizeError("%s image is too large for partition %i" %
-                    image.type, partition_id)
+                    (image.type, partition_id))
 
         filename = image.render_to_simg(priority, daddr)
         basename = os.path.basename(filename)
