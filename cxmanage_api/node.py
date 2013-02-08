@@ -529,7 +529,7 @@ class Node(object):
             self._check_firmware(package, partition_arg, priority)
             return True
         except (SocmanVersionError, FirmwareConfigError,
-                PriorityIncrementError, NoPartitionError):
+                PriorityIncrementError, NoPartitionError, ImageSizeError):
             return False
 
     def update_firmware(self, package, partition_arg="INACTIVE",
@@ -1075,10 +1075,18 @@ class Node(object):
         # Check partitions
         for image in package.images:
             if ((image.type == "UBOOTENV") or (partition_arg == "BOTH")):
-                self._get_partition(fwinfo, image.type, "FIRST")
-                self._get_partition(fwinfo, image.type, "SECOND")
+                partitions = [self._get_partition(fwinfo, image.type, x)
+                        for x in ["FIRST", "SECOND"]]
             else:
-                self._get_partition(fwinfo, image.type, partition_arg)
+                partitions = [self._get_partition(fwinfo, image.type,
+                        partition_arg)]
+
+            for partition in partitions:
+                if (image.size() > int(partition.size, 16)):
+                    raise ImageSizeError(
+                            "%s image is too large for partition %i"
+                            % (image.type, int(partition.partition)))
+
         return True
 
     def _get_next_priority(self, fwinfo, package):

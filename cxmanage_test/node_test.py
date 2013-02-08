@@ -38,7 +38,7 @@ import unittest
 from pyipmi import IpmiError
 from pyipmi.bmc import LanBMC
 
-from cxmanage_test import TestImage, TestSensor
+from cxmanage_test import TestImage, TestSensor, random_file
 from cxmanage_api.simg import create_simg
 from cxmanage_api.node import Node
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
@@ -114,8 +114,8 @@ class NodeTest(unittest.TestCase):
     def test_is_updatable(self):
         """ Test node.is_updatable method """
         for node in self.nodes:
-            filename = "%s/%s" % (self.work_dir, "image.bin")
-            open(filename, "w").write("")
+            max_size = 12288 - 60
+            filename = random_file(max_size)
             images = [
                 TestImage(filename, "SOC_ELF"),
                 TestImage(filename, "CDB"),
@@ -137,6 +137,11 @@ class NodeTest(unittest.TestCase):
             package = FirmwarePackage()
             package.images = images
             package.config = "slot2"
+            self.assertFalse(node.is_updatable(package))
+
+            # should fail if we upload an image that's too large
+            package = FirmwarePackage()
+            package.images = [TestImage(random_file(max_size + 1), "UBOOTENV")]
             self.assertFalse(node.is_updatable(package))
 
     def test_update_firmware(self):
