@@ -42,6 +42,7 @@ setup(
     # at the top of scripts/cxmanage as well.
     install_requires=[
                         'tftpy',
+                        'pexpect',
                         'pyipmi>=0.7.0',
                         'argparse',
                         'sphinx',
