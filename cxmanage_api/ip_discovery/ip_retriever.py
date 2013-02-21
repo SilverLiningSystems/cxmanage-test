@@ -38,7 +38,7 @@ import threading
 from time import sleep
 
 from pexpect import TIMEOUT, EOF
-from pyipmi import make_bmc, IpmiError
+from pyipmi import make_bmc
 from pyipmi.server import Server
 from pyipmi.bmc import LanBMC
 
@@ -142,18 +142,14 @@ class IPRetriever(threading.Thread):
             self._log('Using stored IP %s' % self.server_ip)
             return
 
-        try:
-            for attempt in range(self.retry + 1):
-                self.server_ip = self.sol_try_command(self.sol_find_ip)
+        for attempt in range(self.retry + 1):
+            self.server_ip = self.sol_try_command(self.sol_find_ip)
 
-                if self.server_ip is not None:
-                    self._log('The server IP is %s' % self.server_ip)
-                    return
+            if self.server_ip is not None:
+                self._log('The server IP is %s' % self.server_ip)
+                return
 
-            self._log('The server IP could not be found')
-
-        except RuntimeError as caught_error:
-            self._log(caught_error, error=True)
+        self._log('The server IP could not be found')
 
 
     def _power_server(self, cycle=False):
@@ -162,23 +158,18 @@ class IPRetriever(threading.Thread):
         """
         server = Server(self._bmc)
 
-        try:
-            if cycle:    
-                self._log('Powering server off')
-                server.power_off()
-                sleep(5)
+        if cycle:    
+            self._log('Powering server off')
+            server.power_off()
+            sleep(5)
 
-            if not server.is_powered:
-                self._log('Powering server on')
-                server.power_on()
-                sleep(10)
+        if not server.is_powered:
+            self._log('Powering server on')
+            server.power_on()
+            sleep(10)
 
-            return server.is_powered
+        return server.is_powered
 
-        except IpmiError:
-            raise RuntimeError('The node is unresponsive. '
-                               'Unable to get power status')
-        
 
     def sol_find_ip(self, session):
         """Uses ifconfig to get the IP address in an SOL session.
@@ -218,7 +209,10 @@ class IPRetriever(threading.Thread):
            it fails. If aggresive is True, then the server may be 
            restarted or power cycled to try and reset the state.
         """
-        self._power_server()
+        server = Server(self._bmc)
+        if not server.is_powered:
+            self._log("Server is powered off. Can't proceed.")
+            raise RuntimeError("Server is powered off. Can't proceed.")
 
         self._log('Activating SOL')
         session = self._bmc.activate_payload()
