@@ -574,10 +574,12 @@ class Fabric(object):
         """
         return self._run_command(async, "get_ubootenv")
 
-    def get_server_ip(self, aggressive=False, async=False):
+    def get_server_ip(self, interface=None, ipv6=False, user="user1",
+            password="1Password", aggressive=False, async=False):
         """Get Linux server IP addresses for all nodes"""
         # TODO: Properly document this!
-        return self._run_command(async, "get_server_ip", aggressive)
+        return self._run_command(async, "get_server_ip", interface, ipv6, user,
+                password, aggressive)
 
     def _discover_nodes(self, ip_address, username="admin", password="admin"):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""

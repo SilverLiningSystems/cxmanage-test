@@ -920,12 +920,14 @@ class Node(object):
 
         return results
 
-    def get_server_ip(self, aggressive=False):
+    def get_server_ip(self, interface=None, ipv6=False, user="user1",
+            password="1Password", aggressive=False):
         """ Get the IP address for a Linux server """
         # TODO: properly document this!
         verbosity = 2 if self.verbose else 0
         retriever = IPRetriever(self.ip_address, aggressive=aggressive,
-                verbosity=verbosity, bmc=self.bmc)
+                verbosity=verbosity, server_user=user, server_password=password,
+                interface=interface, ipv6=ipv6, bmc=self.bmc)
         retriever.run()
         return retriever.server_ip
 
