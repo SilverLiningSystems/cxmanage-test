@@ -31,29 +31,10 @@
 # DAMAGE.
 
 
-import os
 import glob
 import json
 
 from cxmanage_api.ip_discovery.ip_retriever import IPRetriever
-
-
-def get_ecme_ips(ecme_ip, aggressive=False, verbosity=0, 
-                          internal_tftp=None, external_tftp=None, **kwargs):
-    """Convenience method for obtaining all ECME IP addresses
-       using a single ECME address. Creates an IPRetriever internally
-       with the arguments provided.
-    """
-    retriever = None
-    if isinstance(ecme_ip, IPRetriever):
-        retriever = ecme_ip
-    else:
-        retriever = IPRetriever(ecme_ip, aggressive, verbosity, **kwargs)
-
-
-    retriever_list = retriever.get_all_nodes(internal_tftp, external_tftp)
-
-    return [node.ecme_ip for node in retriever_list]
 
 
 def get_server_ips(ecme_list, aggressive=False, verbosity=0, 

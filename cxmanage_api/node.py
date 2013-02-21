@@ -43,6 +43,7 @@ from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.infodump import get_info_dump
+from cxmanage_api.ip_discovery.ip_retriever import IPRetriever
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
         PriorityIncrementError, NoPartitionError, TransferFailure, \
@@ -918,6 +919,15 @@ class Node(object):
             raise TftpException("Node failed to reach TFTP server")
 
         return results
+
+    def get_server_ip(self, aggressive=False):
+        """ Get the IP address for a Linux server """
+        # TODO: properly document this!
+        verbosity = 2 if self.verbose else 0
+        retriever = IPRetriever(self.ip_address, aggressive=aggressive,
+                verbosity=verbosity, bmc=self.bmc)
+        retriever.run()
+        return retriever.server_ip
 
 ############################### Private methods ###############################
 

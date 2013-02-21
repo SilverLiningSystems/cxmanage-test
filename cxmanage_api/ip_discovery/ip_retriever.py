@@ -33,7 +33,6 @@
 import sys
 import re
 import json
-import os
 
 import threading
 from time import sleep
@@ -42,10 +41,6 @@ from pexpect import TIMEOUT, EOF
 from pyipmi import make_bmc, IpmiError
 from pyipmi.server import Server
 from pyipmi.bmc import LanBMC
-
-from cxmanage_api.tftp import InternalTftp, ExternalTftp
-from cxmanage_api.fabric import Fabric
-from cxmanage_api.node import Node
 
 
 class IPRetriever(threading.Thread):
@@ -67,8 +62,6 @@ class IPRetriever(threading.Thread):
     server_user = None
     server_password = None
     
-    power_status = False
-
     def __init__(self, ecme_ip, aggressive=False, verbosity=0, **kwargs):
         """Initializes the IPRetriever class. The IPRetriever needs the
            only the first node to know where to start.
@@ -83,9 +76,6 @@ class IPRetriever(threading.Thread):
 
         self.aggressive = aggressive
         self.verbosity = verbosity
-        
-        test_power=Node(ip_address=self.ecme_ip)
-        self.power_status=test_power.get_power()
         
         # Everything here is optional
         self.timeout = kwargs.get('timeout', 120)
@@ -369,56 +359,6 @@ class IPRetriever(threading.Thread):
         # Reaches here if nothing succeeds
         self._bmc.deactivate_payload()
         raise RuntimeError('Unable to properly connect over SOL')
-
-
-    def get_all_nodes(self, internal_tftp=None, external_tftp=None):
-        """Creates an IPRetriever for every node using a ECME IP address.
-           The other ECME IPs are found using cxmanage_api's Fabric class 
-           with either the one of the provided TFTP servers, or 
-           an internally created one. Returns None on failure.
-        """
-        verbose = self.verbosity > 1
-        tftp = None
-
-        if isinstance(external_tftp, basestring):
-            tftp_args = external_tftp.split(':')
-            if len(tftp_args) > 1:
-                tftp_args = tftp_args[0], int(tftp_args[1])
-
-            tftp = ExternalTftp(*tftp_args, verbose=verbose)
-        elif isinstance(internal_tftp, basestring):
-            tftp_args = internal_tftp.split(':')
-            if len(tftp_args) > 1:
-                tftp_args = tftp_args[0], int(tftp_args[1])
-
-            tftp = InternalTftp(*tftp_args, verbose=verbose)
-        elif external_tftp is not None:
-            tftp = external_tftp
-        elif internal_tftp is not None:
-            tftp = internal_tftp
-        else:
-            tftp = InternalTftp(verbose=verbose)
-
-
-        node_lookup = None
-        try:
-            fabric = Fabric(self.ecme_ip, self.ecme_user, self.ecme_password, 
-                            tftp=tftp, verbose=verbose)
-
-            node_lookup = fabric.nodes
-            if not node_lookup:
-                self._log('Unable to find ECME IP addresses', error=True)
-                return None
-
-        except IpmiError:
-            self._log('Unable to connect to the ECME', error=True)
-            return None
-
-        retriever_state = vars(self)
-        del retriever_state['ecme_ip']
-
-        return [IPRetriever(ecme, **retriever_state) 
-                for node, ecme in node_lookup.items()]
 
 
     def read_config(self, path):
