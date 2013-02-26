@@ -55,7 +55,8 @@ class NodeTest(unittest.TestCase):
     def setUp(self):
         tftp = InternalTftp()
         self.nodes = [Node(ip_address=ip, tftp=tftp, bmc=DummyBMC,
-                image=TestImage, ubootenv=DummyUbootEnv, verbose=True)
+                image=TestImage, ubootenv=DummyUbootEnv,
+                ipretriever=DummyIPRetriever, verbose=True)
                 for ip in ADDRESSES]
 
         # Set up an internal server
@@ -290,6 +291,12 @@ class NodeTest(unittest.TestCase):
                 for port in result[node_id]:
                     expected_macaddr = "00:00:00:00:%x:%x" % (node_id, port)
                     self.assertEqual(result[node_id][port], expected_macaddr)
+
+    def test_get_server_ip(self):
+        """ Test node.get_server_ip method """
+        for node in self.nodes:
+            result = node.get_server_ip()
+            self.assertEqual(result, "192.168.200.1")
 
 
 class DummyBMC(LanBMC):
@@ -532,5 +539,24 @@ class DummyUbootEnv(UbootEnv):
         """Hard coded boot order for testing."""
         return ["disk", "pxe"]
 
+
+class DummyIPRetriever(object):
+    """ Dummy IP retriever """
+
+    def __init__(self, ecme_ip, aggressive=False, verbosity=0, **kwargs):
+        self.executed = False
+        self.ecme_ip = ecme_ip
+        self.aggressive = aggressive
+        self.verbosity = verbosity
+        for name, value in kwargs.iteritems():
+            setattr(self, name, value)
+
+    def run(self):
+        """ Set the server_ip variable. Raises an error if called more than
+        once. """
+        if self.executed:
+            raise RuntimeError("DummyIPRetriever.run() was called twice!")
+        self.executed = True
+        self.server_ip = "192.168.200.1"
 
 # End of file: node_test.py

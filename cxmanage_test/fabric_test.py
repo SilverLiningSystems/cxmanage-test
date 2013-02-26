@@ -142,6 +142,14 @@ class FabricTest(unittest.TestCase):
         for node in self.nodes:
             self.assertEqual(node.executed, [("ipmitool_command", ipmitool_args)])
 
+    def test_get_server_ip(self):
+        """ Test get_server_ip command """
+        self.fabric.get_server_ip("interface", "ipv6", "user", "password",
+                "aggressive")
+        for node in self.nodes:
+            self.assertEqual(node.executed, [("get_server_ip", "interface",
+                    "ipv6", "user", "password", "aggressive")])
+
     def test_failed_command(self):
         """ Test a failed command """
         fail_nodes = [DummyFailNode(x) for x in ADDRESSES]
@@ -250,6 +258,11 @@ class DummyNode(object):
 
     def get_fabric_ipinfo(self):
         return {}
+
+    def get_server_ip(self, interface, ipv6, user, password, aggressive):
+        self.executed.append(("get_server_ip", interface, ipv6, user, password,
+                aggressive))
+        return "192.168.200.1"
 
 
 class DummyFailNode(DummyNode):

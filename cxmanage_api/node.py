@@ -43,7 +43,7 @@ from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.infodump import get_info_dump
-from cxmanage_api.ip_discovery.ip_retriever import IPRetriever
+from cxmanage_api.ip_discovery.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
         PriorityIncrementError, NoPartitionError, TransferFailure, \
@@ -78,7 +78,7 @@ class Node(object):
 
     def __init__(self, ip_address, username="admin", password="admin",
                   tftp=None, verbose=False, bmc=None, image=None,
-                  ubootenv=None):
+                  ubootenv=None, ipretriever=None):
         """Default constructor for the Node class."""
         if (not tftp):
             tftp = InternalTftp()
@@ -90,6 +90,8 @@ class Node(object):
             image = IMAGE
         if (not ubootenv):
             ubootenv = UBOOTENV
+        if (not ipretriever):
+            ipretriever = IPRETRIEVER
 
         self.ip_address = ip_address
         self.username = username
@@ -102,6 +104,7 @@ class Node(object):
                             password=password, verbose=verbose)
         self.image = image
         self.ubootenv = ubootenv
+        self.ipretriever = ipretriever
 
     def __eq__(self, other):
         return isinstance(other, Node) and self.ip_address == other.ip_address
@@ -925,7 +928,7 @@ class Node(object):
         """ Get the IP address for a Linux server """
         # TODO: properly document this!
         verbosity = 2 if self.verbose else 0
-        retriever = IPRetriever(self.ip_address, aggressive=aggressive,
+        retriever = self.ipretriever(self.ip_address, aggressive=aggressive,
                 verbosity=verbosity, server_user=user, server_password=password,
                 interface=interface, ipv6=ipv6, bmc=self.bmc)
         retriever.run()
