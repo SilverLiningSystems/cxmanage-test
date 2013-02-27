@@ -43,7 +43,7 @@ from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.infodump import get_info_dump
-from cxmanage_api.ip_discovery.ip_retriever import IPRetriever as IPRETRIEVER
+from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
         PriorityIncrementError, NoPartitionError, TransferFailure, \

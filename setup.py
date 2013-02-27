@@ -34,8 +34,7 @@ from setuptools import setup
 setup(
     name='cxmanage',
     version='0.7.1',
-    packages=['cxmanage', 'cxmanage.commands', 'cxmanage_api',
-            'cxmanage_api.ip_discovery'],
+    packages=['cxmanage', 'cxmanage.commands', 'cxmanage_api'],
     scripts=['scripts/cxmanage'],
     package_data={'cxmanage_api': ['data/cids', 'data/registers']},
     description='Calxeda Management Utility',
