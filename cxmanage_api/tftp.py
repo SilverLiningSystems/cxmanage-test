@@ -68,6 +68,10 @@ class InternalTftp(object):
         pipe = os.pipe()
         pid = os.fork()
         if (not pid):
+            # Force tftpy to use sys.stdout and sys.stderr
+            os.dup2(sys.stdout.fileno(), 1)
+            os.dup2(sys.stderr.fileno(), 2)
+
             # Create a PortThread class only if needed ...
             class PortThread(Thread):
                 """Thread that sends the port number through the pipe."""
