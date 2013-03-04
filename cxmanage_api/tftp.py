@@ -73,7 +73,9 @@ class InternalTftp(object):
                 os.dup2(sys.stdout.fileno(), 1)
                 os.dup2(sys.stderr.fileno(), 2)
 
-            except AttributeError:
+            except AttributeError, err_msg:
+                if (self.verbose):
+                    print ('Passing on exception: %s' % err_msg)
                 pass
 
             # Create a PortThread class only if needed ...
