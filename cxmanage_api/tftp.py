@@ -61,7 +61,7 @@ class InternalTftp(object):
 
     """
 
-    def __init__(self, ip_address=None, port=0, verbose=True):
+    def __init__(self, ip_address=None, port=0, verbose=False):
         """Default constructor for the InternalTftp class."""
         self.tftp_dir = temp_dir()
         self.verbose = verbose
@@ -207,7 +207,7 @@ class ExternalTftp(object):
 
     """
 
-    def __init__(self, ip_address, port=69, verbose=True):
+    def __init__(self, ip_address, port=69, verbose=False):
         """Default constructor for this the ExternalTftp class."""
         self.ip_address = ip_address
         self.port = port
