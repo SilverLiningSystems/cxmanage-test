@@ -290,7 +290,7 @@ class NodeTest(unittest.TestCase):
                 self.assertEqual(len(result[node_id]), 3)
                 for port in result[node_id]:
                     expected_macaddr = "00:00:00:00:%x:%x" % (node_id, port)
-                    self.assertEqual(result[node_id][port], expected_macaddr)
+                    self.assertEqual(result[node_id][port], [expected_macaddr])
 
     def test_get_server_ip(self):
         """ Test node.get_server_ip method """

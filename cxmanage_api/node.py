@@ -915,7 +915,9 @@ class Node(object):
 
                 if not node_id in results:
                     results[node_id] = {}
-                results[node_id][port] = mac_address
+                if not port in results[node_id]:
+                    results[node_id][port] = []
+                results[node_id][port].append(mac_address)
 
         # Make sure we found something
         if (not results):

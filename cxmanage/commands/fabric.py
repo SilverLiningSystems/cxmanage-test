@@ -69,8 +69,9 @@ def macaddrs_command(args):
             print "MAC addresses from %s" % node.ip_address
             for node_id in results[node]:
                 for port in results[node][node_id]:
-                    mac_address = results[node][node_id][port]
-                    print "Node %i, Port %i: %s" % (node_id, port, mac_address)
+                    for mac_address in results[node][node_id][port]:
+                        print "Node %i, Port %i: %s" % (node_id, port,
+                                mac_address)
             print
 
     if not args.quiet and errors:
