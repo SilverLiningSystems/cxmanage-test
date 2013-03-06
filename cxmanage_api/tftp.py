@@ -213,7 +213,7 @@ class ExternalTftp(object):
         self.port = port
         self.verbose = verbose
 
-        if (self.verbose):
+        if not self.verbose:
             setLogLevel(logging.CRITICAL)
 
     def get_address(self, relative_host=None):
