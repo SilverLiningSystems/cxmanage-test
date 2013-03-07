@@ -76,24 +76,31 @@ Example code::
     #
     for i in [x for x in dir(Node) if not x.startswith('_')]: print i
     ...
-    check_firmware
     config_reset
     get_boot_order
     get_fabric_ipinfo
+    get_fabric_macaddrs
     get_firmware_info
-    get_macaddrs
+    get_firmware_info_dict
+    get_mac_addresses
     get_power
     get_power_policy
     get_sensors
+    get_sensors_dict
+    get_server_ip
     get_ubootenv
-    info_basic
+    get_versions
+    get_versions_dict
     info_dump
     ipmitool_command
+    is_updatable
     mc_reset
     set_boot_order
     set_power
     set_power_policy
+    tftp_address
     update_firmware
+
 
     #
     # The easiest way to create a Node is to just give the ip address to the
@@ -166,6 +173,7 @@ API Docs & Code Examples
     Internal/External TFTP <tftp>
     SIMG <simg>
     U-Boot Environment <ubootenv>
+    IP Retriever <ip_retriever>
 
 ``Code Examples``
 
