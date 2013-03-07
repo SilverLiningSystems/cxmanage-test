@@ -25,10 +25,8 @@ Example
 
 **Lets start by stating what the end goals of this example will be:**
     1. Construct a Fabric object using the Cxmanage API.
-    #. Query the Fabric object for **basic** information from each node.
+    #. Query the Fabric object for **version** information from each node.
     #. Print out the information.
-
-.. seealso:: `Fabric Info Basic <fabric.html#cxmanage_api.fabric.Fabric.info_basic>`_ & `Node Info Basic <node.html#cxmanage_api.node.Node.info_basic>`_ for more details on the function(s) we'll be using.
 
 **Now lets dive right in with code ...**
 
@@ -58,17 +56,16 @@ The Code
     :linenos:
 
     from cxmanage_api.fabric import Fabric
-    my_fabric = Fabric('10.20.1.9')                 # 1. Construct a Fabric Object ...
-    basic_info = my_fabric.info_basic()             # 2. Get basic information from each node
+    my_fabric = Fabric('10.20.1.9')               # 1. Construct a Fabric Object ...
+    versions = my_fabric.get_versions_dict()      # 2. Get the versions info for each node ...
+    
+    for node_number, version in versions.items(): # 3. Print out the Information
+        print 'SW/HW Version Info for Node %d:\n' % node_number
+        for key, value in version.items():
+            print('%s = %s' % (key, value))
+    print('=' * 80)
 
-    for node_number, info in basic_info.items():    # 3. Print out the Information
-        print 'Basic Info for Node %d:\n' % node_number
-        versions = [name for name in dir(info) if not name.startswith('_')]
-        for version in versions:
-            print '%s = %s' % (version, getattr(info, version))
-        print '=' * 80
-
-Thats it! In just 10 lines of code, we accomplished all of our stated goals with
+Thats it! In less than 10 lines of code, we accomplished all of our stated goals with
 the help of the Cxmanage API. Additionally, this code scales for Fabrics of N nodes.
 
 
@@ -77,69 +74,65 @@ The Output
 
 ::
 
-    Basic Info for Node 0:
-
-    a9boot_version = v2012.10.16
-    bootlog_version = v0.9.1-39-g7e10987
-    build_number = 7E10987C
-    card = EnergyCard X02
-    cdb_version = v0.9.1-39-g7e10987
-    dtb_version = v3.6-rc1_cx_2012.10.02
-    header = Calxeda SoC (0x0096CD)
-    soc_version = v0.9.1
-    stage2_version = v0.9.1-39-g7e10987
-    timestamp = 1352911670
-    uboot_version = v2012.07_cx_2012.10.29-6-g6605d9
-    ubootenv_version = v2012.07_cx_2012.10.29-6-g6605d9
-    version = ECX-1000-v1.7.1-dirty
+    SW/HW Version Info for Node 0:
+    
+    iana = 38605
+    ubootenv_version = v2013.01-rc1_cx_2013.01.17-2-g3e
+    ecme_version = v1.1.0-141-g8091aea
+    hardware_version = EnergyCard X02
+    cdb_version = v1.1.0-141-g8091aea
+    ecme_timestamp = 1362686083
+    bootlog_version = v1.1.0-141-g8091aea
+    a9boot_version = v2012.12.21-5-gf0559d7
+    stage2_version = v1.1.0-141-g8091aea
+    dtb_version = v3.8-rc4-2-gc841f01
+    firmware_version = ECX-1000-v2.1.1-1-g56b6358
+    uboot_version = v2013.01-rc1_cx_2013.01.17-2-g3e
     ================================================================================
-    Basic Info for Node 1:
-
-    a9boot_version = v2012.10.16
-    bootlog_version = v0.9.1-39-g7e10987
-    build_number = 7E10987C
-    card = EnergyCard X02
-    cdb_version = v0.9.1-39-g7e10987
-    dtb_version = v3.6-rc1_cx_2012.10.02
-    header = Calxeda SoC (0x0096CD)
-    soc_version = v0.9.1
-    stage2_version = v0.9.1-39-g7e10987
-    timestamp = 1352911670
-    uboot_version = v2012.07_cx_2012.10.29-6-g6605d9
-    ubootenv_version = v2012.07_cx_2012.10.29-6-g6605d9
-    version = ECX-1000-v1.7.1-dirty
+    SW/HW Version Info for Node 1:
+    
+    iana = 38605
+    ubootenv_version = v2013.01-rc1_cx_2013.01.17-2-g3e
+    ecme_version = v1.1.0-141-g8091aea
+    hardware_version = EnergyCard X02
+    cdb_version = v1.1.0-141-g8091aea
+    ecme_timestamp = 1362686083
+    bootlog_version = v1.1.0-141-g8091aea
+    a9boot_version = v2012.12.21-5-gf0559d7
+    stage2_version = v1.1.0-141-g8091aea
+    dtb_version = v3.8-rc4-2-gc841f01
+    firmware_version = ECX-1000-v2.1.1-1-g56b6358
+    uboot_version = v2013.01-rc1_cx_2013.01.17-2-g3e
     ================================================================================
-    Basic Info for Node 2:
-
-    a9boot_version = v2012.10.16
-    bootlog_version = v0.9.1-39-g7e10987
-    build_number = 7E10987C
-    card = EnergyCard X02
-    cdb_version = v0.9.1-39-g7e10987
-    dtb_version = v3.6-rc1_cx_2012.10.02
-    header = Calxeda SoC (0x0096CD)
-    soc_version = v0.9.1
-    stage2_version = v0.9.1-39-g7e10987
-    timestamp = 1352911670
-    uboot_version = v2012.07_cx_2012.10.29-6-g6605d9
-    ubootenv_version = v2012.07_cx_2012.10.29-6-g6605d9
-    version = ECX-1000-v1.7.1-dirty
+    SW/HW Version Info for Node 2:
+    
+    iana = 38605
+    ubootenv_version = v2013.01-rc1_cx_2013.01.17-2-g3e
+    ecme_version = v1.1.0-141-g8091aea
+    hardware_version = EnergyCard X02
+    cdb_version = v1.1.0-141-g8091aea
+    ecme_timestamp = 1362686083
+    bootlog_version = v1.1.0-141-g8091aea
+    a9boot_version = v2012.12.21-5-gf0559d7
+    stage2_version = v1.1.0-141-g8091aea
+    dtb_version = v3.8-rc4-2-gc841f01
+    firmware_version = ECX-1000-v2.1.1-1-g56b6358
+    uboot_version = v2013.01-rc1_cx_2013.01.17-2-g3e
     ================================================================================
-    Basic Info for Node 3:
-
-    a9boot_version = v2012.10.16
-    bootlog_version = v0.9.1-39-g7e10987
-    build_number = 7E10987C
-    card = EnergyCard X02
-    cdb_version = v0.9.1-39-g7e10987
-    dtb_version = v3.6-rc1_cx_2012.10.02
-    header = Calxeda SoC (0x0096CD)
-    soc_version = v0.9.1
-    stage2_version = v0.9.1-39-g7e10987
-    timestamp = 1352911670
-    uboot_version = v2012.07_cx_2012.10.29-6-g6605d9
-    ubootenv_version = v2012.07_cx_2012.10.29-6-g6605d9
-    version = ECX-1000-v1.7.1-dirty
+    SW/HW Version Info for Node 3:
+    
+    iana = 38605
+    ubootenv_version = v2013.01-rc1_cx_2013.01.17-2-g3e
+    ecme_version = v1.1.0-141-g8091aea
+    hardware_version = EnergyCard X02
+    cdb_version = v1.1.0-141-g8091aea
+    ecme_timestamp = 1362686083
+    bootlog_version = v1.1.0-141-g8091aea
+    a9boot_version = v2012.12.21-5-gf0559d7
+    stage2_version = v1.1.0-141-g8091aea
+    dtb_version = v3.8-rc4-2-gc841f01
+    firmware_version = ECX-1000-v2.1.1-1-g56b6358
+    uboot_version = v2013.01-rc1_cx_2013.01.17-2-g3e
     ================================================================================
 
 Line by Line Explaination
@@ -158,24 +151,23 @@ address we knew about.
 
     my_fabric = Fabric('10.20.1.9')
 
-*Line 3:* Accomplished our second goal by simply asking the Fabric for Node info
-and storing the result in the 'basic_info' variable, which is a dictionary in
-the format: { node_number : info_basic_result_object }. We'll have to inspect
-this object in a bit ...
+*Line 3:* Accomplished our second goal by simply asking the Fabric for Node 
+version info and storing the result in the 'versions' variable, which is a 
+dictionary in the format: {node_number : {version: info}}. 
 
 .. code-block:: python
 
-    basic_info = my_fabric.info_basic()
+    versions = my_fabric.get_versions_dict()
 
 *Line 4:* Is blank ... it does nothing but serves the purpose of nice code format.
 
-*Line 5:* Is a **for** loop that is going to iterate over the **basic_info**
+*Line 5:* Is a **for** loop that is going to iterate over the **versions**
 dictionary of result objects and store the keys to the dictionary in variable:
-**node_number**, as well as store the values for each key in the variable **info**.
+**node_number**, as well as store the values for each key in the variable **version**.
 
 .. code-block:: python
 
-    for node_number, info in basic_info.items():
+    for node_number, version in versions.items():
 
 *Line 6:* The first of a couple of print statements (*Goal #3*). Its going to
 print some text but most notably, its going to do this on every iteration of the
@@ -184,44 +176,24 @@ character.
 
 .. code-block:: python
 
-    print 'Basic Info for Node %d:\n' % node_number
+    print 'SW/HW Version Info for Node %d:\n' % node_number
 
-*Line 7:* Because the basic_info contains result *objects*, we need to inspect
-that object for the attributes.
-
-Attributes are members of the result object's
-class. In Python, they are accessed like this: object\ **.**\ attribute *[object<dot>attribute]*
-
-We're going to use what's called a `list comprehension <http://docs.python.org/2/tutorial/datastructures.html#list-comprehensions>`_
-to create a list new list of all of the attributes in the result object by using
-the built in function `dir <http://docs.python.org/2/library/functions.html#dir>`_.
-Because everything in Python is an object by default, they all have naturally
-inherited attributes that we're not interested in. Python, by convention, uses
-'__' and '_' preceeding attribute names for such things ... so we exclude those
-from our list. All the attributes that meet our criteria get stored in **versions**.
+*Line 7:* Starts another **for** loop that will get each version attribute, and
+its value and assign them to the variables 'key' and 'value'. We do this so we 
+can print out each different HW/SW version.
 
 .. code-block:: python
 
-    versions = [name for name in dir(info) if not name.startswith('_')]
+    for key, value in version.items():
 
-*Line 8:* Now that we have a list of information from the result object that we
-are interested in printing *(versions)*, we simply begin to iterate over that list.
-
-.. code-block:: python
-
-    for version in versions:
-
-*Line 9:* Prints the version (string name of the attribute) and the value that is
-stored in the result object by making a call to the built-in function
-`getattr <http://docs.python.org/2/library/functions.html#getattr>`_
+*Line 8:* Prints the key and its value for the version.
 
 .. code-block:: python
 
-    print '%s = %s' % (version, getattr(info, version))
+    print('%s = %s' % (key, value))
 
-*Line 10:* Prints the character '=' 80 times.
+*Line 9:* Prints the character '=' 80 times.
 
 .. code-block:: python
 
-    print '=' * 80
-
+    print('=' * 80)
