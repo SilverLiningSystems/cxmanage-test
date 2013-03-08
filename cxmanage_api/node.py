@@ -157,26 +157,21 @@ class Node(object):
         self._node_id = value
 
     def get_mac_addresses(self):
-        """Gets a list of MAC addresses for this node.
+        """Gets a dictionary of MAC addresses for this node. The dictionary
+        maps each port/interface to a list of MAC addresses for that interface.
 
         >>> node.get_macaddrs()
-        ['fc:2f:40:3b:ec:40', 'fc:2f:40:3b:ec:41', 'fc:2f:40:3b:ec:42']
+        {
+         0: ['fc:2f:40:3b:ec:40'],
+         1: ['fc:2f:40:3b:ec:41'],
+         2: ['fc:2f:40:3b:ec:42']
+        }
 
         :return: MAC Addresses for all interfaces.
-        :rtype: list
+        :rtype: dict
 
         """
-        result = []
-        try:
-            i = 0
-            while True:
-                result.append(self.bmc.get_fabric_macaddr(iface=i))
-                i += 1
-        except IpmiError as e:
-            if not "record not found" in str(e):
-                raise IpmiError(self._parse_ipmierror(e))
-
-        return result
+        return self.get_fabric_macaddrs()[self.node_id]
 
     def get_power(self):
         """Returns the power status for this node.

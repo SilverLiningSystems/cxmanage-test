@@ -68,8 +68,9 @@ class FabricTest(unittest.TestCase):
     def test_get_mac_addresses(self):
         """ Test get_mac_addresses command """
         self.fabric.get_mac_addresses()
-        for node in self.nodes:
-            self.assertEqual(node.executed, ["get_mac_addresses"])
+        self.assertEqual(self.nodes[0].executed, ["get_fabric_macaddrs"])
+        for node in self.nodes[1:]:
+            self.assertEqual(node.executed, [])
 
     def test_get_sensors(self):
         """ Test get_sensors command """
@@ -170,15 +171,6 @@ class DummyNode(object):
         self.ip_address = ip_address
         self.tftp = tftp
 
-    def get_mac_addresses(self):
-        self.executed.append("get_mac_addresses")
-        result = []
-        for node in range(NUM_NODES):
-            for port in range(3):
-                address = "00:00:00:00:%02x:%02x" % (node, port)
-                result.append((node, port, address))
-        return result
-
     def get_power(self):
         self.executed.append("get_power")
         return False
@@ -263,6 +255,16 @@ class DummyNode(object):
         self.executed.append(("get_server_ip", interface, ipv6, user, password,
                 aggressive))
         return "192.168.200.1"
+
+    def get_fabric_macaddrs(self):
+        self.executed.append("get_fabric_macaddrs")
+        result = {}
+        for node in range(NUM_NODES):
+            result[node] = {}
+            for port in range(3):
+                address = "00:00:00:00:%02x:%02x" % (node, port)
+                result[node][port] = address
+        return result
 
 
 class DummyFailNode(DummyNode):

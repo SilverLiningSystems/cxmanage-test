@@ -157,7 +157,11 @@ class Fabric(object):
         :rtype: dictionary or `Task <tasks.html>`__
 
         """
-        return self._run_command(async, "get_mac_addresses")
+        # This command is a special case and should avoid using _run_command,
+        # because we can just get the info from one node.
+        if async:
+            return self.task_queue.put(self.nodes[0].get_fabric_macaddrs)
+        return self.nodes[0].get_fabric_macaddrs()
 
     def get_power(self, async=False):
         """Returns the power status for all nodes.
