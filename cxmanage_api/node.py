@@ -106,6 +106,8 @@ class Node(object):
         self.ubootenv = ubootenv
         self.ipretriever = ipretriever
 
+        self._node_id = None
+
     def __eq__(self, other):
         return isinstance(other, Node) and self.ip_address == other.ip_address
 
@@ -128,6 +130,31 @@ class Node(object):
         """
         return '%s:%s' % (self.tftp.get_address(relative_host=self.ip_address),
                           self.tftp.port)
+
+    @property
+    def node_id(self):
+        """ Returns the numerical ID for this node.
+
+        >>> node.node_id
+        0
+
+        :returns: The ID of this node.
+        :rtype: int
+
+        """
+        if self._node_id == None:
+            self._node_id = self.bmc.get_fabric_nodeid()
+        return self._node_id
+
+    @node_id.setter
+    def node_id(self, value):
+        """ Sets the ID for this node.
+
+        :param value: The value we want to set.
+        :type value: int
+
+        """
+        self._node_id = value
 
     def get_mac_addresses(self):
         """Gets a list of MAC addresses for this node.

@@ -593,6 +593,7 @@ class Fabric(object):
                                             password=password,
                                             tftp=self.tftp,
                                             verbose=self.verbose)
+            self._nodes[node_id].node_id = node_id
 
     def _run_command(self, async, name, *args):
         """Start a command on the given nodes."""
