@@ -37,6 +37,8 @@ import json
 import threading
 from time import sleep
 
+from cxmanage_api.cx_exceptions import IPDiscoveryError
+
 from pexpect import TIMEOUT, EOF
 from pyipmi import make_bmc
 from pyipmi.server import Server
@@ -192,11 +194,12 @@ class IPRetriever(threading.Thread):
                 return found_ip[0]
             else:
                 self._bmc.deactivate_payload()
-                raise RuntimeError('Interface %s does not have '
+                raise IPDiscoveryError('Interface %s does not have '
                                    'given address' % self.interface)
         elif index == 1:
             self._bmc.deactivate_payload()
-            raise RuntimeError('Could not find interface %s' % self.interface)
+            raise IPDiscoveryError('Could not find interface %s'
+                    % self.interface)
 
         else: # Failed to find interface. Returning None
             return None
@@ -212,7 +215,7 @@ class IPRetriever(threading.Thread):
         server = Server(self._bmc)
         if not server.is_powered:
             self._log("Server is powered off. Can't proceed.")
-            raise RuntimeError("Server is powered off. Can't proceed.")
+            raise IPDiscoveryError("Server is powered off. Can't proceed.")
 
         self._log('Activating SOL')
         session = self._bmc.activate_payload()
@@ -243,7 +246,7 @@ class IPRetriever(threading.Thread):
             # An invalid boot device can occur if bootcmd_sata fails
             elif index == 3:
                 self._bmc.deactivate_payload()
-                raise RuntimeError('Unable to boot linux due to '
+                raise IPDiscoveryError('Unable to boot linux due to '
                                    'an invalid boot device')
 
             # Enter username or report incorrect login
@@ -258,7 +261,7 @@ class IPRetriever(threading.Thread):
                     timeout = 4
                 else:
                     self._bmc.deactivate_payload()
-                    raise RuntimeError('Incorrect username or password')
+                    raise IPDiscoveryError('Incorrect username or password')
 
             # Enter password
             elif index == 5:
@@ -315,8 +318,8 @@ class IPRetriever(threading.Thread):
                 elif not self.aggressive:
                     sleep(2)
                     self._bmc.deactivate_payload()
-                    raise RuntimeError('Unable to obtain the server\'s '
-                                       'IP address unintrusively')
+                    raise IPDiscoveryError('Unable to obtain the server\'s '
+                                           'IP address unintrusively')
 
                 # Try sending kill signals
                 elif attempt == 1:
@@ -352,7 +355,7 @@ class IPRetriever(threading.Thread):
 
         # Reaches here if nothing succeeds
         self._bmc.deactivate_payload()
-        raise RuntimeError('Unable to properly connect over SOL')
+        raise IPDiscoveryError('Unable to properly connect over SOL')
 
 
     def read_config(self, path):

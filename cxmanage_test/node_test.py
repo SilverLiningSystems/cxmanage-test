@@ -44,6 +44,7 @@ from cxmanage_api.node import Node
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.ubootenv import UbootEnv
 from cxmanage_api.firmware_package import FirmwarePackage
+from cxmanage_api.cx_exceptions import IPDiscoveryError
 
 
 NUM_NODES = 4
@@ -566,7 +567,7 @@ class DummyIPRetriever(object):
         """ Set the server_ip variable. Raises an error if called more than
         once. """
         if self.executed:
-            raise RuntimeError("DummyIPRetriever.run() was called twice!")
+            raise IPDiscoveryError("DummyIPRetriever.run() was called twice!")
         self.executed = True
         self.server_ip = "192.168.200.1"
 

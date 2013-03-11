@@ -48,7 +48,7 @@ from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
         PriorityIncrementError, NoPartitionError, TransferFailure, \
-        ImageSizeError, PartitionInUseError
+        ImageSizeError, PartitionInUseError, IPDiscoveryError
 
 
 class Node(object):
@@ -970,7 +970,7 @@ class Node(object):
         :return: The IP address of the server.
         :rtype: string
         :raises IpmiError: If errors in the command occur with BMC communication.
-        :raises RuntimeError: If the server is off, or the IP can't be obtained.
+        :raises IPDiscoveryError: If the server is off, or the IP can't be obtained.
 
         """
         verbosity = 2 if self.verbose else 0

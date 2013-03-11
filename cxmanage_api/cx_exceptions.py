@@ -387,4 +387,29 @@ class PartitionInUseError(Exception):
         return self.msg
 
 
+class IPDiscoveryError(Exception):
+    """Raised when server IP discovery fails for any reason.
+
+    >>> from cxmanage_api.cx_exceptions import IPDiscoveryError
+    >>> raise IPDiscoveryError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.IPDiscoveryError: My custom exception text!
+
+    :param msg: Exceptions message and details to return to the user.
+    :type msg: string
+    :raised: When IP discovery fails for any reason.
+
+    """
+
+    def __init__(self, msg):
+        """Default constructor for the IPDsicoveryError class."""
+        super(IPDiscoveryError, self).__init__()
+        self.msg = msg
+
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+
+
 # End of file: exceptions.py
