@@ -362,4 +362,29 @@ class CommandFailedError(Exception):
         return 'Results: %s Errors: %s' % (self.results, self.errors)
 
 
+class PartitionInUseError(Exception):
+    """Raised when trying to upload to a CDB/BOOT_LOG partition that's in use.
+
+    >>> from cxmanage_api.cx_exceptions import PartitionInUseError
+    >>> raise PartitionInUseError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.PartitionInUseError: My custom exception text!
+
+    :param msg: Exceptions message and details to return to the user.
+    :type msg: string
+    :raised: When trying to upload to a CDB/BOOT_LOG partition that's in use.
+
+    """
+
+    def __init__(self, msg):
+        """Default constructor for the PartitionInUseError class."""
+        super(PartitionInUseError, self).__init__()
+        self.msg = msg
+
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+
+
 # End of file: exceptions.py

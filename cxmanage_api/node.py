@@ -48,7 +48,7 @@ from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
         PriorityIncrementError, NoPartitionError, TransferFailure, \
-        ImageSizeError
+        ImageSizeError, PartitionInUseError
 
 
 class Node(object):
@@ -555,8 +555,8 @@ class Node(object):
         try:
             self._check_firmware(package, partition_arg, priority)
             return True
-        except (SocmanVersionError, FirmwareConfigError,
-                PriorityIncrementError, NoPartitionError, ImageSizeError):
+        except (SocmanVersionError, FirmwareConfigError, PriorityIncrementError,
+                NoPartitionError, ImageSizeError, PartitionInUseError):
             return False
 
     def update_firmware(self, package, partition_arg="INACTIVE",
@@ -1139,6 +1139,10 @@ class Node(object):
                     raise ImageSizeError(
                             "%s image is too large for partition %i"
                             % (image.type, int(partition.partition)))
+
+                if image.type in ["CDB", "BOOT_LOG"] and partition.in_use == "1":
+                    raise PartitionInUseError(
+                            "Can't upload to a CDB/BOOT_LOG partition that's in use")
 
         return True
 

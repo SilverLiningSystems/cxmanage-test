@@ -151,6 +151,11 @@ class NodeTest(unittest.TestCase):
             package.images = [TestImage(random_file(max_size + 1), "UBOOTENV")]
             self.assertFalse(node.is_updatable(package))
 
+            # should fail if we upload to a CDB partition that's in use
+            package = FirmwarePackage()
+            package.images = images
+            self.assertFalse(node.is_updatable(package, partition_arg="ACTIVE"))
+
     def test_update_firmware(self):
         """ Test node.update_firmware method """
         filename = "%s/%s" % (self.work_dir, "image.bin")
@@ -312,10 +317,10 @@ class DummyBMC(LanBMC):
         self.executed = []
         self.partitions = [
                 Partition(0, 3, 0, 393216, in_use=True),        # socman
-                Partition(1, 10, 393216, 196608),               # factory cdb
+                Partition(1, 10, 393216, 196608, in_use=True),  # factory cdb
                 Partition(2, 3, 589824, 393216, in_use=False),  # socman
-                Partition(3, 10, 983040, 196608),               # factory cdb
-                Partition(4, 10, 1179648, 196608),              # running cdb
+                Partition(3, 10, 983040, 196608, in_use=False), # factory cdb
+                Partition(4, 10, 1179648, 196608, in_use=True), # running cdb
                 Partition(5, 11, 1376256, 12288),               # ubootenv
                 Partition(6, 11, 1388544, 12288)                # ubootenv
         ]
