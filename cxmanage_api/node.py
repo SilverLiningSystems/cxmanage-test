@@ -950,8 +950,29 @@ class Node(object):
 
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
             password="1Password", aggressive=False):
-        """ Get the IP address for a Linux server """
-        # TODO: properly document this!
+        """Get the IP address of the Linux server. The server must be powered
+        on for this to work.
+
+        >>> node.get_server_ip()
+        '192.168.100.100'
+
+        :param interface: Network interface to check (e.g. eth0).
+        :type interface: string
+        :param ipv6: Return an IPv6 address instead of IPv4.
+        :type ipv6: boolean
+        :param user: Linux username.
+        :type user: string
+        :param password: Linux password.
+        :type password: string
+        :param aggressive: Discover the IP aggressively (may power cycle node).
+        :type aggressive: boolean
+
+        :return: The IP address of the server.
+        :rtype: string
+        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises RuntimeError: If the server is off, or the IP can't be obtained.
+
+        """
         verbosity = 2 if self.verbose else 0
         retriever = self.ipretriever(self.ip_address, aggressive=aggressive,
                 verbosity=verbosity, server_user=user, server_password=password,

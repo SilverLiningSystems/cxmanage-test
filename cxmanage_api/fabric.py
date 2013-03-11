@@ -580,8 +580,35 @@ class Fabric(object):
 
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
             password="1Password", aggressive=False, async=False):
-        """Get Linux server IP addresses for all nodes"""
-        # TODO: Properly document this!
+        """Get the server IP address from all nodes. The nodes must be powered
+        on for this to work.
+
+        >>> fabric.get_server_ip()
+        {
+         0: '192.168.100.100',
+         1: '192.168.100.101',
+         2: '192.168.100.102',
+         3: '192.168.100.103'
+        }
+
+        :param interface: Network interface to check (e.g. eth0).
+        :type interface: string
+        :param ipv6: Return an IPv6 address instead of IPv4.
+        :type ipv6: boolean
+        :param user: Linux username.
+        :type user: string
+        :param password: Linux password.
+        :type password: string
+        :param aggressive: Discover the IP aggressively (may power cycle node).
+        :type aggressive: boolean
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Task object (can get status, etc.).
+        :type async: boolean
+
+        :return: Server IP addresses for all nodes..
+        :rtype: dictionary or `Task <command.html>`_
+
+        """
         return self._run_command(async, "get_server_ip", interface, ipv6, user,
                 password, aggressive)
 
