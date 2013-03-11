@@ -94,32 +94,32 @@ def build_parser():
 
     #power command
     power = subparsers.add_parser('power',
-        help='control a9 power')
+        help='control server power')
     power_subs = power.add_subparsers()
 
-    power_on = power_subs.add_parser('on', help='boot the a9')
+    power_on = power_subs.add_parser('on', help='boot the server')
     power_on.set_defaults(power_mode='on', func=power_command)
 
-    power_off = power_subs.add_parser('off', help='shut the a9 off')
+    power_off = power_subs.add_parser('off', help='shut the server off')
     power_off.set_defaults(power_mode='off', func=power_command)
 
-    power_reset = power_subs.add_parser('reset', help='reset the a9')
+    power_reset = power_subs.add_parser('reset', help='reset the server')
     power_reset.set_defaults(power_mode='reset', func=power_command)
 
     power_status = power_subs.add_parser('status',
-            help='get a9 power status')
+            help='get server power status')
     power_status.set_defaults(func=power_status_command)
 
     power_policy = power_subs.add_parser('policy',
-            help='set a9 power policy')
+            help='set server power policy')
     power_policy_subs = power_policy.add_subparsers()
 
     power_policy_always_on = power_policy_subs.add_parser(
-            'always-on', help='always boot the a9 by default')
+            'always-on', help='always boot the server by default')
     power_policy_always_on.set_defaults(policy='always-on',
             func=power_policy_command)
     power_policy_always_off = power_policy_subs.add_parser(
-            'always-off', help='never boot the a9 by default')
+            'always-off', help='never boot the server by default')
     power_policy_always_off.set_defaults(policy='always-off',
             func=power_policy_command)
     power_policy_previous = power_policy_subs.add_parser(
@@ -220,7 +220,7 @@ def build_parser():
     reset.set_defaults(func=config_reset_command)
 
     boot = config_subs.add_parser('boot',
-            help='set A9 boot order')
+            help='set server boot order')
     boot.add_argument('boot_order', help='boot order to use', default=[],
             type=lambda x: [] if x == 'none' else x.split(','))
     boot.set_defaults(func=config_boot_command)
