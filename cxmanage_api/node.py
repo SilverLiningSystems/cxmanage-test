@@ -30,8 +30,9 @@
 
 
 import os
-import time
+import re
 import subprocess
+import time
 
 from pkg_resources import parse_version
 from pyipmi import make_bmc, IpmiError
@@ -1083,6 +1084,18 @@ class Node(object):
         info = self.get_versions()
         fwinfo = self.get_firmware_info()
 
+        # Check firmware version
+        if package.version and info.firmware_version:
+            package_match = re.match("^ECX-[0-9]+", package.version)
+            firmware_match = re.match("^ECX-[0-9]+", info.firmware_version)
+            if package_match and firmware_match:
+                package_version = package_match.group(0)
+                firmware_version = firmware_match.group(0)
+                if package_version != firmware_version:
+                    raise FirmwareConfigError(
+                            "Refusing to upload an %s package to an %s host"
+                            % (package_version, firmware_version))
+
         # Check socman version
         if (package.required_socman_version):
             ecme_version = info.ecme_version.lstrip("v")
@@ -1094,7 +1107,8 @@ class Node(object):
                         "Update requires socman version %s (found %s)"
                         % (required_version, ecme_version))
 
-        # Check firmware config
+        # Check slot0 vs. slot2
+        # TODO: remove this check
         if (package.config and info.firmware_version != "Unknown" and
                 len(info.firmware_version) < 32):
             if "slot2" in info.firmware_version:

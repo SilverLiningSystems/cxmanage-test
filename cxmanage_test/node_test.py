@@ -128,6 +128,12 @@ class NodeTest(unittest.TestCase):
             package.images = images
             self.assertTrue(node.is_updatable(package))
 
+            # should fail if the firmware version is wrong
+            package = FirmwarePackage()
+            package.images = images
+            package.version = "ECX-31415-v0.0.0"
+            self.assertFalse(node.is_updatable(package))
+
             # should fail if we specify a socman version
             package = FirmwarePackage()
             package.images = images
@@ -437,7 +443,7 @@ class DummyBMC(LanBMC):
         class Result:
             def __init__(self):
                 self.iana = int("0x0096CD", 16)
-                self.firmware_version = "v0.0.0"
+                self.firmware_version = "ECX-0000-v0.0.0"
                 self.ecme_version = "v0.0.0"
                 self.ecme_timestamp = 0
         return Result()
