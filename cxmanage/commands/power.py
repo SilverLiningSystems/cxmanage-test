@@ -28,7 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_tftp, get_nodes, run_command
+from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 
 
 def power_command(args):
@@ -57,14 +57,12 @@ def power_status_command(args):
 
     # Print results
     if results:
+        node_strings = get_node_strings(args, results, justify=True)
         print 'Power status'
         for node in nodes:
             if node in results:
-                if results[node]:
-                    result = 'on'
-                else:
-                    result = 'off'
-                print '%s: %s' % (node.ip_address.ljust(16), result)
+                result = 'on' if results[node] else 'off'
+                print '%s: %s' % (node_strings[node], result)
         print
 
     if not args.quiet and errors:
@@ -99,10 +97,11 @@ def power_policy_status_command(args):
 
     # Print results
     if results:
+        node_strings = get_node_strings(args, results, justify=True)
         print 'Power policy status'
         for node in nodes:
             if node in results:
-                print '%s: %s' % (node.ip_address.ljust(16), results[node])
+                print '%s: %s' % (node_strings[node], results[node])
         print
 
     if not args.quiet and errors:

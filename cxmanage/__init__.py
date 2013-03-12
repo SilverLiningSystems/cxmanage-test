@@ -96,13 +96,15 @@ def get_nodes(args, tftp, verify_prompt=False):
                     new_node = Node(ip_address=ip_address, username=args.user,
                             password=args.password, tftp=tftp,
                             verbose=args.verbose)
+                    new_node.node_id = node_id
                     if not new_node in all_nodes:
                         all_nodes.append(new_node)
 
+        node_strings = get_node_strings(args, all_nodes, justify=False)
         if not args.quiet and all_nodes:
             print "Discovered the following IP addresses:"
             for node in all_nodes:
-                print node.ip_address
+                print node_strings[node]
             print
 
         if errors:
@@ -122,6 +124,22 @@ def get_nodes(args, tftp, verify_prompt=False):
         return all_nodes
 
     return nodes
+
+
+def get_node_strings(args, nodes, justify=False):
+    """ Get string representations for the nodes. """
+    # Use the private _node_id instead of node_id. Strange choice,
+    # but we want to avoid accidentally polling the BMC.
+    if args.ids and all(x._node_id != None for x in nodes):
+        strings = ["Node %i (%s)" % (x._node_id, x.ip_address) for x in nodes]
+    else:
+        strings = [x.ip_address for x in nodes]
+
+    if justify:
+        just_size = max(16, max(len(x) for x in strings) + 1)
+        strings = [x.ljust(just_size) for x in strings]
+
+    return dict(zip(nodes, strings))
 
 
 def run_command(args, nodes, name, *method_args):
@@ -168,7 +186,7 @@ def run_command(args, nodes, name, *method_args):
     # Handle errors
     should_retry = False
     if errors:
-        _print_errors(nodes, errors)
+        _print_errors(args, nodes, errors)
         if args.retry == None:
             sys.stdout.write("Retry command on failed hosts? (y/n): ")
             sys.stdout.flush()
@@ -273,14 +291,14 @@ def parse_ip_range_entry(entry):
     return addresses
 
 
-def _print_errors(nodes, errors):
+def _print_errors(args, nodes, errors):
     """ Print errors if they occured """
     if errors:
+        node_strings = get_node_strings(args, nodes, justify=True)
         print "Command failed on these hosts"
         for node in nodes:
             if node in errors:
-                print "%s: %s" % (node.ip_address.ljust(16),
-                        errors[node])
+                print "%s: %s" % (node_strings[node], errors[node])
         print
 
         # Print a special message for TFTP errors

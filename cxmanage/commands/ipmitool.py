@@ -28,7 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_tftp, get_nodes, run_command
+from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 
 
 def ipmitool_command(args):
@@ -47,9 +47,10 @@ def ipmitool_command(args):
             ipmitool_args)
 
     # Print results
+    node_strings = get_node_strings(args, results, justify=False)
     for node in nodes:
         if node in results and results[node] != "":
-            print "[ IPMItool output from %s ]" % node.ip_address
+            print "[ IPMItool output from %s ]" % node_strings[node]
             print results[node]
             print
 

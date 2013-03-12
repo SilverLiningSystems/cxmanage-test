@@ -28,7 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_tftp, get_nodes, run_command
+from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 
 
 def ipdiscover_command(args):
@@ -43,10 +43,11 @@ def ipdiscover_command(args):
             args.ipv6, args.server_user, args.server_password, args.aggressive)
 
     if results:
+        node_strings = get_node_strings(args, results, justify=True)
         print 'IP addresses (ECME, Server)'
         for node in nodes:
             if node in results:
-                print '%s: %s' % (node.ip_address.ljust(16), results[node])
+                print '%s: %s' % (node_strings[node], results[node])
         print
 
     if not args.quiet and errors:

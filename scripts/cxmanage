@@ -79,6 +79,8 @@ def build_parser():
             default=None)
     parser.add_argument('-n', '--nodes', metavar='COUNT', type=int,
             help='Expected number of nodes')
+    parser.add_argument('-i', '--ids', action='store_true',
+            help='Display node IDs in addition to IP addresses')
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument('-v', '--verbose', action='store_true',
             help='Verbose output')
@@ -258,7 +260,7 @@ def build_parser():
             help='Server-side Linux password')
     ipdiscover.add_argument('-6', '--ipv6', action='store_true',
             help='Discover IPv6 addresses')
-    ipdiscover.add_argument('-i', '--interface', type=str, default=None,
+    ipdiscover.add_argument('-I', '--interface', type=str, default=None,
             help='Network interface to check')
     ipdiscover.set_defaults(func=ipdiscover_command)
 

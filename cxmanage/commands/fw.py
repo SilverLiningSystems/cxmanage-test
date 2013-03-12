@@ -28,7 +28,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_tftp, get_nodes, run_command, prompt_yes
+from cxmanage import get_tftp, get_nodes, get_node_strings, run_command, \
+        prompt_yes
 
 from cxmanage_api.image import Image
 from cxmanage_api.firmware_package import FirmwarePackage
@@ -63,7 +64,6 @@ def fwupdate_command(args):
             if not prompt_yes(
                     'WARNING: Updating firmware without --all-nodes is dangerous. Continue?'):
                 return 1
-
 
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp, verify_prompt=True)
@@ -100,9 +100,10 @@ def fwinfo_command(args):
 
     results, errors = run_command(args, nodes, "get_firmware_info")
 
+    node_strings = get_node_strings(args, results, justify=False)
     for node in nodes:
         if node in results:
-            print "[ Firmware info for %s ]" % node.ip_address
+            print "[ Firmware info for %s ]" % node_strings[node]
 
             for partition in results[node]:
                 print "Partition : %s" % partition.partition

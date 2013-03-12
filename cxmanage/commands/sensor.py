@@ -28,7 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_tftp, get_nodes, run_command
+from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 
 
 def sensor_command(args):
@@ -56,20 +56,22 @@ def sensor_command(args):
                 except ValueError:
                     sensors[sensor_name].append((node, reading, ""))
 
+    node_strings = get_node_strings(args, results, justify=True)
+    jsize = len(node_strings.itervalues().next())
     for sensor_name, readings in sensors.iteritems():
         print sensor_name
 
         for node, reading, suffix in readings:
-            print "%s: %.2f %s" % (node.ip_address.ljust(16), reading, suffix)
+            print "%s: %.2f %s" % (node_strings[node], reading, suffix)
 
         try:
             if all(suffix == x[2] for x in readings):
                 minimum = min(x[1] for x in readings)
                 maximum = max(x[1] for x in readings)
                 average = sum(x[1] for x in readings) / len(readings)
-                print "Minimum         : %.2f %s" % (minimum, suffix)
-                print "Maximum         : %.2f %s" % (maximum, suffix)
-                print "Average         : %.2f %s" % (average, suffix)
+                print "%s: %.2f %s" % ("Minimum".ljust(jsize), minimum, suffix)
+                print "%s: %.2f %s" % ("Maximum".ljust(jsize), maximum, suffix)
+                print "%s: %.2f %s" % ("Average".ljust(jsize), average, suffix)
         except ValueError:
             pass
 

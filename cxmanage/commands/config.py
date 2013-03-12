@@ -28,7 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_tftp, get_nodes, run_command
+from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 
 from cxmanage_api.ubootenv import UbootEnv
 
@@ -86,11 +86,11 @@ def config_boot_status_command(args):
 
     # Print results
     if results:
+        node_strings = get_node_strings(args, results, justify=True)
         print "Boot order"
         for node in nodes:
             if node in results:
-                print "%s: %s" % (node.ip_address.ljust(16),
-                        ",".join(results[node]))
+                print "%s: %s" % (node_strings[node], ",".join(results[node]))
         print
 
     if not args.quiet and errors:

@@ -28,7 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_tftp, get_nodes, run_command
+from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 
 
 def info_command(args):
@@ -62,10 +62,11 @@ def info_basic_command(args):
     results, errors = run_command(args, nodes, "get_versions")
 
     # Print results
+    node_strings = get_node_strings(args, results, justify=False)
     for node in nodes:
         if node in results:
             result = results[node]
-            print "[ Info from %s ]" % node.ip_address
+            print "[ Info from %s ]" % node_strings[node]
             print "Hardware version   : %s" % result.hardware_version
             print "Firmware version   : %s" % result.firmware_version
             for var, string in components:
@@ -89,10 +90,11 @@ def info_ubootenv_command(args):
     results, errors = run_command(args, nodes, "get_ubootenv")
 
     # Print results
+    node_strings = get_node_strings(args, results, justify=False)
     for node in nodes:
         if node in results:
             ubootenv = results[node]
-            print "[ U-Boot Environment from %s ]" % node.ip_address
+            print "[ U-Boot Environment from %s ]" % node_strings[node]
             for variable in ubootenv.variables:
                 print "%s=%s" % (variable, ubootenv.variables[variable])
             print
@@ -112,9 +114,10 @@ def info_dump_command(args):
     results, errors = run_command(args, nodes, "info_dump")
 
     # Print results
+    node_strings = get_node_strings(args, results, justify=False)
     for node in nodes:
         if node in results:
-            print "[ Info dump from %s ]" % node.ip_address
+            print "[ Info dump from %s ]" % node_strings[node]
             print results[node]
             print
 
