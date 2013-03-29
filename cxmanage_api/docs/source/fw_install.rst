@@ -59,12 +59,13 @@ The Code
     fw_pkg = FirmwarePackage(filename='ECX-1000_update-v1.6.1-2-g279e340.tar.gz')
 
     from cxmanage_api.fabric import Fabric
-    my_fabric = Fabric('10.20.1.9')
+    my_fabric = Fabric('10.20.1.9')        
+    versions = my_fabric.get_versions_dict()
 
-    basic_info = my_fabric.info_basic()
-    for node_num, info in basic_info.items():
-        print 'Node %d Firmware Version: %s' % (node_num, info.version)
-    print '=' * 80
+    for node_number, version in versions.items():
+        for key, value in version.items():
+            if ('firmware' in key):
+                print 'Node %d: FW Version: %s' % (node_number, value)
 
     results = my_fabric.is_updatable(package=fw_pkg)
     if (False in results.values()):
@@ -75,9 +76,11 @@ The Code
         print '=' * 80
         my_fabric.update_firmware(package=fw_pkg)
 
-    new_basic_info = my_fabric.info_basic()
-    for node_num, info in new_basic_info.items():
-        print 'Node %d Firmware Version: %s' % (node_num, info.version)
+    new_basic_info = my_fabric.get_versions_dict()
+    for node_number, version in versions.items():
+        for key, value in version.items():
+            if ('firmware' in key):
+                print 'Node %d: FW Version: %s' % (node_number, value)
 
 Again, in about 10 lines of (useful) code, we are able to upgrade a Fabric or
 even multiple Fabrics using the Cxmanage API.
@@ -87,17 +90,17 @@ The Output
 
 ::
 
-    Node 0 Firmware Version: ECX-1000-v1.6.1-2-g279e340
-    Node 1 Firmware Version: ECX-1000-v1.6.1-2-g279e340
-    Node 2 Firmware Version: ECX-1000-v1.6.1-2-g279e340
-    Node 3 Firmware Version: ECX-1000-v1.6.1-2-g279e340
+    Node 0: FW Version: ECX-1000-v2.0.0-0
+    Node 1: FW Version: ECX-1000-v2.0.0-0
+    Node 2: FW Version: ECX-1000-v2.0.0-0
+    Node 3: FW Version: ECX-1000-v2.0.0-0
     ================================================================================
-    Fabric Firmware Update -> ECX-1000-v1.7.1
+    Fabric Firmware Update -> ECX-1000-v2.1.1-1
     ================================================================================
-    Node 0 Firmware Version: ECX-1000-v1.7.1
-    Node 1 Firmware Version: ECX-1000-v1.7.1
-    Node 2 Firmware Version: ECX-1000-v1.7.1
-    Node 3 Firmware Version: ECX-1000-v1.7.1
+    Node 0: FW Version: ECX-1000-v2.1.1-1
+    Node 1: FW Version: ECX-1000-v2.1.1-1
+    Node 2: FW Version: ECX-1000-v2.1.1-1
+    Node 3: FW Version: ECX-1000-v2.1.1-1
 
 Line by Line Explaination
 #########################
@@ -129,24 +132,23 @@ Line by Line Explaination
 
     my_fabric = Fabric('10.20.1.9')
 
-*Line 10:* Gets basic info from each Node on the Fabric. We simply do this so
-we can print out that information prior to checking to see if a node is
-upgradable.
+*Line 9:* Gets the Hardware/Software versions dictionary from the Fabric.
 
 .. code-block:: python
 
-    basic_info = my_fabric.info_basic()
+    versions = my_fabric.get_versions_dict()
 
-*Lines 11-13:* A **for** loop that iterates over the **basic_info** dictionary
-and prints the Nodes firmware version.
+*Lines 11-14:* A **for** loop that iterates over the **versions** dictionary
+and prints the Nodes firmware version (ONLY).
 
 .. code-block:: python
 
-    for node_num, info in basic_info.items():
-        print 'Node %d Firmware Version: %s' % (node_num, info.version)
-    print '=' * 80
+    for node_number, version in versions.items():
+        for key, value in version.items():
+            if ('firmware' in key):
+                print 'Node %d: FW Version: %s' % (node_number, value)
 
-*Line 15:* Is a VERY important line of code. It asks every Node on the Fabric
+*Line 16:* Is a VERY important line of code. It asks every Node on the Fabric
 if it can be updated to the proposed Firmware Package. It returns a dictionary
 of {node_number : True/False} stating whether or not an update is possible. We
 store that dictionary in **results**.
@@ -155,7 +157,7 @@ store that dictionary in **results**.
 
     results = my_fabric.is_updatable(package=fw_pkg)
 
-*Lines 16-18:* Tests to see if False occurs for ANY Node by simply looking at
+*Lines 17-18:* Tests to see if False occurs for ANY Node by simply looking at
 the *values* in the dictionary. If False occurs, we'll figure out which Node(s)
 are offending.
 
@@ -177,12 +179,15 @@ in this block of code.
         print '=' * 80
         my_fabric.update_firmware(package=fw_pkg)
 
-*Lines 24-26:* Do essentially what lines 10-13 did ... Gets basic_info from each
-Node on the Fabric and prints it out.
+*Lines 24-26:* Do essentially what lines 11-14 did ... Gets versions_dict from each
+Node on the Fabric and prints it out. Duplicate code like this should be factored
+into a function call.
 
 .. code-block:: python
 
-    new_basic_info = my_fabric.info_basic()
-    for node_num, info in new_basic_info.items():
-        print 'Node %d Firmware Version: %s' % (node_num, info.version)
+    new_basic_info = my_fabric.get_versions_dict()
+    for node_number, version in versions.items():
+        for key, value in version.items():
+            if ('firmware' in key):
+                print 'Node %d: FW Version: %s' % (node_number, value)
 
