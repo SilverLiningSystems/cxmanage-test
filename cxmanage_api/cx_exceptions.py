@@ -361,6 +361,9 @@ class CommandFailedError(Exception):
     def __repr__(self):
         return 'Results: %s Errors: %s' % (self.results, self.errors)
 
+    def __str__(self):
+        return str(dict((x, str(y)) for x, y in self.errors.iteritems()))
+
 
 class PartitionInUseError(Exception):
     """Raised when trying to upload to a CDB/BOOT_LOG partition that's in use.
