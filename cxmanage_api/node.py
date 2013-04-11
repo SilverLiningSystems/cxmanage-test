@@ -980,6 +980,32 @@ class Node(object):
                 interface=interface, ipv6=ipv6, bmc=self.bmc)
         retriever.run()
         return retriever.server_ip
+    
+    def get_linkspeed(self, link=None, actual=False):
+        """Get the linkspeed for the node.  This returns either
+        the actual linkspeed based on phy controller register settings,
+        or if sent to a primary node, the linkspeed setting for the
+        Profile 0 of the currently active Configuration.
+
+        >>> fabric.get_linkspeed()
+        2.5
+
+        :param link: The fabric link number to read the linkspeed for.
+        :type link: integer
+        :param actual: WhetherThe fabric link number to read the linkspeed for.
+        :type actual: boolean
+
+        :return: Linkspeed for the fabric..
+        :rtype: float
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just get the info from a primary node (fabric config).
+
+        try:
+            return self.bmc.get_fabric_linkspeed(link=link, actual=actual)
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
 
 ############################### Private methods ###############################
 

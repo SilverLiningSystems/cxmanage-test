@@ -170,7 +170,7 @@ class FabricTest(unittest.TestCase):
         Currently it should always return node 0.
         """
         self.assertEqual(self.fabric.primary_node, self.nodes[0])
-    
+
     def test_get_ipsrc(self):
         """Test the get_ipsrc method
         
@@ -205,6 +205,57 @@ class FabricTest(unittest.TestCase):
         bmc = self.fabric.primary_node.bmc
         self.assertIn('fabric_get_ipaddr_base', bmc.executed)
         self.assertEqual(bmc.ipaddr_base, ipaddr_base)
+
+    def test_update_config(self):
+        """Test the update_config method
+        
+        """
+        self.fabric.update_config()
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('fabric_config_updateconfig', bmc.executed)
+
+    def test_get_linkspeed(self):
+        """Test the get_linkspeed method
+        
+        """
+        self.fabric.get_linkspeed()
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('get_fabric_config_linkspeed', bmc.executed)
+
+    def test_set_linkspeed(self):
+        """Test the set_linkspeed method"""
+
+        valid_linkspeeds = [1, 2.5, 5, 7.5, 10]
+        linkspeed = random.choice(valid_linkspeeds)
+
+        self.fabric.set_linkspeed(linkspeed)
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('set_fabric_config_linkspeed', bmc.executed)
+
+        #fabric_linkspeed is just part of DummyBMC - not a real bmc attribute
+        #it's there to make sure the ipsrc_mode value gets passed to the bmc.
+        self.assertEqual(bmc.fabric_linkspeed, linkspeed)
+        
+    def test_get_linkspeed_policy(self):
+        """Test the get_linkspeed_policy method
+        
+        """
+        self.fabric.get_linkspeed_policy()
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('get_fabric_config_linkspeed_policy', bmc.executed)
+
+    def test_set_linkspeed_policy(self):
+        """Test the set_linkspeed_policy method"""
+
+        ls_policy = random.randint(0, 1)
+
+        self.fabric.set_linkspeed_policy(ls_policy)
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('set_fabric_config_linkspeed_policy', bmc.executed)
+
+        #fabric_ls_policy is just part of DummyBMC - not a real bmc attribute
+        #it's there to make sure the ipsrc_mode value gets passed to the bmc.
+        self.assertEqual(bmc.fabric_ls_policy, ls_policy)
 
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """

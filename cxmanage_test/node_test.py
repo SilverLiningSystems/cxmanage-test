@@ -310,6 +310,11 @@ class NodeTest(unittest.TestCase):
             result = node.get_server_ip()
             self.assertEqual(result, "192.168.200.1")
 
+    def test_get_linkspeed(self):
+        """ Test node.get_linkspeed method """
+        for node in self.nodes:
+            result = node.get_linkspeed()
+            self.assertEqual(result, 1)
 
 class DummyBMC(LanBMC):
     """ Dummy BMC for the node tests """
@@ -527,6 +532,29 @@ class DummyBMC(LanBMC):
         """Provide a fake base IP addr"""
         self.executed.append('fabric_get_ipaddr_base')
         return self.ipaddr_base
+
+    def fabric_config_updateconfig(self):
+        self.executed.append('fabric_config_updateconfig')
+
+    def get_fabric_linkspeed(self, link="", actual=""):
+        self.executed.append('get_fabric_linkspeed')
+        return 1
+
+    def get_fabric_config_linkspeed(self):
+        self.executed.append('get_fabric_config_linkspeed')
+        return 1
+
+    def set_fabric_config_linkspeed(self, linkspeed):
+        self.fabric_linkspeed = linkspeed
+        self.executed.append('set_fabric_config_linkspeed')
+
+    def get_fabric_config_linkspeed_policy(self):
+        self.executed.append('get_fabric_config_linkspeed_policy')
+        return 1
+
+    def set_fabric_config_linkspeed_policy(self, ls_policy):
+        self.fabric_ls_policy = ls_policy
+        self.executed.append('set_fabric_config_linkspeed_policy')
 
 class Partition:
     def __init__(self, partition, type, offset=0,

@@ -160,8 +160,8 @@ class Fabric(object):
         # This command is a special case and should avoid using _run_command,
         # because we can just get the info from one node.
         if async:
-            return self.task_queue.put(self.nodes[0].get_fabric_macaddrs)
-        return self.nodes[0].get_fabric_macaddrs()
+            return self.task_queue.put(self.primary_node.get_fabric_macaddrs)
+        return self.primary_node.get_fabric_macaddrs()
 
     def get_power(self, async=False):
         """Returns the power status for all nodes.
@@ -679,6 +679,79 @@ class Fabric(object):
                                             tftp=self.tftp,
                                             verbose=self.verbose)
             self._nodes[node_id].node_id = node_id
+
+    def update_config(self):
+        """Push out updated configuration data for all nodes in the fabric.
+
+        >>> fabric.update_config()
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just get the info from a primary node (fabric config).
+        self.primary_node.bmc.fabric_config_updateconfig()
+
+    def get_linkspeed(self):
+        """Get the global linkspeed for the fabric. In the partition world
+        this means the linkspeed for Configuration 0, Partition 0, Profile 0.
+
+        >>> fabric.get_linkspeed()
+        2.5
+
+        :return: Linkspeed for the fabric.
+        :rtype: float
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just get the info from a primary node (fabric config).
+        return self.primary_node.bmc.get_fabric_config_linkspeed()
+
+    def set_linkspeed(self, linkspeed):
+        """Set the global linkspeed for the fabric. In the partition world
+        this means the linkspeed for Configuration 0, Partition 0, Profile 0.
+
+        >>> fabric.set_linkspeed(10)
+
+        :param linkspeed: Linkspeed specified in Gbps.
+        :type linkspeed: float
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just get the info from a primary node (fabric config).
+        self.primary_node.bmc.set_fabric_config_linkspeed(linkspeed)
+
+    def get_linkspeed_policy(self):
+        """Get the global linkspeed policy for the fabric. In the partition
+        world this means the linkspeed for Configuration 0, Partition 0,
+        Profile 0.
+
+        >>> fabric.get_linkspeed_policy()
+        1
+
+        :return: Linkspeed Policy for the fabric.
+        :rtype: integer
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just get the info from a primary node (fabric config).
+        return self.primary_node.bmc.get_fabric_config_linkspeed_policy()
+
+    def set_linkspeed_policy(self, ls_policy):
+        """Set the global linkspeed policy for the fabric. In the partition
+        world this means the linkspeed policy for Configuration 0,
+        Partition 0, Profile 0.
+
+        >>> fabric.set_linkspeed_policy(1)
+
+        :param linkspeed: Linkspeed Policy. 0: Fixed, 1: Topological
+        :type linkspeed: int
+
+        :return: Linkspeed Policy for the fabric..
+        :rtype: integer
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just get the info from a primary node (fabric config).
+        self.primary_node.bmc.set_fabric_config_linkspeed_policy(ls_policy)
 
     def _run_command(self, async, name, *args):
         """Start a command on the given nodes."""
