@@ -162,6 +162,13 @@ class FabricTest(unittest.TestCase):
             for node in fail_nodes:
                 self.assertEqual(node.executed, ["get_power"])
 
+    def test_master_node(self):
+        """Test the master_node property
+        
+        Currently it should always return node 0.
+        """
+        self.assertEqual(self.fabric.master_node, self.nodes[0])
+
 
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """

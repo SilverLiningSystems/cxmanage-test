@@ -612,6 +612,20 @@ class Fabric(object):
         return self._run_command(async, "get_server_ip", interface, ipv6, user,
                 password, aggressive)
 
+    @property
+    def master_node(self):
+        """The node to use for fabric config operations.
+        
+        Today, this is always node 0.
+
+        >>> fabric.master_node
+        <cxmanage_api.node.Node object at 0x210d790>
+
+        :return: Node object for master node
+        :rtype: Node object
+        """
+        return self.nodes[0]
+
     def _discover_nodes(self, ip_address, username="admin", password="admin"):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""
         node = self.node(ip_address=ip_address, username=username,
