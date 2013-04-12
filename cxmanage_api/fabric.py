@@ -647,6 +647,13 @@ class Fabric(object):
         """
         self.primary_node.bmc.set_fabric_ipsrc(ipsrc_mode)
 
+    def apply_factory_default_config(self):
+        """Sets the fabric config to factory default
+        
+        >>> fabric.apply_factory_default_config()
+        """
+        self.primary_node.bmc.fabric_factory_default()
+
     def _discover_nodes(self, ip_address, username="admin", password="admin"):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""
         node = self.node(ip_address=ip_address, username=username,

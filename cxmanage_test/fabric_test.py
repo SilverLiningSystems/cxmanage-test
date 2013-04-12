@@ -192,6 +192,13 @@ class FabricTest(unittest.TestCase):
         #it's there to make sure the ipsrc_mode value gets passed to the bmc.
         self.assertEqual(bmc.fabric_ipsrc, ipsrc)
 
+    def test_apply_factory_default_config(self):
+        """Test the apply_factory_default_config method"""
+
+        self.fabric.apply_factory_default_config()
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('fabric_factory_default', bmc.executed)
+
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """
     def __init__(self, ip_address, username="admin", password="admin",
