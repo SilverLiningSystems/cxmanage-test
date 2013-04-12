@@ -511,6 +511,10 @@ class DummyBMC(LanBMC):
 
         shutil.rmtree(work_dir)
 
+    def get_fabric_ipsrc(self):
+        self.executed.append('get_fabric_ipsrc')
+        return 2
+
 
 class Partition:
     def __init__(self, partition, type, offset=0,

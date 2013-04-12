@@ -38,6 +38,8 @@ from cxmanage_api.firmware_package import FirmwarePackage
 from cxmanage_api.ubootenv import UbootEnv
 from cxmanage_api.cx_exceptions import CommandFailedError
 from cxmanage_test import TestSensor
+from cxmanage_test.node_test import DummyBMC
+from pyipmi import make_bmc
 
 NUM_NODES = 128
 ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]
@@ -168,7 +170,14 @@ class FabricTest(unittest.TestCase):
         Currently it should always return node 0.
         """
         self.assertEqual(self.fabric.master_node, self.nodes[0])
-
+    
+    def test_get_ipsrc(self):
+        """Test the get_ipsrc method
+        
+        """
+        self.fabric.get_ipsrc()
+        bmc = self.fabric.master_node.bmc
+        self.assertIn('get_fabric_ipsrc', bmc.executed)
 
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """
@@ -177,6 +186,8 @@ class DummyNode(object):
         self.executed = []
         self.ip_address = ip_address
         self.tftp = tftp
+        self.bmc = make_bmc(DummyBMC, hostname=ip_address, username=username,
+                            password=password, verbose=False)
 
     def get_power(self):
         self.executed.append("get_power")

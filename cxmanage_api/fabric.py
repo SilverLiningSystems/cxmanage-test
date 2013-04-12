@@ -626,6 +626,17 @@ class Fabric(object):
         """
         return self.nodes[0]
 
+    def get_ipsrc(self):
+        """Return the ipsrc for the fabric.
+
+        >>> fabric.get_ipsrc()
+        2
+
+        :return: 1 for static, 2 for DHCP
+        :rtype: integer
+        """
+        return self.master_node.bmc.get_fabric_ipsrc()
+
     def _discover_nodes(self, ip_address, username="admin", password="admin"):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""
         node = self.node(ip_address=ip_address, username=username,
