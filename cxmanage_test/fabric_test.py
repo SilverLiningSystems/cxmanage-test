@@ -198,6 +198,13 @@ class FabricTest(unittest.TestCase):
         self.fabric.apply_factory_default_config()
         bmc = self.fabric.primary_node.bmc
         self.assertIn('fabric_factory_default', bmc.executed)
+    
+    def test_get_ipaddr_base(self):
+        """Test the get_ipaddr_base method"""
+        ipaddr_base = self.fabric.get_ipaddr_base()
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('fabric_get_ipaddr_base', bmc.executed)
+        self.assertEqual(bmc.ipaddr_base, ipaddr_base)
 
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """

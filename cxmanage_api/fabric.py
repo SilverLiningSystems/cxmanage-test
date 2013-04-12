@@ -654,6 +654,18 @@ class Fabric(object):
         """
         self.primary_node.bmc.fabric_factory_default()
 
+    def get_ipaddr_base(self):
+        """The base IPv4 address for a range of static IP addresses used
+        for the nodes in the fabric
+        
+        >>> fabric.get_ipaddr_base()
+        '192.168.100.1'
+
+        :return: The first IP address in the range of static IP addresses
+        :rtype: string
+        """
+        return self.primary_node.bmc.fabric_get_ipaddr_base()
+
     def _discover_nodes(self, ip_address, username="admin", password="admin"):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""
         node = self.node(ip_address=ip_address, username=username,

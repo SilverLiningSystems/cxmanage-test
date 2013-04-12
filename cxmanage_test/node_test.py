@@ -325,6 +325,7 @@ class DummyBMC(LanBMC):
                 Partition(5, 11, 1376256, 12288),               # ubootenv
                 Partition(6, 11, 1388544, 12288)                # ubootenv
         ]
+        self.ipaddr_base = '192.168.100.1'
 
     def set_chassis_power(self, mode):
         """ Set chassis power """
@@ -521,6 +522,11 @@ class DummyBMC(LanBMC):
 
     def fabric_factory_default(self):
         self.executed.append('fabric_factory_default')
+
+    def fabric_get_ipaddr_base(self):
+        """Provide a fake base IP addr"""
+        self.executed.append('fabric_get_ipaddr_base')
+        return self.ipaddr_base
 
 class Partition:
     def __init__(self, partition, type, offset=0,
