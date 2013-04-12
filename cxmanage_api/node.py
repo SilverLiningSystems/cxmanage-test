@@ -711,9 +711,10 @@ class Node(object):
         :raises Exception: If there are errors within the command response.
 
         """
-        result = self.bmc.get_info_basic()
-        if (hasattr(result, "error")):
-            raise Exception(result.error)
+        try:
+            result = self.bmc.get_info_basic()
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
 
         fwinfo = self.get_firmware_info()
         components = [("cdb_version", "CDB"),
@@ -856,7 +857,7 @@ class Node(object):
             try:
                 result = self.bmc.get_fabric_ipinfo(basename, self.tftp_address)
             except IpmiError as e:
-                raise self._parse_ipmierror(e)
+                raise IpmiError(self._parse_ipmierror(e))
             if hasattr(result, "error"):
                 raise IpmiError(result.error)
         
@@ -913,7 +914,7 @@ class Node(object):
                 result = self.bmc.get_fabric_macaddresses(basename,
                         self.tftp_address)
             except IpmiError as e:
-                raise self._parse_ipmierror(e)
+                raise IpmiError(self._parse_ipmierror(e))
             if hasattr(result, "error"):
                 raise IpmiError(result.error)
         
