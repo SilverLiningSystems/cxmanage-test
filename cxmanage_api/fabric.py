@@ -613,15 +613,15 @@ class Fabric(object):
                 password, aggressive)
 
     @property
-    def master_node(self):
+    def primary_node(self):
         """The node to use for fabric config operations.
         
         Today, this is always node 0.
 
-        >>> fabric.master_node
+        >>> fabric.primary_node
         <cxmanage_api.node.Node object at 0x210d790>
 
-        :return: Node object for master node
+        :return: Node object for primary node
         :rtype: Node object
         """
         return self.nodes[0]
@@ -635,7 +635,7 @@ class Fabric(object):
         :return: 1 for static, 2 for DHCP
         :rtype: integer
         """
-        return self.master_node.bmc.get_fabric_ipsrc()
+        return self.primary_node.bmc.get_fabric_ipsrc()
 
     def _discover_nodes(self, ip_address, username="admin", password="admin"):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""

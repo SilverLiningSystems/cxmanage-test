@@ -164,19 +164,19 @@ class FabricTest(unittest.TestCase):
             for node in fail_nodes:
                 self.assertEqual(node.executed, ["get_power"])
 
-    def test_master_node(self):
-        """Test the master_node property
+    def test_primary_node(self):
+        """Test the primary_node property
         
         Currently it should always return node 0.
         """
-        self.assertEqual(self.fabric.master_node, self.nodes[0])
+        self.assertEqual(self.fabric.primary_node, self.nodes[0])
     
     def test_get_ipsrc(self):
         """Test the get_ipsrc method
         
         """
         self.fabric.get_ipsrc()
-        bmc = self.fabric.master_node.bmc
+        bmc = self.fabric.primary_node.bmc
         self.assertIn('get_fabric_ipsrc', bmc.executed)
 
 class DummyNode(object):
