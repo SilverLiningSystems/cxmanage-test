@@ -178,6 +178,19 @@ class FabricTest(unittest.TestCase):
         self.fabric.get_ipsrc()
         bmc = self.fabric.primary_node.bmc
         self.assertIn('get_fabric_ipsrc', bmc.executed)
+    
+    def test_set_ipsrc(self):
+        """Test the set_ipsrc method"""
+
+        ipsrc = random.randint(1, 2)
+
+        self.fabric.set_ipsrc(ipsrc)
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('set_fabric_ipsrc', bmc.executed)
+
+        #fabric_ipsrc is just part of DummyBMC - not a real bmc attribute
+        #it's there to make sure the ipsrc_mode value gets passed to the bmc.
+        self.assertEqual(bmc.fabric_ipsrc, ipsrc)
 
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """

@@ -515,6 +515,9 @@ class DummyBMC(LanBMC):
         self.executed.append('get_fabric_ipsrc')
         return 2
 
+    def set_fabric_ipsrc(self, ipsrc_mode):
+        self.fabric_ipsrc = ipsrc_mode
+        self.executed.append('set_fabric_ipsrc')
 
 class Partition:
     def __init__(self, partition, type, offset=0,
