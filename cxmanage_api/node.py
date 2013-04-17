@@ -140,7 +140,7 @@ class Node(object):
         0
 
         :returns: The ID of this node.
-        :rtype: int
+        :rtype: integer
 
         """
         if self._node_id == None:
@@ -152,7 +152,7 @@ class Node(object):
         """ Sets the ID for this node.
 
         :param value: The value we want to set.
-        :type value: int
+        :type value: integer
 
         """
         self._node_id = value
@@ -169,7 +169,7 @@ class Node(object):
         }
 
         :return: MAC Addresses for all interfaces.
-        :rtype: dict
+        :rtype: dictionary
 
         """
         return self.get_fabric_macaddrs()[self.node_id]
@@ -860,7 +860,7 @@ class Node(object):
                 raise IpmiError(self._parse_ipmierror(e))
             if hasattr(result, "error"):
                 raise IpmiError(result.error)
-        
+
             deadline = time.time() + 10
             while time.time() < deadline:
                 try:
@@ -917,7 +917,7 @@ class Node(object):
                 raise IpmiError(self._parse_ipmierror(e))
             if hasattr(result, "error"):
                 raise IpmiError(result.error)
-        
+
             deadline = time.time() + 10
             while time.time() < deadline:
                 try:
@@ -927,7 +927,7 @@ class Node(object):
                         break
                 except (TftpException, IOError):
                     pass
-    
+
         # Parse addresses from ipinfo file
         results = {}
         for line in open(filename):
@@ -980,7 +980,7 @@ class Node(object):
                 interface=interface, ipv6=ipv6, bmc=self.bmc)
         retriever.run()
         return retriever.server_ip
-    
+
     def get_linkspeed(self, link=None, actual=False):
         """Get the linkspeed for the node.  This returns either
         the actual linkspeed based on phy controller register settings,
@@ -1067,7 +1067,7 @@ class Node(object):
 
         filename = image.render_to_simg(priority, daddr)
         basename = os.path.basename(filename)
-        
+
         try:
             self.bmc.register_firmware_write(basename, partition_id, image.type)
             self.node_tftp.put_file(filename, basename)
@@ -1092,7 +1092,7 @@ class Node(object):
         basename = os.path.basename(filename)
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
-        
+
         try:
             self.bmc.register_firmware_read(basename, partition_id, image_type)
             self.node_tftp.get_file(basename, filename)
@@ -1104,7 +1104,7 @@ class Node(object):
                 raise AttributeError("Failed to start firmware download")
             self._wait_for_transfer(result.tftp_handle_id)
             self.tftp.get_file(basename, filename)
-            
+
         return self.image(filename=filename, image_type=image_type,
                           daddr=int(partition.daddr, 16),
                           version=partition.version)
