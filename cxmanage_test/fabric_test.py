@@ -284,6 +284,26 @@ class FabricTest(unittest.TestCase):
             for i in range(0, 5):
                 self.assertIn(('get_fabric_link_stats', i), node.executed)
 
+    def test_get_link_users_factor(self):
+        """Test the get_link_users_factor method
+
+        """
+        self.fabric.get_link_users_factor()
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('fabric_config_get_link_users_factor', bmc.executed)
+
+    def test_set_link_users_factor(self):
+        """Test the set_link_users_factor method"""
+
+        lu_factor = random.randint(5, 50)
+
+        self.fabric.set_link_users_factor(lu_factor)
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn('fabric_config_set_link_users_factor', bmc.executed)
+
+        # fabric_lu_factor is just part of DummyBMC - not a real bmc attribute
+        # it's there to make sure the ipsrc_mode value gets passed to the bmc.
+        self.assertEqual(bmc.fabric_lu_factor, lu_factor)
 
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """

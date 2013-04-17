@@ -659,6 +659,14 @@ class DummyBMC(LanBMC):
         self.fabric_ls_policy = ls_policy
         self.executed.append('fabric_config_set_linkspeed_policy')
 
+    def fabric_config_get_link_users_factor(self):
+        self.executed.append('fabric_config_get_link_users_factor')
+        return 1
+
+    def fabric_config_set_link_users_factor(self, lu_factor):
+        self.fabric_lu_factor = lu_factor
+        self.executed.append('fabric_config_set_link_users_factor')
+
 class Partition:
     def __init__(self, partition, type, offset=0,
             size=0, priority=0, daddr=0, in_use=None):

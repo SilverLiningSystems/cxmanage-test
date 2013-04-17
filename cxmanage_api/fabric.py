@@ -767,15 +767,43 @@ class Fabric(object):
         >>> fabric.set_linkspeed_policy(1)
 
         :param linkspeed: Linkspeed Policy. 0: Fixed, 1: Topological
-        :type linkspeed: int
-
-        :return: Linkspeed Policy for the fabric..
-        :rtype: integer
+        :type linkspeed: integer
 
         """
         # This command is a case where we should avoid using _run_command,
         # because we can just get the info from a primary node (fabric config).
         self.primary_node.bmc.fabric_config_set_linkspeed_policy(ls_policy)
+
+    def get_link_users_factor(self):
+        """Get the global link users factor for the fabric. In the partition
+        world this means the link users factor for Configuration 0,
+        Partition 0, Profile 0.
+
+        >>> fabric.get_link_users_factor()
+        1
+
+        :return: Link users factor for the fabric.
+        :rtype: integer
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just get the info from a primary node (fabric config).
+        return self.primary_node.bmc.fabric_config_get_link_users_factor()
+
+    def set_link_users_factor(self, lu_factor):
+        """Set the global link users factor for the fabric. In the partition
+        world this means the link users factor for Configuration 0,
+        Partition 0, Profile 0.
+
+        >>> fabric.set_link_users_factor(10)
+
+        :param lu_factor: Multiplying factor for topological linkspeeds
+        :type lu_factor: integer
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just get the info from a primary node (fabric config).
+        self.primary_node.bmc.fabric_config_set_link_users_factor(lu_factor)
 
     def get_uplink(self, iface=0):
         """Get the uplink for an interface to xmit a packet out of the cluster.
