@@ -1009,7 +1009,7 @@ class Node(object):
 
         # Make sure we found something
         if (not results):
-           raise TftpException("Node failed to reach TFTP server")
+            raise TftpException("Node failed to reach TFTP server")
 
         return results
 
