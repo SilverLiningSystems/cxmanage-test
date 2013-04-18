@@ -163,6 +163,33 @@ class Fabric(object):
             return self.task_queue.put(self.primary_node.get_fabric_macaddrs)
         return self.primary_node.get_fabric_macaddrs()
 
+    def get_uplink_info(self, async=False):
+        """Gets the fabric uplink info.
+
+        >>> fabric.get_uplink_info()
+        {
+         0: {0: 0, 1: 0, 2: 0}
+         1: {0: 0, 1: 0, 2: 0}
+         2: {0: 0, 1: 0, 2: 0}
+         3: {0: 0, 1: 0, 2: 0}
+        }
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Task object (can get status, etc.).
+        :type async: boolean
+
+        :return: The uplink info for each node.
+        :rtype: dictionary
+
+        """
+        # This command is a special case and should avoid using _run_command,
+        # because we can just get the info from one node.
+        if async:
+            return self.task_queue.put(
+                self.primary_node.get_fabric_uplink_info
+            )
+        return self.primary_node.get_fabric_uplink_info()
+
     def get_power(self, async=False):
         """Returns the power status for all nodes.
 
@@ -615,7 +642,7 @@ class Fabric(object):
     @property
     def primary_node(self):
         """The node to use for fabric config operations.
-        
+
         Today, this is always node 0.
 
         >>> fabric.primary_node
@@ -636,7 +663,7 @@ class Fabric(object):
         :rtype: integer
         """
         return self.primary_node.bmc.fabric_config_get_ip_src()
-    
+
     def set_ipsrc(self, ipsrc_mode):
         """Set the ipsrc for the fabric.
 
@@ -649,7 +676,7 @@ class Fabric(object):
 
     def apply_factory_default_config(self):
         """Sets the fabric config to factory default
-        
+
         >>> fabric.apply_factory_default_config()
         """
         self.primary_node.bmc.fabric_config_factory_default()
@@ -657,7 +684,7 @@ class Fabric(object):
     def get_ipaddr_base(self):
         """The base IPv4 address for a range of static IP addresses used
         for the nodes in the fabric
-        
+
         >>> fabric.get_ipaddr_base()
         '192.168.100.1'
 
