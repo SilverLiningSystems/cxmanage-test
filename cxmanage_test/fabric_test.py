@@ -42,7 +42,7 @@ from cxmanage_test.node_test import DummyBMC
 from pyipmi import make_bmc
 
 NUM_NODES = 128
-ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]
+ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES + 1)]
 
 class FabricTest(unittest.TestCase):
     """ Test the various Fabric commands """
@@ -71,6 +71,13 @@ class FabricTest(unittest.TestCase):
         """ Test get_mac_addresses command """
         self.fabric.get_mac_addresses()
         self.assertEqual(self.nodes[0].executed, ["get_fabric_macaddrs"])
+        for node in self.nodes[1:]:
+            self.assertEqual(node.executed, [])
+
+    def test_get_uplink_info(self):
+        """ Test get_mac_addresses command """
+        self.fabric.get_uplink_info()
+        self.assertEqual(self.nodes[0].executed, ["get_fabric_uplink_info"])
         for node in self.nodes[1:]:
             self.assertEqual(node.executed, [])
 
@@ -166,19 +173,19 @@ class FabricTest(unittest.TestCase):
 
     def test_primary_node(self):
         """Test the primary_node property
-        
+
         Currently it should always return node 0.
         """
         self.assertEqual(self.fabric.primary_node, self.nodes[0])
 
     def test_get_ipsrc(self):
         """Test the get_ipsrc method
-        
+
         """
         self.fabric.get_ipsrc()
         bmc = self.fabric.primary_node.bmc
         self.assertIn('fabric_config_get_ip_src', bmc.executed)
-    
+
     def test_set_ipsrc(self):
         """Test the set_ipsrc method"""
 
@@ -188,8 +195,8 @@ class FabricTest(unittest.TestCase):
         bmc = self.fabric.primary_node.bmc
         self.assertIn('fabric_config_set_ip_src', bmc.executed)
 
-        #fabric_ipsrc is just part of DummyBMC - not a real bmc attribute
-        #it's there to make sure the ipsrc_mode value gets passed to the bmc.
+        # fabric_ipsrc is just part of DummyBMC - not a real bmc attribute
+        # it's there to make sure the ipsrc_mode value gets passed to the bmc.
         self.assertEqual(bmc.fabric_ipsrc, ipsrc)
 
     def test_apply_factory_default_config(self):
@@ -198,7 +205,7 @@ class FabricTest(unittest.TestCase):
         self.fabric.apply_factory_default_config()
         bmc = self.fabric.primary_node.bmc
         self.assertIn('fabric_config_factory_default', bmc.executed)
-    
+
     def test_get_ipaddr_base(self):
         """Test the get_ipaddr_base method"""
         ipaddr_base = self.fabric.get_ipaddr_base()
@@ -208,7 +215,7 @@ class FabricTest(unittest.TestCase):
 
     def test_update_config(self):
         """Test the update_config method
-        
+
         """
         self.fabric.update_config()
         bmc = self.fabric.primary_node.bmc
@@ -216,7 +223,7 @@ class FabricTest(unittest.TestCase):
 
     def test_get_linkspeed(self):
         """Test the get_linkspeed method
-        
+
         """
         self.fabric.get_linkspeed()
         bmc = self.fabric.primary_node.bmc
@@ -232,13 +239,13 @@ class FabricTest(unittest.TestCase):
         bmc = self.fabric.primary_node.bmc
         self.assertIn('fabric_config_set_linkspeed', bmc.executed)
 
-        #fabric_linkspeed is just part of DummyBMC - not a real bmc attribute
-        #it's there to make sure the ipsrc_mode value gets passed to the bmc.
+        # fabric_linkspeed is just part of DummyBMC - not a real bmc attribute
+        # it's there to make sure the ipsrc_mode value gets passed to the bmc.
         self.assertEqual(bmc.fabric_linkspeed, linkspeed)
-        
+
     def test_get_linkspeed_policy(self):
         """Test the get_linkspeed_policy method
-        
+
         """
         self.fabric.get_linkspeed_policy()
         bmc = self.fabric.primary_node.bmc
@@ -253,8 +260,8 @@ class FabricTest(unittest.TestCase):
         bmc = self.fabric.primary_node.bmc
         self.assertIn('fabric_config_set_linkspeed_policy', bmc.executed)
 
-        #fabric_ls_policy is just part of DummyBMC - not a real bmc attribute
-        #it's there to make sure the ipsrc_mode value gets passed to the bmc.
+        # fabric_ls_policy is just part of DummyBMC - not a real bmc attribute
+        # it's there to make sure the ipsrc_mode value gets passed to the bmc.
         self.assertEqual(bmc.fabric_ls_policy, ls_policy)
 
 class DummyNode(object):
@@ -361,6 +368,14 @@ class DummyNode(object):
                 address = "00:00:00:00:%02x:%02x" % (node, port)
                 result[node][port] = address
         return result
+
+    def get_fabric_uplink_info(self):
+        self.executed.append('get_fabric_uplink_info')
+        results = {}
+        for n in range(1, NUM_NODES):
+            results[n] = {'eth0': 0, 'eth1': 0, 'mgmt': 0}
+        return results
+
 
 
 class DummyFailNode(DummyNode):

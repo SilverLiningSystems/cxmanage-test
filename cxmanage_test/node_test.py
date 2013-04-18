@@ -48,7 +48,7 @@ from cxmanage_api.cx_exceptions import IPDiscoveryError
 
 
 NUM_NODES = 4
-ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES+1)]
+ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES + 1)]
 
 class NodeTest(unittest.TestCase):
     """ Tests involving cxmanage Nodes """
@@ -306,6 +306,14 @@ class NodeTest(unittest.TestCase):
                     expected_macaddr = "00:00:00:00:%x:%x" % (node_id, port)
                     self.assertEqual(result[node_id][port], [expected_macaddr])
 
+    def test_get_fabric_uplink_info(self):
+        """ Test node.get_fabric_macaddrs method """
+        for node in self.nodes:
+            result = node.get_fabric_uplink_info()
+
+            for x in node.bmc.executed:
+                self.assertEqual(x, "fabric_config_get_uplink_info")
+
     def test_get_server_ip(self):
         """ Test node.get_server_ip method """
         for node in self.nodes:
@@ -324,13 +332,13 @@ class DummyBMC(LanBMC):
         super(DummyBMC, self).__init__(**kwargs)
         self.executed = []
         self.partitions = [
-                Partition(0, 3, 0, 393216, in_use=True),        # socman
+                Partition(0, 3, 0, 393216, in_use=True),  # socman
                 Partition(1, 10, 393216, 196608, in_use=True),  # factory cdb
                 Partition(2, 3, 589824, 393216, in_use=False),  # socman
-                Partition(3, 10, 983040, 196608, in_use=False), # factory cdb
-                Partition(4, 10, 1179648, 196608, in_use=True), # running cdb
-                Partition(5, 11, 1376256, 12288),               # ubootenv
-                Partition(6, 11, 1388544, 12288)                # ubootenv
+                Partition(3, 10, 983040, 196608, in_use=False),  # factory cdb
+                Partition(4, 10, 1179648, 196608, in_use=True),  # running cdb
+                Partition(5, 11, 1376256, 12288),  # ubootenv
+                Partition(6, 11, 1388544, 12288)  # ubootenv
         ]
         self.ipaddr_base = '192.168.100.1'
 
@@ -493,6 +501,19 @@ class DummyBMC(LanBMC):
         tftp.put_file("%s/%s" % (work_dir, filename), filename)
 
         shutil.rmtree(work_dir)
+
+    def fabric_config_get_uplink_info(self, filename, tftp_address=None):
+        self.executed.append("fabric_config_get_uplink_info")
+
+        if tftp_address == None:
+            raise IpmiError()
+
+        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
+        # Create uplink info file
+        ulinfo = open("%s/%s" % (work_dir, filename), "w")
+        for i in range(1, NUM_NODES):
+            ulinfo.write("Node %i: eth0 0, eth1 0, mgmt 0\n" % i)
+        ulinfo.close()
 
     def fabric_config_get_mac_addresses(self, filename, tftp_address=None):
         """ Upload a macaddrs file from the node to TFTP"""
