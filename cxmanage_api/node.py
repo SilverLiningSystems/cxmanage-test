@@ -144,7 +144,7 @@ class Node(object):
 
         """
         if self._node_id == None:
-            self._node_id = self.bmc.get_fabric_nodeid()
+            self._node_id = self.bmc.get_fabric_node_id()
         return self._node_id
 
     @node_id.setter
@@ -848,14 +848,14 @@ class Node(object):
         basename = os.path.basename(filename)
 
         try:
-            result = self.bmc.get_fabric_ipinfo(basename)
+            result = self.bmc.fabric_config_get_ip_info(basename)
             if hasattr(result, "error"):
                 raise IpmiError(result.error)
             self.node_tftp.get_file(basename, filename)
         except (IpmiError, TftpException):
             # Fall back and use our tftp server
             try:
-                result = self.bmc.get_fabric_ipinfo(basename, self.tftp_address)
+                result = self.bmc.fabric_config_get_ip_info(basename, self.tftp_address)
             except IpmiError as e:
                 raise IpmiError(self._parse_ipmierror(e))
             if hasattr(result, "error"):
@@ -904,14 +904,14 @@ class Node(object):
         basename = os.path.basename(filename)
 
         try:
-            result = self.bmc.get_fabric_macaddresses(basename)
+            result = self.bmc.fabric_config_get_mac_addresses(basename)
             if hasattr(result, "error"):
                 raise IpmiError(result.error)
             self.node_tftp.get_file(basename, filename)
         except (IpmiError, TftpException):
             # Fall back and use our tftp server
             try:
-                result = self.bmc.get_fabric_macaddresses(basename,
+                result = self.bmc.fabric_config_get_mac_addresses(basename,
                         self.tftp_address)
             except IpmiError as e:
                 raise IpmiError(self._parse_ipmierror(e))
@@ -1003,7 +1003,7 @@ class Node(object):
         # because we can just get the info from a primary node (fabric config).
 
         try:
-            return self.bmc.get_fabric_linkspeed(link=link, actual=actual)
+            return self.bmc.fabric_get_linkspeed(link=link, actual=actual)
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 

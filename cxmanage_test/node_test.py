@@ -286,7 +286,8 @@ class NodeTest(unittest.TestCase):
             result = node.get_fabric_ipinfo()
 
             for x in node.bmc.executed:
-                self.assertEqual(x, "get_fabric_ipinfo")
+                self.assertEqual(x, "fabric_config_get_ip_info")
+
             self.assertEqual(result, dict([(i, ADDRESSES[i])
                     for i in range(NUM_NODES)]))
 
@@ -296,7 +297,8 @@ class NodeTest(unittest.TestCase):
             result = node.get_fabric_macaddrs()
 
             for x in node.bmc.executed:
-                self.assertEqual(x, "get_fabric_macaddresses")
+                self.assertEqual(x, "fabric_config_get_mac_addresses")
+
             self.assertEqual(len(result), NUM_NODES)
             for node_id in xrange(NUM_NODES):
                 self.assertEqual(len(result[node_id]), 3)
@@ -469,9 +471,9 @@ class DummyBMC(LanBMC):
                 self.revision = "0"
         return Result()
 
-    def get_fabric_ipinfo(self, filename, tftp_address=None):
+    def fabric_config_get_ip_info(self, filename, tftp_address=None):
         """ Upload an ipinfo file from the node to TFTP"""
-        self.executed.append("get_fabric_ipinfo")
+        self.executed.append("fabric_config_get_ip_info")
 
         if tftp_address == None:
             raise IpmiError()
@@ -492,9 +494,9 @@ class DummyBMC(LanBMC):
 
         shutil.rmtree(work_dir)
 
-    def get_fabric_macaddresses(self, filename, tftp_address=None):
+    def fabric_config_get_mac_addresses(self, filename, tftp_address=None):
         """ Upload a macaddrs file from the node to TFTP"""
-        self.executed.append("get_fabric_macaddresses")
+        self.executed.append("fabric_config_get_mac_addresses")
 
         if tftp_address == None:
             raise IpmiError()
@@ -517,44 +519,44 @@ class DummyBMC(LanBMC):
 
         shutil.rmtree(work_dir)
 
-    def get_fabric_ipsrc(self):
-        self.executed.append('get_fabric_ipsrc')
+    def fabric_config_get_ip_src(self):
+        self.executed.append('fabric_config_get_ip_src')
         return 2
 
-    def set_fabric_ipsrc(self, ipsrc_mode):
+    def fabric_config_set_ip_src(self, ipsrc_mode):
         self.fabric_ipsrc = ipsrc_mode
-        self.executed.append('set_fabric_ipsrc')
+        self.executed.append('fabric_config_set_ip_src')
 
-    def fabric_factory_default(self):
-        self.executed.append('fabric_factory_default')
+    def fabric_config_factory_default(self):
+        self.executed.append('fabric_config_factory_default')
 
-    def fabric_get_ipaddr_base(self):
+    def fabric_config_get_ip_addr_base(self):
         """Provide a fake base IP addr"""
-        self.executed.append('fabric_get_ipaddr_base')
+        self.executed.append('fabric_config_get_ip_addr_base')
         return self.ipaddr_base
 
-    def fabric_config_updateconfig(self):
-        self.executed.append('fabric_config_updateconfig')
+    def fabric_config_update_config(self):
+        self.executed.append('fabric_config_update_config')
 
-    def get_fabric_linkspeed(self, link="", actual=""):
-        self.executed.append('get_fabric_linkspeed')
+    def fabric_get_linkspeed(self, link="", actual=""):
+        self.executed.append('fabric_get_linkspeed')
         return 1
 
-    def get_fabric_config_linkspeed(self):
-        self.executed.append('get_fabric_config_linkspeed')
+    def fabric_config_get_linkspeed(self):
+        self.executed.append('fabric_config_get_linkspeed')
         return 1
 
-    def set_fabric_config_linkspeed(self, linkspeed):
+    def fabric_config_set_linkspeed(self, linkspeed):
         self.fabric_linkspeed = linkspeed
-        self.executed.append('set_fabric_config_linkspeed')
+        self.executed.append('fabric_config_set_linkspeed')
 
-    def get_fabric_config_linkspeed_policy(self):
-        self.executed.append('get_fabric_config_linkspeed_policy')
+    def fabric_config_get_linkspeed_policy(self):
+        self.executed.append('fabric_config_get_linkspeed_policy')
         return 1
 
-    def set_fabric_config_linkspeed_policy(self, ls_policy):
+    def fabric_config_set_linkspeed_policy(self, ls_policy):
         self.fabric_ls_policy = ls_policy
-        self.executed.append('set_fabric_config_linkspeed_policy')
+        self.executed.append('fabric_config_set_linkspeed_policy')
 
 class Partition:
     def __init__(self, partition, type, offset=0,

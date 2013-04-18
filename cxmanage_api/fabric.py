@@ -635,7 +635,7 @@ class Fabric(object):
         :return: 1 for static, 2 for DHCP
         :rtype: integer
         """
-        return self.primary_node.bmc.get_fabric_ipsrc()
+        return self.primary_node.bmc.fabric_config_get_ip_src()
     
     def set_ipsrc(self, ipsrc_mode):
         """Set the ipsrc for the fabric.
@@ -645,14 +645,14 @@ class Fabric(object):
         :param ipsrc_mode: 1 for static, 2 for DHCP
         :type ipsrc_mode: integer
         """
-        self.primary_node.bmc.set_fabric_ipsrc(ipsrc_mode)
+        self.primary_node.bmc.fabric_config_set_ip_src(ipsrc_mode)
 
     def apply_factory_default_config(self):
         """Sets the fabric config to factory default
         
         >>> fabric.apply_factory_default_config()
         """
-        self.primary_node.bmc.fabric_factory_default()
+        self.primary_node.bmc.fabric_config_factory_default()
 
     def get_ipaddr_base(self):
         """The base IPv4 address for a range of static IP addresses used
@@ -664,7 +664,7 @@ class Fabric(object):
         :return: The first IP address in the range of static IP addresses
         :rtype: string
         """
-        return self.primary_node.bmc.fabric_get_ipaddr_base()
+        return self.primary_node.bmc.fabric_config_get_ip_addr_base()
 
     def _discover_nodes(self, ip_address, username="admin", password="admin"):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""
@@ -688,7 +688,7 @@ class Fabric(object):
         """
         # This command is a case where we should avoid using _run_command,
         # because we can just get the info from a primary node (fabric config).
-        self.primary_node.bmc.fabric_config_updateconfig()
+        self.primary_node.bmc.fabric_config_update_config()
 
     def get_linkspeed(self):
         """Get the global linkspeed for the fabric. In the partition world
@@ -703,7 +703,7 @@ class Fabric(object):
         """
         # This command is a case where we should avoid using _run_command,
         # because we can just get the info from a primary node (fabric config).
-        return self.primary_node.bmc.get_fabric_config_linkspeed()
+        return self.primary_node.bmc.fabric_config_get_linkspeed()
 
     def set_linkspeed(self, linkspeed):
         """Set the global linkspeed for the fabric. In the partition world
@@ -717,7 +717,7 @@ class Fabric(object):
         """
         # This command is a case where we should avoid using _run_command,
         # because we can just get the info from a primary node (fabric config).
-        self.primary_node.bmc.set_fabric_config_linkspeed(linkspeed)
+        self.primary_node.bmc.fabric_config_set_linkspeed(linkspeed)
 
     def get_linkspeed_policy(self):
         """Get the global linkspeed policy for the fabric. In the partition
@@ -733,7 +733,7 @@ class Fabric(object):
         """
         # This command is a case where we should avoid using _run_command,
         # because we can just get the info from a primary node (fabric config).
-        return self.primary_node.bmc.get_fabric_config_linkspeed_policy()
+        return self.primary_node.bmc.fabric_config_get_linkspeed_policy()
 
     def set_linkspeed_policy(self, ls_policy):
         """Set the global linkspeed policy for the fabric. In the partition
@@ -751,7 +751,7 @@ class Fabric(object):
         """
         # This command is a case where we should avoid using _run_command,
         # because we can just get the info from a primary node (fabric config).
-        self.primary_node.bmc.set_fabric_config_linkspeed_policy(ls_policy)
+        self.primary_node.bmc.fabric_config_set_linkspeed_policy(ls_policy)
 
     def _run_command(self, async, name, *args):
         """Start a command on the given nodes."""
