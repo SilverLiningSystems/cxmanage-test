@@ -949,6 +949,70 @@ class Node(object):
 
         return results
 
+    def get_fabric_uplink_info(self):
+        """Gets what uplink information THIS node knows about the Fabric.
+
+        >>> node.get_fabric_uplink_info()
+        {'0': {'eth0': '0', 'eth1': '0', 'mgmt': '0'},
+         '1': {'eth0': '0', 'eth1': '0', 'mgmt': '0'},
+         '2': {'eth0': '0', 'eth1': '0', 'mgmt': '0'},
+         '3': {'eth0': '0', 'eth1': '0', 'mgmt': '0'},
+         '4': {'eth0': '0', 'eth1': '0', 'mgmt': '0'}}
+
+        :return: Returns a map of {node_id : {interface : uplink}}
+        :rtype: dictionary
+
+        :raises IpmiError: If the IPMI command fails.
+        :raises TftpException: If the TFTP transfer fails.
+
+        """
+        filename = temp_file()
+        basename = os.path.basename(filename)
+        #
+        # TODO: Use ECME as TFTP server first, when supported
+        #
+        # result = self.bmc.fabric_config_get_uplink_info(basename)
+        #
+        try:
+            result = self.bmc.fabric_config_get_uplink_info(
+                basename,
+                self.tftp_address
+            )
+
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
+
+        if hasattr(result, "error"):
+            raise IpmiError(result.error)
+
+        deadline = time.time() + 10
+        while (time.time() < deadline):
+            try:
+                time.sleep(1)
+                self.tftp.get_file(src=basename, dest=filename)
+                if (os.path.getsize(filename) > 0):
+                    break
+
+            except (TftpException, IOError):
+                pass
+
+        # Parse addresses from ipinfo file
+        results = {}
+        for line in open(filename):
+            node_id = line.replace('Node ', '')[0]
+            ul_info = line.replace('Node %s:' % node_id, '').strip().split(',')
+            node_data = {}
+            for ul in ul_info:
+                data = tuple(ul.split())
+                node_data[data[0]] = data[1]
+            results[node_id] = node_data
+
+        # Make sure we found something
+        if (not results):
+           raise TftpException("Node failed to reach TFTP server")
+
+        return results
+
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
             password="1Password", aggressive=False):
         """Get the IP address of the Linux server. The server must be powered
