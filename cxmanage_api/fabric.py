@@ -138,7 +138,7 @@ class Fabric(object):
             self._discover_nodes(self.ip_address)
         return self._nodes
 
-    def get_mac_addresses(self, async=False):
+    def get_mac_addresses(self):
         """Gets MAC addresses from all nodes.
 
         >>> fabric.get_mac_addresses()
@@ -154,16 +154,14 @@ class Fabric(object):
         :type async: boolean
 
         :return: The MAC addresses for each node.
-        :rtype: dictionary or `Task <tasks.html>`__
+        :rtype: dictionary
 
         """
         # This command is a special case and should avoid using _run_command,
         # because we can just get the info from one node.
-        if async:
-            return self.task_queue.put(self.primary_node.get_fabric_macaddrs)
         return self.primary_node.get_fabric_macaddrs()
 
-    def get_uplink_info(self, async=False):
+    def get_uplink_info(self):
         """Gets the fabric uplink info.
 
         >>> fabric.get_uplink_info()
@@ -184,10 +182,6 @@ class Fabric(object):
         """
         # This command is a special case and should avoid using _run_command,
         # because we can just get the info from one node.
-        if async:
-            return self.task_queue.put(
-                self.primary_node.get_fabric_uplink_info
-            )
         return self.primary_node.get_fabric_uplink_info()
 
     def get_power(self, async=False):
