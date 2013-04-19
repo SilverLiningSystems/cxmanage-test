@@ -743,6 +743,40 @@ class Fabric(object):
         # because we can just get the info from a primary node (fabric config).
         self.primary_node.bmc.fabric_config_set_linkspeed(linkspeed)
 
+    def add_macaddr(self, nodeid, iface, macaddr):
+        """Add a new macaddr to a node/interface in the fabric.
+
+        >>> fabric.add_mac_address (3, 1, "66:55:44:33:22:11")
+
+        :param nodeid: Node id to which the macaddr is to be added
+        :type nodeid: integer
+        :param iface: interface on the node to which the macaddr is to be added
+        :type iface: integer
+        :param macaddr: mac address to be added
+        :type macaddr: string
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just add the macaddr using primary node
+        self.primary_node.bmc.fabric_add_macaddr(nodeid, iface, macaddr)
+
+    def rm_macaddr(self, nodeid, iface, macaddr):
+        """Remove a macaddr to a node/interface in the fabric.
+
+        >>> fabric.rm_mac_address (3, 1, "66:55:44:33:22:11")
+
+        :param nodeid: Node id from which the macaddr is to be remove
+        :type nodeid: integer
+        :param iface: interface on the node from which the macaddr is to be removed
+        :type iface: integer
+        :param macaddr: mac address to be removed
+        :type macaddr: string
+
+        """
+        # This command is a case where we should avoid using _run_command,
+        # because we can just add the macaddr using primary node
+        self.primary_node.bmc.fabric_rm_macaddr(nodeid, iface, macaddr)
+
     def get_linkspeed_policy(self):
         """Get the global linkspeed policy for the fabric. In the partition
         world this means the linkspeed for Configuration 0, Partition 0,

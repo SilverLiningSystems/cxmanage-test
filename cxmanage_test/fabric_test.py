@@ -305,6 +305,36 @@ class FabricTest(unittest.TestCase):
         # it's there to make sure the ipsrc_mode value gets passed to the bmc.
         self.assertEqual(bmc.fabric_lu_factor, lu_factor)
 
+    def test_add_macaddr (self):
+        """Test the add_macaddr method"""
+
+        valid_nodeids = [0, 1, 2, 3]
+        t_nodeid = random.choice(valid_nodeids)
+
+        valid_ifaces = [0, 1, 2]
+        t_nodeid = random.choice(valid_ifaces)
+
+        t_macaddr = "66:55:44:33:22:11"
+
+        self.fabric.add_macaddr (t_nodeid, t_iface, t_macaddr)
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn ('fabric_add_macaddr', bmc.executed)
+
+    def test_rm_macaddr (self):
+        """Test the rm_macaddr method"""
+
+        valid_nodeids = [0, 1, 2, 3]
+        t_nodeid = random.choice(valid_nodeids)
+
+        valid_ifaces = [0, 1, 2]
+        t_nodeid = random.choice(valid_ifaces)
+
+        t_macaddr = "66:55:44:33:22:11"
+
+        self.fabric.rm_macaddr (t_nodeid, t_iface, t_macaddr)
+        bmc = self.fabric.primary_node.bmc
+        self.assertIn ('fabric_rm_macaddr', bmc.executed)
+
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """
     def __init__(self, ip_address, username="admin", password="admin",
