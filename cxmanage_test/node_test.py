@@ -307,7 +307,7 @@ class NodeTest(unittest.TestCase):
                     self.assertEqual(result[node_id][port], [expected_macaddr])
 
     def test_get_fabric_uplink_info(self):
-        """ Test node.get_fabric_macaddrs method """
+        """ Test node.get_fabric_uplink_info method """
         for node in self.nodes:
             result = node.get_fabric_uplink_info()
 
@@ -514,6 +514,14 @@ class DummyBMC(LanBMC):
         for i in range(1, NUM_NODES):
             ulinfo.write("Node %i: eth0 0, eth1 0, mgmt 0\n" % i)
         ulinfo.close()
+
+        # Upload to tftp
+        address, port = tftp_address.split(":")
+        port = int(port)
+        tftp = ExternalTftp(address, port)
+        tftp.put_file("%s/%s" % (work_dir, filename), filename)
+
+        shutil.rmtree(work_dir)
 
     def fabric_config_get_mac_addresses(self, filename, tftp_address=None):
         """ Upload a macaddrs file from the node to TFTP"""
