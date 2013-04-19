@@ -81,6 +81,19 @@ class FabricTest(unittest.TestCase):
         for node in self.nodes[1:]:
             self.assertEqual(node.executed, [])
 
+    def test_get_uplink(self):
+        """ Test get_uplink command """
+        self.assertEqual(self.fabric.get_uplink(iface=0), 0)
+
+    def test_set_uplink(self):
+        """ Test set_uplink command """
+        iface, uplink = 0, 0
+        self.fabric.set_uplink(iface=iface, uplink=uplink)
+        self.assertEqual(
+                [("fabric_config_set_uplink", iface, uplink)],
+                self.nodes[0].bmc.executed
+            )
+
     def test_get_sensors(self):
         """ Test get_sensors command """
         self.fabric.get_sensors()
@@ -376,6 +389,12 @@ class DummyNode(object):
             results[n] = {'eth0': 0, 'eth1': 0, 'mgmt': 0}
         return results
 
+    def get_uplink(self, iface):
+        self.executed.append(('get_uplink', iface))
+        return 0
+
+    def set_uplink(self, uplink, iface):
+        self.executed.append(('set_uplink', uplink, iface))
 
 
 class DummyFailNode(DummyNode):

@@ -326,6 +326,19 @@ class NodeTest(unittest.TestCase):
             result = node.get_linkspeed()
             self.assertEqual(result, 1)
 
+    def test_get_uplink(self):
+        """ Test node.get_uplink method"""
+        for node in self.nodes:
+            result = node.get_uplink(iface=0)
+            self.assertEqual(result, 0)
+
+    def test_set_uplink(self):
+        """ Test node.set_uplink method """
+        for node in self.nodes:
+            node.set_uplink(iface=0, uplink=0)
+            self.assertEqual(node.get_uplink(iface=0), 0)
+
+
 class DummyBMC(LanBMC):
     """ Dummy BMC for the node tests """
     def __init__(self, **kwargs):
@@ -522,6 +535,13 @@ class DummyBMC(LanBMC):
         tftp.put_file("%s/%s" % (work_dir, filename), filename)
 
         shutil.rmtree(work_dir)
+
+    def fabric_config_get_uplink(self, iface):
+        self.executed.append(("fabric_config_get_uplink", iface))
+        return 0
+
+    def fabric_config_set_uplink(self, uplink, iface):
+        self.executed.append(("fabric_config_set_uplink", uplink, iface))
 
     def fabric_config_get_mac_addresses(self, filename, tftp_address=None):
         """ Upload a macaddrs file from the node to TFTP"""
