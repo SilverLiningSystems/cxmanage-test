@@ -774,6 +774,36 @@ class Fabric(object):
         # because we can just get the info from a primary node (fabric config).
         self.primary_node.bmc.fabric_config_set_linkspeed_policy(ls_policy)
 
+    def get_uplink(self, iface=0):
+        """Get the uplink a MAC will use when transmitting a packet out of the
+        cluster.
+
+        >>> fabric.get_uplink(0)
+        0
+
+        :param iface: The interface for the uplink.
+        :type iface: integer
+
+        :return: Uplink
+        :rtype: integer
+ 
+        """
+        return self.primary_node.bmc.fabric_config_get_uplink(iface=iface)
+
+    def set_uplink(self, uplink=0, iface=0):
+        """Set the uplink a MAC will use when transmitting a packet out of the
+        cluster.
+         
+        >>> fabric.set_uplink(0,0)
+        
+        :param uplink: The uplink to set.
+        :type uplink: integer
+        :param iface: The interface for the uplink.
+        :type iface: integer
+        
+        """
+        self.primary_node.bmc.fabric_config_set_uplink(uplink=uplink, iface=iface)
+
     def _run_command(self, async, name, *args):
         """Start a command on the given nodes."""
         tasks = {}

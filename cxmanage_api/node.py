@@ -1071,6 +1071,44 @@ class Node(object):
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
+    def get_uplink(self, iface=0):
+        """Get the uplink a MAC will use when transmitting a packet out of the
+        cluster.
+
+        >>> fabric.get_uplink(0)
+        0
+
+        :param iface: The interface for the uplink.
+        :type iface: integer
+
+        :return: Uplink
+        :rtype: integer
+
+        """
+
+        try:
+            return self.bmc.fabric_config_get_uplink(iface=iface)
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
+
+    def set_uplink(self, uplink=0, iface=0):
+        """Set the uplink a MAC will use when transmitting a packet out of the
+        cluster.
+
+        >>> fabric.set_uplink(0,0)
+
+        :param uplink: The uplink to set.
+        :type uplink: integer
+        :param iface: The interface for the uplink.
+        :type iface: integer
+
+        """
+
+        try:
+            return self.bmc.fabric_config_set_uplink(uplink=uplink, iface=iface)
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
+
 ############################### Private methods ###############################
 
     def _get_partition(self, fwinfo, image_type, partition_arg):
