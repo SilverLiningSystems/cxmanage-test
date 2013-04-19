@@ -1075,17 +1075,18 @@ class Node(object):
         """Get the uplink a MAC will use when transmitting a packet out of the
         cluster.
 
-        >>> fabric.get_uplink(0)
+        >>> fabric.get_uplink(iface=1)
         0
 
         :param iface: The interface for the uplink.
         :type iface: integer
 
-        :return: Uplink
+        :return: The uplink iface is connected to.
         :rtype: integer
 
-        """
+        :raises IpmiError: When any errors are encountered.
 
+        """
         try:
             return self.bmc.fabric_config_get_uplink(iface=iface)
         except IpmiError as e:
@@ -1095,17 +1096,24 @@ class Node(object):
         """Set the uplink a MAC will use when transmitting a packet out of the
         cluster.
 
-        >>> fabric.set_uplink(0,0)
+        >>> #
+        >>> # Set eth0 to uplink 1 ...
+        >>> #
+        >>> fabric.set_uplink(uplink=1,iface=0)
 
         :param uplink: The uplink to set.
         :type uplink: integer
         :param iface: The interface for the uplink.
         :type iface: integer
 
-        """
+        :raises IpmiError: When any errors are encountered.
 
+        """
         try:
-            return self.bmc.fabric_config_set_uplink(uplink=uplink, iface=iface)
+            return self.bmc.fabric_config_set_uplink(
+                uplink=uplink,
+                iface=iface
+            )
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
