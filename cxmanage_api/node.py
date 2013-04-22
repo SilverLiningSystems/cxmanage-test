@@ -78,8 +78,8 @@ class Node(object):
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
-                  tftp=None, verbose=False, bmc=None, image=None,
-                  ubootenv=None, ipretriever=None):
+                  tftp=None, ecme_tftp_port=5001, verbose=False, bmc=None,
+                  image=None, ubootenv=None, ipretriever=None):
         """Default constructor for the Node class."""
         if (not tftp):
             tftp = InternalTftp()
@@ -98,7 +98,7 @@ class Node(object):
         self.username = username
         self.password = password
         self.tftp = tftp
-        self.node_tftp = ExternalTftp(ip_address, 5001)
+        self.ecme_tftp = ExternalTftp(ip_address, ecme_tftp_port)
         self.verbose = verbose
 
         self.bmc = make_bmc(bmc, hostname=ip_address, username=username,
@@ -851,7 +851,7 @@ class Node(object):
             result = self.bmc.fabric_config_get_ip_info(basename)
             if hasattr(result, "error"):
                 raise IpmiError(result.error)
-            self.node_tftp.get_file(basename, filename)
+            self.ecme_tftp.get_file(basename, filename)
         except (IpmiError, TftpException):
             # Fall back and use our tftp server
             try:
@@ -907,7 +907,7 @@ class Node(object):
             result = self.bmc.fabric_config_get_mac_addresses(basename)
             if hasattr(result, "error"):
                 raise IpmiError(result.error)
-            self.node_tftp.get_file(basename, filename)
+            self.ecme_tftp.get_file(basename, filename)
         except (IpmiError, TftpException):
             # Fall back and use our tftp server
             try:
@@ -1180,7 +1180,7 @@ class Node(object):
 
         try:
             self.bmc.register_firmware_write(basename, partition_id, image.type)
-            self.node_tftp.put_file(filename, basename)
+            self.ecme_tftp.put_file(filename, basename)
         except (IpmiError, TftpException):
             # Fall back and use TFTP server
             self.tftp.put_file(filename, basename)
@@ -1205,7 +1205,7 @@ class Node(object):
 
         try:
             self.bmc.register_firmware_read(basename, partition_id, image_type)
-            self.node_tftp.get_file(basename, filename)
+            self.ecme_tftp.get_file(basename, filename)
         except (IpmiError, TftpException):
             # Fall back and use TFTP server
             result = self.bmc.retrieve_firmware(basename, partition_id,
