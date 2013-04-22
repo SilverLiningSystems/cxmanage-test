@@ -91,6 +91,8 @@ def build_parser():
             help='Host an internal TFTP server listening on ip:port')
     tftp_type.add_argument('--external-tftp', metavar='IP:PORT',
             help='Connect to remote TFTP server at ip:port')
+    parser.add_argument('--ecme-tftp-port', type=int, default=5001,
+            metavar='PORT', help='TFTP port of the ECME')
 
     subparsers = parser.add_subparsers()
 
