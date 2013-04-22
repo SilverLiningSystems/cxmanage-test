@@ -1117,8 +1117,6 @@ class Node(object):
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
-############################### Private methods ###############################
-
     def _get_partition(self, fwinfo, image_type, partition_arg):
         """Get a partition for this image type based on the argument."""
         # Filter partitions for this type
