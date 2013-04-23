@@ -1013,6 +1013,66 @@ class Node(object):
 
         return results
 
+    def get_fabric_link_stats(self, link=0):
+        """Gets the linkstats for the link specified.
+
+        :param link: The link to get stats for (0-4).
+        :type link: integer
+
+        :returns: The linkstats for the link specified.
+        :rtype: dictionary
+
+        :raises IpmiError: If the IPMI command fails.
+
+        """
+        filename = temp_file()
+        basename = os.path.basename(filename)
+        try:
+            result = self.bmc.fabric_get_link_stats(
+                filename=basename,
+                tftp_addr=self.tftp_address,
+                link=link
+            )
+
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
+
+        if hasattr(result, "error"):
+            raise IpmiError(result.error)
+
+        deadline = time.time() + 10
+        while (time.time() < deadline):
+            try:
+                time.sleep(1)
+                self.tftp.get_file(src=basename, dest=filename)
+                if (os.path.getsize(filename) > 0):
+                    break
+
+            except (TftpException, IOError):
+                pass
+
+        results = {}
+        for line in open(filename):
+            if ('=' in line):
+                reg_value = line.strip().split('=')
+                if (len(reg_value) < 2):
+                    raise ValueError(
+                        'Register: %s has no value!' % reg_value[0]
+                    )
+                else:
+                    results[
+                        reg_value[0].replace(
+                            'pFS_LCn', 'FS_LC%s' % link
+                        ).replace('(link)', '').strip()
+                    ] = reg_value[1].strip()
+
+        # Make sure we found something
+        if (not results):
+            raise TftpException("Node failed to reach TFTP server")
+
+        return results
+
+
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
             password="1Password", aggressive=False):
         """Get the IP address of the Linux server. The server must be powered

@@ -314,6 +314,12 @@ class NodeTest(unittest.TestCase):
             for x in node.bmc.executed:
                 self.assertEqual(x, "fabric_config_get_uplink_info")
 
+    def test_get_fabric_link_stats(self):
+        """ Test node.get_fabric_link_stats() """
+        for node in self.nodes:
+            result = node.get_fabric_link_stats()
+            self.assertEqual(node.bmc.executed[0], ('get_fabric_link_stats', 0))
+
     def test_get_server_ip(self):
         """ Test node.get_server_ip method """
         for node in self.nodes:
@@ -491,6 +497,52 @@ class DummyBMC(LanBMC):
                 self.type = "TestBoard"
                 self.revision = "0"
         return Result()
+
+    def fabric_get_link_stats(self, filename, tftp_addr=None,
+        link=None):
+        """Upload a link_stats file from the node to TFTP"""
+        self.executed.append(('get_fabric_link_stats', link))
+
+        if not(tftp_addr):
+            raise IpmiError('ERROR: No TFTP Address!')
+
+        link_stats = []
+        link_stats.append('Packet Counts for Link %s:' % link)
+        link_stats.append('Link0 StatspFS_LCn_CFG_0(link) = 0x1030d07f')
+        link_stats.append('pFS_LCn_CFG_1 = 0x105f')
+        link_stats.append('pFS_LCn_STATE = 0x1033')
+        link_stats.append('pFS_LCn_SC_STAT = 0x0')
+        link_stats.append('pFS_LCn_PKT_CNT_0 = 0x0')
+        link_stats.append('pFS_LCn_PKT_CNT_1 = 0x0')
+        link_stats.append('pFS_LCn_BYTE_CNT_0 = 0x0')
+        link_stats.append('pFS_LCn_BYTE_CNT_1 = 0x0')
+        link_stats.append('pFS_LCn_CM_TXDATA_0 = 0x82000000')
+        link_stats.append('pFS_LCn_CM_TXDATA_1 = 0x0')
+        link_stats.append('pFS_LCn_CM_RXDATA_0 = 0x0')
+        link_stats.append('pFS_LCn_CM_RXDATA_1 = 0x0')
+        link_stats.append('pFS_LCn_PKT_CNT_0 = 0x0')
+        link_stats.append('pFS_LCn_PKT_CNT_1 = 0x0')
+        link_stats.append('pFS_LCn_RMCSCNT = 0x1428')
+        link_stats.append('pFS_LCn_RUCSCNT = 0x116')
+        link_stats.append('pFS_LCn_RERRSCNT = 0x0')
+        link_stats.append('pFS_LCn_RDRPSCNT = 0xb4')
+        link_stats.append('pFS_LCn_RPKTSCNT = 0x0')
+        link_stats.append('pFS_LCn_TPKTSCNT = 0x1')
+        link_stats.append('pFS_LCn_TDRPSCNT = 0x0')
+
+        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
+        with open('%s/%s' % (work_dir, filename), 'w') as ls_file:
+            for stat in link_stats:
+                ls_file.write(stat + '\n')
+            ls_file.close()
+
+        # Upload to tftp
+        address, port = tftp_addr.split(":")
+        port = int(port)
+        tftp = ExternalTftp(address, port)
+        tftp.put_file("%s/%s" % (work_dir, filename), filename)
+
+        shutil.rmtree(work_dir)
 
     def fabric_config_get_ip_info(self, filename, tftp_address=None):
         """ Upload an ipinfo file from the node to TFTP"""

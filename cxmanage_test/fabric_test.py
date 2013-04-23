@@ -277,6 +277,14 @@ class FabricTest(unittest.TestCase):
         # it's there to make sure the ipsrc_mode value gets passed to the bmc.
         self.assertEqual(bmc.fabric_ls_policy, ls_policy)
 
+    def test_get_link_stats(self):
+        """Test the get_link_stats() method."""
+        stats = self.fabric.get_link_stats()
+        for nn, node in self.fabric.nodes.items():
+            for i in range(0, 5):
+                self.assertIn(('get_fabric_link_stats', i), node.executed)
+
+
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """
     def __init__(self, ip_address, username="admin", password="admin",
@@ -388,6 +396,30 @@ class DummyNode(object):
         for n in range(1, NUM_NODES):
             results[n] = {'eth0': 0, 'eth1': 0, 'mgmt': 0}
         return results
+
+    def get_fabric_link_stats(self, link=0):
+        self.executed.append(('get_fabric_link_stats', link))
+        return {
+                 'FS_LC%s_BYTE_CNT_0' % link: '0x0',
+                 'FS_LC%s_BYTE_CNT_1' % link: '0x0',
+                 'FS_LC%s_CFG_0' % link: '0x1030107f',
+                 'FS_LC%s_CFG_1' % link: '0x104f',
+                 'FS_LC%s_CM_RXDATA_0' % link: '0x0',
+                 'FS_LC%s_CM_RXDATA_1' % link: '0x0',
+                 'FS_LC%s_CM_TXDATA_0' % link: '0x0',
+                 'FS_LC%s_CM_TXDATA_1' % link: '0x0',
+                 'FS_LC%s_PKT_CNT_0' % link: '0x0',
+                 'FS_LC%s_PKT_CNT_1' % link: '0x0',
+                 'FS_LC%s_RDRPSCNT' % link: '0x0',
+                 'FS_LC%s_RERRSCNT' % link: '0x0',
+                 'FS_LC%sRMCSCNT' % link: '0x0',
+                 'FS_LC%s_RPKTSCNT' % link: '0x0',
+                 'FS_LC%s_RUCSCNT' % link: '0x0',
+                 'FS_LC%s_SC_STAT' % link: '0x0',
+                 'FS_LC%s_STATE' % link: '0x1033',
+                 'FS_LC%s_TDRPSCNT' % link: '0x0',
+                 'FS_LC%s_TPKTSCNT' % link: '0x1'
+        }
 
     def get_uplink(self, iface):
         self.executed.append(('get_uplink', iface))

@@ -805,6 +805,21 @@ class Fabric(object):
             iface=iface
         )
 
+    def get_link_stats(self):
+        """Get the link_stats for each link on each node in the fabric.
+
+        :returns: The link_stats for each link on each node.
+        :rtype: dictionary
+
+        """
+        link_stats = {}
+        for nn, node in self.nodes.items():
+            link_stats[nn] = {}
+            for l in range(0, 5):
+                link_stats[nn][l] = node.get_fabric_link_stats(link=l)
+
+        return link_stats
+
     def _run_command(self, async, name, *args):
         """Start a command on the given nodes."""
         tasks = {}
