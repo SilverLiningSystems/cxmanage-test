@@ -57,13 +57,14 @@ class Fabric(object):
     """
 
     def __init__(self, ip_address, username="admin", password="admin",
-                  tftp=None, task_queue=None, verbose=False,
-                  node=None):
+                  tftp=None, ecme_tftp_port=5001, task_queue=None,
+                  verbose=False, node=None):
         """Default constructor for the Fabric class."""
         self.ip_address = ip_address
         self.username = username
         self.password = password
         self._tftp = tftp
+        self.ecme_tftp_port = ecme_tftp_port
         self.task_queue = task_queue
         self.verbose = verbose
         self.node = node
@@ -691,6 +692,7 @@ class Fabric(object):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""
         node = self.node(ip_address=ip_address, username=username,
                          password=password, tftp=self.tftp,
+                         ecme_tftp_port=self.ecme_tftp_port,
                          verbose=self.verbose)
         ipinfo = node.get_fabric_ipinfo()
         for node_id, node_address in ipinfo.iteritems():
@@ -698,6 +700,7 @@ class Fabric(object):
                                             username=username,
                                             password=password,
                                             tftp=self.tftp,
+                                            ecme_tftp_port=self.ecme_tftp_port,
                                             verbose=self.verbose)
             self._nodes[node_id].node_id = node_id
 

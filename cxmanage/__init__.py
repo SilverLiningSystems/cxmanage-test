@@ -79,7 +79,8 @@ def get_nodes(args, tftp, verify_prompt=False):
         hosts.extend(parse_host_entry(entry))
 
     nodes = [Node(ip_address=x, username=args.user, password=args.password,
-            tftp=tftp, verbose=args.verbose) for x in hosts]
+            tftp=tftp, ecme_tftp_port=args.ecme_tftp_port,
+            verbose=args.verbose) for x in hosts]
 
     if args.all_nodes:
         if not args.quiet:
@@ -95,6 +96,7 @@ def get_nodes(args, tftp, verify_prompt=False):
                     # addresses instead of searching a list every time...
                     new_node = Node(ip_address=ip_address, username=args.user,
                             password=args.password, tftp=tftp,
+                            ecme_tftp_port=args.ecme_tftp_port,
                             verbose=args.verbose)
                     new_node.node_id = node_id
                     if not new_node in all_nodes:
