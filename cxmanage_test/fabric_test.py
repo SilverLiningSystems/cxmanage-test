@@ -312,7 +312,7 @@ class FabricTest(unittest.TestCase):
         t_nodeid = random.choice(valid_nodeids)
 
         valid_ifaces = [0, 1, 2]
-        t_nodeid = random.choice(valid_ifaces)
+        t_iface = random.choice(valid_ifaces)
 
         t_macaddr = "66:55:44:33:22:11"
 
@@ -327,7 +327,7 @@ class FabricTest(unittest.TestCase):
         t_nodeid = random.choice(valid_nodeids)
 
         valid_ifaces = [0, 1, 2]
-        t_nodeid = random.choice(valid_ifaces)
+        t_iface = random.choice(valid_ifaces)
 
         t_macaddr = "66:55:44:33:22:11"
 

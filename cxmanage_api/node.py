@@ -174,10 +174,27 @@ class Node(object):
         """
         return self.get_fabric_macaddrs()[self.node_id]
 
+    def set_interface_mac_address(self, interface, macaddr):
+        """set mac address for an interface
+
+        >>> node.set_interface_mac_address(interface, macaddr)
+        fc:2f:40:d8:e3:14
+
+        :return: The Node's current mac address for specified interface
+        :rtype: string
+
+        :raises IpmiError: If errors in the command occur with BMC communication.
+
+        """
+        try:
+            return self.bmc.set_node_interface_macaddr(interface, macaddr)
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
+
     def get_interface_mac_address(self, interface):
         """Return mac address for an interface
 
-        >>> node.get_interface_mac_address()
+        >>> node.get_interface_mac_address(interface)
         fc:2f:40:d8:e3:14
 
         :return: The Node's current mac address for specified interface
