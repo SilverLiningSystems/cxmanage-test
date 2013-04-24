@@ -823,6 +823,28 @@ class Fabric(object):
 
         return link_stats
 
+    def get_linkmap(self):
+        """Get the linkmap for each node in the fabric.
+
+        :returns: The linkmap for each node.
+        :rtype: dectionary
+
+        """
+        linkmaps = {}
+        for nn, node in self.nodes.items():
+            linkmaps[nn] = node.get_fabric_linkmap()
+
+        return linkmaps
+
+    def get_routing_table(self):
+        """Get the routing_table for the fabric.
+
+        :returns: The routing_table for the fabric.
+        :rtype: dictionary
+
+        """
+        return self.primary_node.get_fabric_routing_table()
+
     def _run_command(self, async, name, *args):
         """Start a command on the given nodes."""
         tasks = {}

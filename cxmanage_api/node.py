@@ -1071,7 +1071,112 @@ class Node(object):
             raise TftpException("Node failed to reach TFTP server")
 
         return results
+ 
+    def get_fabric_linkmap(self):
+        """Gets the src and destination of each link on a node.
 
+        :return: Returns a map of link_id->node_id.
+        :rtype: dictionary
+
+        :raises IpmiError: If the IPMI command fails.
+        :raises TftpException: If the TFTP transfer fails.
+
+        """
+        filename = temp_file()
+        basename = os.path.basename(filename)
+
+        try:
+            result = self.bmc.fabric_get_linkmap(basename)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+            self.ecme_tftp.get_file(basename, filename)
+        except (IpmiError, TftpException):
+            # Fall back and use our tftp server
+            try:
+                result = self.bmc.fabric_get_linkmap(basename,
+                        self.tftp_address)
+            except IpmiError as e:
+                raise IpmiError(self._parse_ipmierror(e))
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                try:
+                    time.sleep(1)
+                    self.tftp.get_file(src=basename, dest=filename)
+                    if (os.path.getsize(filename) > 0):
+                        break
+                except (TftpException, IOError):
+                    pass
+
+        results = {}
+        for line in open(filename):
+            if (line.startswith("Link")):
+                elements = line.strip().split()
+                link_id = int(elements[1].rstrip(':'))
+                node_id = int(elements[3].strip())
+                results[link_id] = node_id
+
+        # Make sure we found something
+        if (not results):
+            raise TftpException("Node failed to reach TFTP server")
+
+        return results
+
+    def get_fabric_routing_table(self):
+        """Gets the routing table as instantiated in the fabric switch.
+
+        :return: Returns a map of node_id->rt_entries.
+        :rtype: dictionary
+
+        :raises IpmiError: If the IPMI command fails.
+        :raises TftpException: If the TFTP transfer fails.
+
+        """
+        filename = temp_file()
+        basename = os.path.basename(filename)
+
+        try:
+            result = self.bmc.fabric_get_routingtable(basename)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+            self.ecme_tftp.get_file(basename, filename)
+        except (IpmiError, TftpException):
+            # Fall back and use our tftp server
+            try:
+                result = self.bmc.fabric_get_routingtable(basename,
+                        self.tftp_address)
+            except IpmiError as e:
+                raise IpmiError(self._parse_ipmierror(e))
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                try:
+                    time.sleep(1)
+                    self.tftp.get_file(src=basename, dest=filename)
+                    if (os.path.getsize(filename) > 0):
+                        break
+                except (TftpException, IOError):
+                    pass
+
+        results = {}
+        for line in open(filename):
+            if (line.startswith("Node")):
+                elements = line.strip().split()
+                node_id = int(elements[1].rstrip(':'))
+                rt_entries = []
+                for entry in elements[4].strip().split('.'):
+                    rt_entries.append(int(entry))
+                results[node_id] = rt_entries
+
+        # Make sure we found something
+        if (not results):
+            raise TftpException("Node failed to reach TFTP server")
+
+        return results
 
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
             password="1Password", aggressive=False):
