@@ -923,6 +923,73 @@ class Node(object):
 
         return results
 
+    def get_node_routing_table(self):
+        """Gets THIS node's routing table.
+
+        >>> node.get_node_routing_table()
+        {
+        "Node 0: rt - 0.0.0.0.2",
+        "Node 1: rt - 0.0.0.0.2",
+        "Node 2: rt - 0.0.0.0.2",
+        "Node 3: rt - 0.0.0.0.2",
+        "Node 4: rt - 0.0.0.0.2",
+        "Node 5: rt - 0.0.0.0.2",
+        "Node 6: rt - 0.0.0.0.2",
+        "Node 7: rt - 0.0.0.0.2",
+        "Node 8: rt - 0.0.0.0.2",
+        "Node 9: rt - 0.0.0.0.2",
+        "Node 10: rt - 0.0.0.0.2",
+        "Node 11: rt - 0.0.0.0.2",
+        "Node 12: rt - 0.0.0.3.2",
+        "Node 13: rt - 0.0.0.2.0",
+        "Node 14: rt - 0.0.0.2.3",
+        }
+
+        :return: list of routing table entries, one per dest node
+        :rtype: list of strings
+
+        :raises IpmiError: If the IPMI command fails.
+        :raises TftpException: If the TFTP transfer fails.
+
+        """
+        filename = temp_file()
+        basename = os.path.basename(filename)
+
+        try:
+            result = self.bmc.fabric_info_get_routing_table(basename)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+            self.ecme_tftp.get_file(basename, filename)
+        except (IpmiError, TftpException):
+            # Fall back and use our tftp server
+            try:
+                result = self.bmc.fabric_config_get_routing_table(basename, self.tftp_address)
+            except IpmiError as e:
+                raise IpmiError(self._parse_ipmierror(e))
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                try:
+                    time.sleep(1)
+                    self.tftp.get_file(src=basename, dest=filename)
+                    if (os.path.getsize(filename) > 0):
+                        break
+                except (TftpException, IOError):
+                    pass
+
+        # Parse addresses from ipinfo file
+        results = []
+        for line in open(filename):
+            results.append (line)
+
+        # Make sure we found something
+        if (not results):
+            raise TftpException("Node failed to reach TFTP server")
+
+        return results
+
     def get_fabric_macaddrs(self):
         """Gets what macaddr information THIS node knows about the Fabric.
 
