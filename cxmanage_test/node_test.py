@@ -706,6 +706,10 @@ class DummyUbootEnv(UbootEnv):
         """Hard coded boot order for testing."""
         return ["disk", "pxe"]
 
+    def set_boot_order(self, boot_args):
+        """ Do nothing """
+        pass
+
 
 class DummyIPRetriever(object):
     """ Dummy IP retriever """

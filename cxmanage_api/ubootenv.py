@@ -37,6 +37,10 @@ from cxmanage_api.cx_exceptions import UnknownBootCmdError
 
 
 ENVIRONMENT_SIZE = 8192
+UBOOTENV_V1_VARIABLES = ["bootcmd_default", "bootcmd_sata", "bootcmd_pxe",
+        "bootdevice"]
+UBOOTENV_V2_VARIABLES = ["bootcmd0", "init_scsi", "bootcmd_scsi", "init_pxe",
+        "bootcmd_pxe", "devnum"]
 
 
 class UbootEnv:
@@ -85,41 +89,64 @@ class UbootEnv:
         :raises ValueError: If 'retry' and 'reset' args are used together.
 
         """
+        validate_boot_args(boot_args)
+        if boot_args == self.get_boot_order():
+            return
+
         commands = []
         retry = False
         reset = False
-        for arg in boot_args:
-            if (arg == "pxe"):
-                commands.append("run bootcmd_pxe")
-            elif (arg == "disk"):
-                commands.append("run bootcmd_sata")
-            elif (arg.startswith("disk")):
-                try:
-                    dev, part = map(int, arg[4:].split(":"))
-                    bootdevice = "%i:%i" % (dev, part)
-                except ValueError:
-                    try:
-                        bootdevice = str(int(arg[4:]))
-                    except ValueError:
-                        raise ValueError("Invalid boot device: %s" % arg)
-                commands.append("setenv bootdevice %s && run bootcmd_sata"
-                        % bootdevice)
-            elif (arg == "retry"):
-                retry = True
-            elif (arg == "reset"):
-                reset = True
-            else:
-                raise ValueError("Invalid boot device: %s" % arg)
 
-        if (retry and reset):
+        if all(x in self.variables for x in UBOOTENV_V1_VARIABLES):
+            version = 1
+        elif all(x in self.variables for x in UBOOTENV_V2_VARIABLES):
+            version = 2
+        else:
+            raise Exception("Unrecognized u-boot environment")
+
+        for arg in boot_args:
+            if arg == "retry":
+                retry = True
+            elif arg == "reset":
+                reset = True
+            elif version == 1:
+                if arg == "pxe":
+                    commands.append("run bootcmd_pxe")
+                elif arg == "disk":
+                    commands.append("run bootcmd_sata")
+                elif arg.startswith("disk"):
+                    try:
+                        dev, part = map(int, arg[4:].split(":"))
+                        bootdevice = "%i:%i" % (dev, part)
+                    except ValueError:
+                        bootdevice = str(int(arg[4:]))
+                    commands.append("setenv bootdevice %s && run bootcmd_sata"
+                            % bootdevice)
+            elif version == 2:
+                if arg == "pxe":
+                    commands.append("run init_pxe && run bootcmd_pxe")
+                elif arg == "disk":
+                    commands.append("run init_scsi && run bootcmd_scsi")
+                elif arg.startswith("disk"):
+                    try:
+                        dev, part = map(int, arg[4:].split(":"))
+                        bootdevice = "%i:%i" % (dev, part)
+                    except ValueError:
+                        bootdevice = str(int(arg[4:]))
+                    commands.append("setenv devnum %s && run init_scsi && run bootcmd_scsi"
+                            % bootdevice)
+
+        if retry and reset:
             raise ValueError("retry and reset are mutually exclusive")
-        elif (retry):
+        elif retry:
             commands[-1] = "while true\ndo\n%s\nsleep 1\ndone" % commands[-1]
-        elif (reset):
+        elif reset:
             commands.append("reset")
 
-        # Set bootcmd_default
-        self.variables["bootcmd_default"] = "; ".join(commands)
+        if version == 1:
+            self.variables["bootcmd_default"] = "; ".join(commands)
+        else:
+            self.variables["bootcmd0"] = "; ".join(commands)
 
     def get_boot_order(self):
         """Gets the boot order specified in the uboot environment.
@@ -179,6 +206,7 @@ class UbootEnv:
         if not boot_args:
             boot_args = ["none"]
 
+        validate_boot_args(boot_args) # sanity check
         return boot_args
 
     def get_contents(self):
@@ -208,4 +236,18 @@ class UbootEnv:
         return contents
 
 
-# End of file: ./ubootenv.py
+def validate_boot_args(boot_args):
+    """ Validate boot arguments. Raises a ValueError if the args are invalid."""
+    for arg in boot_args:
+        if arg in ["retry", "reset", "pxe", "disk", "none"]:
+            continue
+        elif arg.startswith("disk"):
+            try:
+                map(int, arg[4:].split(":"))
+            except ValueError:
+                try:
+                    int(arg[4:])
+                except ValueError:
+                    raise ValueError("Invalid boot arg: %s" % arg)
+        else:
+            raise ValueError("Invalid boot arg: %s" % arg)

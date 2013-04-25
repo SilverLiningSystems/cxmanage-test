@@ -30,7 +30,7 @@
 
 from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 
-from cxmanage_api.ubootenv import UbootEnv
+from cxmanage_api.ubootenv import UbootEnv, validate_boot_args
 
 
 def config_reset_command(args):
@@ -54,12 +54,7 @@ def config_boot_command(args):
     if args.boot_order == ['status']:
         return config_boot_status_command(args)
 
-    # Make sure boot_args are valid
-    try:
-        UbootEnv().set_boot_order(args.boot_order)
-    except ValueError as e:
-        print e
-        return 1
+    validate_boot_args(args.boot_order)
 
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
