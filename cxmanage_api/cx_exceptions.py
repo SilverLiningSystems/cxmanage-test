@@ -284,31 +284,6 @@ class InvalidImageError(Exception):
         return self.msg
 
 
-class NoBootCmdDefaultError(Exception):
-    """Raised when there is no bootcmd_default arg in the boot order.
-
-    >>> from cxmanage_api.cx_exceptions import NoBootCmdDefaultError
-    >>> raise NoBootCmdDefaultError('My custom exception text!')
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-    cxmanage_api.cx_exceptions.NoBootCmdDefaultError: My custom exception text!
-
-    :param msg: Exceptions message and details to return to the user.
-    :type msg: string
-    :raised: When there is no bootcmd_default arg in the boot order.
-
-    """
-
-    def __init__(self, msg):
-        """Default constructor for the NoBootCmdDefaultError class."""
-        super(NoBootCmdDefaultError, self).__init__()
-        self.msg = msg
-
-    def __str__(self):
-        """String representation of this Exception class."""
-        return self.msg
-
-
 class UnknownBootCmdError(Exception):
     """Raised when the boot command is not: run bootcmd_pxe, run bootcmd_sata,
        run bootcmd_mmc, setenv bootdevice, or reset.
