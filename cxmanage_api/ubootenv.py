@@ -76,7 +76,6 @@ class UbootEnv:
                              disk    - boot from default sata device\n
                              diskX   - boot from sata device X\n
                              diskX:Y - boot from sata device X, partition Y\n
-                             sd      - boot from SD\n
                              retry   - retry last boot device indefinitely\n
                              reset   - reset A9\n
 
@@ -106,10 +105,6 @@ class UbootEnv:
                         raise ValueError("Invalid boot device: %s" % arg)
                 commands.append("setenv bootdevice %s && run bootcmd_sata"
                         % bootdevice)
-            elif (arg == "sd"):
-                # TODO: enable this once it's working in u-boot
-                # commands.append("run bootcmd_mmc")
-                raise ValueError("Invalid boot device: %s" % arg)
             elif (arg == "retry"):
                 retry = True
             elif (arg == "reset"):
@@ -154,8 +149,6 @@ class UbootEnv:
                 boot_args.append("pxe")
             elif (command == "run bootcmd_sata"):
                 boot_args.append("disk")
-            elif (command == "run bootcmd_mmc"):
-                boot_args.append("sd")
             elif (command.startswith("setenv bootdevice")):
                 boot_args.append("disk%s" % command.split()[2])
             elif (command == "reset"):
