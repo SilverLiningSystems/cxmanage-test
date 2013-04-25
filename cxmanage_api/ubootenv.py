@@ -33,7 +33,6 @@ import struct
 
 from cxmanage_api.simg import has_simg, get_simg_contents
 from cxmanage_api.crc32 import get_crc32
-from cxmanage_api.cx_exceptions import NoBootCmdDefaultError
 from cxmanage_api.cx_exceptions import UnknownBootCmdError
 
 
@@ -131,38 +130,55 @@ class UbootEnv:
         :returns: Boot order for this U-Boot Environment.
         :rtype: string
 
-        :raises NoBootCmdDefaultError: When no bootcmd_default exists.
-        :raises UnknownBootComdError: If a boot command is unrecognized.
+        :raises UnknownBootCmdError: If a boot command is unrecognized.
 
         """
         boot_args = []
-        if (not "bootcmd_default" in self.variables):
-            raise NoBootCmdDefaultError("Variable bootcmd_default not found")
-        commands = self.variables["bootcmd_default"].split("; ")
 
-        retry = False
-        for command in commands:
-            if (command.startswith("while true")):
-                retry = True
-                command = command.split("\n")[2]
-            if (command == "run bootcmd_pxe"):
-                boot_args.append("pxe")
-            elif (command == "run bootcmd_sata"):
-                boot_args.append("disk")
-            elif (command.startswith("setenv bootdevice")):
-                boot_args.append("disk%s" % command.split()[2])
-            elif (command == "reset"):
-                boot_args.append("reset")
-                break
+        if self.variables["bootcmd0"] == "run boot_iter":
+            for target in self.variables["boot_targets"].split():
+                if target == "pxe":
+                    boot_args.append("pxe")
+                elif target == "scsi":
+                    boot_args.append("disk")
+                else:
+                    raise UnknownBootCmdError("Unrecognized boot target: %s"
+                            % target)
+        else:
+            if "bootcmd_default" in self.variables:
+                commands = self.variables["bootcmd_default"].split("; ")
             else:
-                raise UnknownBootCmdError("Unrecognized boot command: %s" %
-                                          command)
-            if (retry):
-                boot_args.append("retry")
-                break
+                commands = self.variables["bootcmd0"].split("; ")
 
-        if (len(boot_args) == 0):
-            boot_args.append("none")
+            retry = False
+            for command in commands:
+                if command.startswith("while true"):
+                    retry = True
+                    command = command.split("\n")[2]
+
+                if command in ["run bootcmd_pxe",
+                        "run init_pxe && run bootcmd_pxe"]:
+                    boot_args.append("pxe")
+                elif command in ["run bootcmd_sata",
+                        "run init_scsi && run bootcmd_scsi"]:
+                    boot_args.append("disk")
+                elif (command.startswith("setenv bootdevice") or
+                        command.startswith("setenv devnum")):
+                    boot_args.append("disk%s" % command.split()[2])
+                elif (command == "reset"):
+                    boot_args.append("reset")
+                    break
+                else:
+                    raise UnknownBootCmdError("Unrecognized boot command: %s"
+                            % command)
+
+                if retry:
+                    boot_args.append("retry")
+                    break
+
+        if not boot_args:
+            boot_args = ["none"]
+
         return boot_args
 
     def get_contents(self):
