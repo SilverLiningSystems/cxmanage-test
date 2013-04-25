@@ -945,7 +945,7 @@ class Node(object):
         "Node 14: rt - 0.0.0.2.3",
         }
 
-        :return: list of routing table entries, one per dest node
+        :return: list of routing table entries
         :rtype: list of strings
 
         :raises IpmiError: If the IPMI command fails.
@@ -964,6 +964,61 @@ class Node(object):
             # Fall back and use our tftp server
             try:
                 result = self.bmc.fabric_config_get_routing_table(basename, self.tftp_address)
+            except IpmiError as e:
+                raise IpmiError(self._parse_ipmierror(e))
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                try:
+                    time.sleep(1)
+                    self.tftp.get_file(src=basename, dest=filename)
+                    if (os.path.getsize(filename) > 0):
+                        break
+                except (TftpException, IOError):
+                    pass
+
+        # Parse addresses from ipinfo file
+        results = []
+        for line in open(filename):
+            results.append (line)
+
+        # Make sure we found something
+        if (not results):
+            raise TftpException("Node failed to reach TFTP server")
+
+        return results
+
+    def get_node_link_map(self):
+        """Gets THIS node's link map.
+
+        >>> node.get_node_link_map()
+        {
+        "Link 1: Node 6\n",
+        "Link 3: Node 5\n",
+        "Link 4: Node 7\n",
+        }
+
+        :return: list of link map entries
+        :rtype: list of strings
+
+        :raises IpmiError: If the IPMI command fails.
+        :raises TftpException: If the TFTP transfer fails.
+
+        """
+        filename = temp_file()
+        basename = os.path.basename(filename)
+
+        try:
+            result = self.bmc.fabric_info_get_link_map(basename)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+            self.ecme_tftp.get_file(basename, filename)
+        except (IpmiError, TftpException):
+            # Fall back and use our tftp server
+            try:
+                result = self.bmc.fabric_config_get_link_map(basename, self.tftp_address)
             except IpmiError as e:
                 raise IpmiError(self._parse_ipmierror(e))
             if hasattr(result, "error"):
