@@ -1045,6 +1045,73 @@ class Node(object):
 
         return results
 
+    def get_node_depth_chart(self):
+        """Gets THIS node's depth chart.
+
+        >>> node.get_node_depth_chart()
+        {
+        "Node 1: Shortest Distance 0 hops via neighbor 0: other hops/neighbors -\n",
+        "Node 2: Shortest Distance 0 hops via neighbor 0: other hops/neighbors - 1/3\n",
+        "Node 3: Shortest Distance 0 hops via neighbor 0: other hops/neighbors - 1/2\n",
+        "Node 4: Shortest Distance 2 hops via neighbor 6: other hops/neighbors - 3/7\n",
+        "Node 5: Shortest Distance 3 hops via neighbor 4: other hops/neighbors -\n",
+        "Node 6: Shortest Distance 1 hops via neighbor 2: other hops/neighbors -\n",
+        "Node 7: Shortest Distance 2 hops via neighbor 6: other hops/neighbors - 3/4\n",
+        "Node 8: Shortest Distance 3 hops via neighbor 10: other hops/neighbors - 4/11\n",
+        "Node 9: Shortest Distance 4 hops via neighbor 8: other hops/neighbors -\n",
+        "Node 10: Shortest Distance 2 hops via neighbor 6: other hops/neighbors -\n",
+        "Node 11: Shortest Distance 3 hops via neighbor 10: other hops/neighbors - 4/8\n",
+        "Node 12: Shortest Distance 4 hops via neighbor 14: other hops/neighbors - 5/15\n",
+        "Node 13: Shortest Distance 5 hops via neighbor 12: other hops/neighbors -\n",
+        "Node 14: Shortest Distance 3 hops via neighbor 10: other hops/neighbors -\n",
+        "Node 15: Shortest Distance 4 hops via neighbor 14: other hops/neighbors - 5/12\n",
+        }
+
+        :return: list of depth chart entries
+        :rtype: list of strings
+
+        :raises IpmiError: If the IPMI command fails.
+        :raises TftpException: If the TFTP transfer fails.
+
+        """
+        filename = temp_file()
+        basename = os.path.basename(filename)
+
+        try:
+            result = self.bmc.fabric_info_get_depth_chart(basename)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+            self.ecme_tftp.get_file(basename, filename)
+        except (IpmiError, TftpException):
+            # Fall back and use our tftp server
+            try:
+                result = self.bmc.fabric_config_get_depth_chart(basename, self.tftp_address)
+            except IpmiError as e:
+                raise IpmiError(self._parse_ipmierror(e))
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                try:
+                    time.sleep(1)
+                    self.tftp.get_file(src=basename, dest=filename)
+                    if (os.path.getsize(filename) > 0):
+                        break
+                except (TftpException, IOError):
+                    pass
+
+        # Parse addresses from ipinfo file
+        results = []
+        for line in open(filename):
+            results.append (line)
+
+        # Make sure we found something
+        if (not results):
+            raise TftpException("Node failed to reach TFTP server")
+
+        return results
+
     def get_fabric_macaddrs(self):
         """Gets what macaddr information THIS node knows about the Fabric.
 
