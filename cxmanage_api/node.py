@@ -598,10 +598,9 @@ class Node(object):
                 old_ubootenv_image = self._download_image(running_part)
                 old_ubootenv = self.ubootenv(open(
                                         old_ubootenv_image.filename).read())
-                if ("bootcmd_default" in old_ubootenv.variables):
+                try:
                     ubootenv = self.ubootenv(open(image.filename).read())
-                    ubootenv.variables["bootcmd_default"] = \
-                                    old_ubootenv.variables["bootcmd_default"]
+                    ubootenv.set_boot_order(old_ubootenv.get_boot_order())
 
                     filename = temp_file()
                     with open(filename, "w") as f:
@@ -611,7 +610,7 @@ class Node(object):
                                            image.version)
                     self._upload_image(ubootenv_image, running_part,
                             priority)
-                else:
+                except (ValueError, Exception):
                     self._upload_image(image, running_part, priority)
 
             else:

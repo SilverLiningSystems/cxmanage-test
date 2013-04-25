@@ -87,6 +87,7 @@ class UbootEnv:
 
         :raises ValueError: If an invalid boot device is specified.
         :raises ValueError: If 'retry' and 'reset' args are used together.
+        :raises Exception: If the u-boot environment is unrecognized
 
         """
         validate_boot_args(boot_args)
