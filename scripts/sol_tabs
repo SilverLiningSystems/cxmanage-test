@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Copyright 2012 Calxeda, Inc. All Rights Reserved.
+
+node_0_ip=$1
+
+for ip in `cxmanage ipinfo $node_0_ip | grep '\([0-9]\{1,3\}\.\)\{3\}[0-9]\{1,3\}' | grep -v from | awk {'print $3'}`
+do
+	echo $ip
+	WID=$(xprop -root | grep "_NET_ACTIVE_WINDOW(WINDOW)"| awk '{print $5}')
+	xdotool windowfocus $WID
+	xdotool key ctrl+shift+t
+	wmctrl -i -a $WID
+	sleep 3
+	xdotool type "
+ipmitool -I lanplus -U admin -P admin -H $ip sol deactivate
+ipmitool -I lanplus -U admin -P admin -H $ip sol activate
+"
+done
