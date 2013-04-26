@@ -1177,6 +1177,69 @@ class Node(object):
 
         return results
 
+    def get_fabric_depth_chart(self):
+        """Gets a table indicating the distance from a given node to all other
+        nodes on each fabric link.
+
+        :return: Returns a map of target->(neighbor, hops),
+                                  [other (neighbors,hops)]
+        :rtype: dictionary
+
+        :raises IpmiError: If the IPMI command fails.
+        :raises TftpException: If the TFTP transfer fails.
+
+        """
+        filename = temp_file()
+        basename = os.path.basename(filename)
+
+        try:
+            result = self.bmc.fabric_get_depthchart(basename)
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+            self.ecme_tftp.get_file(basename, filename)
+        except (IpmiError, TftpException):
+            # Fall back and use our tftp server
+            try:
+                result = self.bmc.fabric_get_depthchart(basename,
+                        self.tftp_address)
+            except IpmiError as e:
+                raise IpmiError(self._parse_ipmierror(e))
+            if hasattr(result, "error"):
+                raise IpmiError(result.error)
+
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                try:
+                    time.sleep(1)
+                    self.tftp.get_file(src=basename, dest=filename)
+                    if (os.path.getsize(filename) > 0):
+                        break
+                except (TftpException, IOError):
+                    pass
+
+        results = {}
+        for line in open(filename):
+            if (line.startswith("Node")):
+                elements = line.strip().split()
+                target = int(elements[1].rstrip(':'))
+                neighbor = int(elements[8].rstrip(':'))
+                hops = int(elements[4].strip())
+                dchrt_entries = []
+                try:
+                    other_hops_neighbors = elements[12].strip().split('[,\s]+')
+                    for entry in other_hops_neighbors:
+                        pair = entry.strip().split('/')
+                        dchrt_entries.append((int(pair[1]), int(pair[0])))
+                    results[target] = (neighbor, hops), dchrt_entries
+                except:
+                    results[target] = (neighbor, hops)
+
+        # Make sure we found something
+        if (not results):
+            raise TftpException("Node failed to reach TFTP server")
+
+        return results
+
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
             password="1Password", aggressive=False):
         """Get the IP address of the Linux server. The server must be powered

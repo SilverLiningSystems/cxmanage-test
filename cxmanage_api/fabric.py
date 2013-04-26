@@ -871,7 +871,23 @@ class Fabric(object):
         :rtype: dictionary
 
         """
-        return self.primary_node.get_fabric_routing_table()
+        rt_tables = {}
+        for nn, node in self.nodes.items():
+            rt_tables[nn] = node.get_fabric_routing_table()
+        return rt_tables
+
+    def get_depth_chart(self):
+        """Get the depth_chart for the fabric.
+
+        :returns: The depth_chart for the fabric.
+        :rtype: dictionary
+
+        """
+        dpthcharts = {}
+        for nn, node in self.nodes.items():
+            dpthcharts[nn] = node.get_fabric_depth_chart()
+
+        return dpthcharts
 
     def _run_command(self, async, name, *args):
         """Start a command on the given nodes."""
