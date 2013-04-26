@@ -119,6 +119,9 @@ def get_nodes(args, tftp, verify_prompt=False):
                         % (len(all_nodes), args.nodes))
                 sys.exit(1)
         elif verify_prompt and not args.force:
+            print "NOTE: Please check node count! Ensure discovery of all nodes in the cluster."
+            print "Power cycle your system if the discovered node count does not equal nodes in"
+            print "your system.\n"
             if not prompt_yes("Discovered %i nodes. Continue?"
                     % len(all_nodes)):
                 sys.exit(1)
