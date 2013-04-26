@@ -52,6 +52,17 @@ PYIPMI_VERSION = '0.7.0'
 IPMITOOL_VERSION = '1.8.11.0-cx4'
 
 
+PARSER_EPILOG = """examples:
+  cxmanage power status 192.168.1.1             # single host
+  cxmanage power on 192.168.1.1,192.168.1.2     # comma-separated hosts
+  cxmanage info 192.168.1.1-192.168.1.5         # IP range (5 hosts)
+  cxmanage -a sensor temp 192.168.1.1           # all nodes on a fabric
+  cxmanage -a fwupdate package ECX-1000_update.tar.gz 192.168.1.1"""
+
+FWUPDATE_EPILOG = """examples:
+  cxmanage -a fwupdate package ECX-1000_update.tar.gz 192.168.1.1"""
+
+
 FWUPDATE_IMAGE_TYPES = ['PACKAGE'] + sorted([
     'DEL',
     'DEL1',
@@ -71,14 +82,14 @@ FWUPDATE_IMAGE_TYPES = ['PACKAGE'] + sorted([
     'DIAG_ELF',
 ])
 
-FWUPDATE_EPILOG = """examples:
-  cxmanage -a fwupdate package ECX-1000_update.tar.gz 192.168.100.100"""
 
 
 def build_parser():
     """setup the argparse parser"""
     parser = argparse.ArgumentParser(
-            description='Calxeda Server Management Utility')
+            description='Calxeda Server Management Utility',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog=PARSER_EPILOG)
 
     #global arguments
     parser.add_argument('-V', '--version', action='store_true',
@@ -164,8 +175,8 @@ def build_parser():
 
     #fwupdate command
     fwupdate = subparsers.add_parser('fwupdate', help='update firmware',
-            epilog=FWUPDATE_EPILOG,
-            formatter_class=argparse.RawDescriptionHelpFormatter)
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog=FWUPDATE_EPILOG)
     fwupdate.add_argument('image_type', metavar='IMAGE_TYPE',
             help='image type to use (%s)' % ", ".join(FWUPDATE_IMAGE_TYPES),
             type=lambda string: string.upper(),
@@ -272,7 +283,8 @@ def build_parser():
             help='Network interface to check')
     ipdiscover.set_defaults(func=ipdiscover_command)
 
-    parser.add_argument('hostname', help='hostname to target')
+    parser.add_argument('hostname',
+            help='nodes to operate on (see examples below)')
 
     return parser
 
