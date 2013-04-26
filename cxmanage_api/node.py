@@ -877,32 +877,12 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = temp_file()
-        basename = os.path.basename(filename)
-
         try:
-            result = self.bmc.fabric_config_get_ip_info(basename)
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
-            self.ecme_tftp.get_file(basename, filename)
-        except (IpmiError, TftpException):
-            # Fall back and use our tftp server
-            try:
-                result = self.bmc.fabric_config_get_ip_info(basename, self.tftp_address)
-            except IpmiError as e:
-                raise IpmiError(self._parse_ipmierror(e))
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
-
-            deadline = time.time() + 10
-            while time.time() < deadline:
-                try:
-                    time.sleep(1)
-                    self.tftp.get_file(src=basename, dest=filename)
-                    if (os.path.getsize(filename) > 0):
-                        break
-                except (TftpException, IOError):
-                    pass
+            filename = self._run_fabric_command(
+                function_name='fabric_config_get_ip_info',
+            )
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
 
         # Parse addresses from ipinfo file
         results = {}
@@ -1122,33 +1102,13 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = temp_file()
-        basename = os.path.basename(filename)
-
         try:
-            result = self.bmc.fabric_config_get_mac_addresses(basename)
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
-            self.ecme_tftp.get_file(basename, filename)
-        except (IpmiError, TftpException):
-            # Fall back and use our tftp server
-            try:
-                result = self.bmc.fabric_config_get_mac_addresses(basename,
-                        self.tftp_address)
-            except IpmiError as e:
-                raise IpmiError(self._parse_ipmierror(e))
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
+            filename = self._run_fabric_command(
+                function_name='fabric_config_get_mac_addresses'
+            )
 
-            deadline = time.time() + 10
-            while time.time() < deadline:
-                try:
-                    time.sleep(1)
-                    self.tftp.get_file(src=basename, dest=filename)
-                    if (os.path.getsize(filename) > 0):
-                        break
-                except (TftpException, IOError):
-                    pass
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
 
         # Parse addresses from ipinfo file
         results = {}
@@ -1188,35 +1148,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = temp_file()
-        basename = os.path.basename(filename)
-        #
-        # TODO: Use ECME as TFTP server first, when supported
-        #
-        # result = self.bmc.fabric_config_get_uplink_info(basename)
-        #
-        try:
-            result = self.bmc.fabric_config_get_uplink_info(
-                basename,
-                self.tftp_address
-            )
-
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
-
-        if hasattr(result, "error"):
-            raise IpmiError(result.error)
-
-        deadline = time.time() + 10
-        while (time.time() < deadline):
-            try:
-                time.sleep(1)
-                self.tftp.get_file(src=basename, dest=filename)
-                if (os.path.getsize(filename) > 0):
-                    break
-
-            except (TftpException, IOError):
-                pass
+        filename = self._run_fabric_command(
+            function_name='fabric_config_get_uplink_info'
+        )
 
         # Parse addresses from ipinfo file
         results = {}
@@ -1247,32 +1181,10 @@ class Node(object):
         :raises IpmiError: If the IPMI command fails.
 
         """
-        filename = temp_file()
-        basename = os.path.basename(filename)
-        try:
-            result = self.bmc.fabric_get_link_stats(
-                filename=basename,
-                tftp_addr=self.tftp_address,
-                link=link
-            )
-
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
-
-        if hasattr(result, "error"):
-            raise IpmiError(result.error)
-
-        deadline = time.time() + 10
-        while (time.time() < deadline):
-            try:
-                time.sleep(1)
-                self.tftp.get_file(src=basename, dest=filename)
-                if (os.path.getsize(filename) > 0):
-                    break
-
-            except (TftpException, IOError):
-                pass
-
+        filename = self._run_fabric_command(
+            function_name='fabric_get_link_stats',
+            link=link
+        )
         results = {}
         for line in open(filename):
             if ('=' in line):
@@ -1570,6 +1482,38 @@ class Node(object):
             )
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
+
+    def _run_fabric_command(self, function_name, **kwargs):
+        """Handles the basics of sending a node a command for fabric data."""
+        filename = temp_file()
+        basename = os.path.basename(filename)
+        try:
+            getattr(self.bmc, function_name)(filename=basename, **kwargs)
+            self.ecme_tftp.get_file(basename, filename)
+
+        except (IpmiError, TftpException) as e:
+            try:
+                getattr(self.bmc, function_name)(
+                    filename=basename,
+                    tftp_addr=self.tftp_address,
+                    **kwargs
+                )
+
+            except IpmiError as e:
+                raise IpmiError(self._parse_ipmierror(e))
+
+            deadline = time.time() + 10
+            while (time.time() < deadline):
+                try:
+                    time.sleep(1)
+                    self.tftp.get_file(src=basename, dest=filename)
+                    if (os.path.getsize(filename) > 0):
+                        break
+
+                except (TftpException, IOError):
+                    pass
+
+        return filename
 
     def _get_partition(self, fwinfo, image_type, partition_arg):
         """Get a partition for this image type based on the argument."""

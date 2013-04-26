@@ -504,7 +504,7 @@ class DummyBMC(LanBMC):
         self.executed.append(('get_fabric_link_stats', link))
 
         if not(tftp_addr):
-            raise IpmiError('ERROR: No TFTP Address!')
+            raise IpmiError('No tftp address!')
 
         link_stats = []
         link_stats.append('Packet Counts for Link %s:' % link)
@@ -544,12 +544,12 @@ class DummyBMC(LanBMC):
 
         shutil.rmtree(work_dir)
 
-    def fabric_config_get_ip_info(self, filename, tftp_address=None):
+    def fabric_config_get_ip_info(self, filename, tftp_addr=None):
         """ Upload an ipinfo file from the node to TFTP"""
         self.executed.append("fabric_config_get_ip_info")
 
-        if tftp_address == None:
-            raise IpmiError()
+        if not(tftp_addr):
+            raise IpmiError('No tftp address!')
 
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 
@@ -560,18 +560,18 @@ class DummyBMC(LanBMC):
         ipinfo.close()
 
         # Upload to tftp
-        address, port = tftp_address.split(":")
+        address, port = tftp_addr.split(":")
         port = int(port)
         tftp = ExternalTftp(address, port)
         tftp.put_file("%s/%s" % (work_dir, filename), filename)
 
         shutil.rmtree(work_dir)
 
-    def fabric_config_get_uplink_info(self, filename, tftp_address=None):
+    def fabric_config_get_uplink_info(self, filename, tftp_addr=None):
         self.executed.append("fabric_config_get_uplink_info")
 
-        if tftp_address == None:
-            raise IpmiError()
+        if not(tftp_addr):
+            raise IpmiError('No tftp address!')
 
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         # Create uplink info file
@@ -581,7 +581,7 @@ class DummyBMC(LanBMC):
         ulinfo.close()
 
         # Upload to tftp
-        address, port = tftp_address.split(":")
+        address, port = tftp_addr.split(":")
         port = int(port)
         tftp = ExternalTftp(address, port)
         tftp.put_file("%s/%s" % (work_dir, filename), filename)
@@ -595,12 +595,12 @@ class DummyBMC(LanBMC):
     def fabric_config_set_uplink(self, uplink, iface):
         self.executed.append(("fabric_config_set_uplink", uplink, iface))
 
-    def fabric_config_get_mac_addresses(self, filename, tftp_address=None):
+    def fabric_config_get_mac_addresses(self, filename, tftp_addr=None):
         """ Upload a macaddrs file from the node to TFTP"""
         self.executed.append("fabric_config_get_mac_addresses")
 
-        if tftp_address == None:
-            raise IpmiError()
+        if not(tftp_addr):
+            raise IpmiError('No tftp address!')
 
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
 
@@ -613,7 +613,7 @@ class DummyBMC(LanBMC):
         macaddrs.close()
 
         # Upload to tftp
-        address, port = tftp_address.split(":")
+        address, port = tftp_addr.split(":")
         port = int(port)
         tftp = ExternalTftp(address, port)
         tftp.put_file("%s/%s" % (work_dir, filename), filename)
