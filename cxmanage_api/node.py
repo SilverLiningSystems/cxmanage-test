@@ -1224,15 +1224,19 @@ class Node(object):
                 target = int(elements[1].rstrip(':'))
                 neighbor = int(elements[8].rstrip(':'))
                 hops = int(elements[4].strip())
-                dchrt_entries = []
+                dchrt_entries = {}
+                dchrt_entries['shortest'] = (neighbor, hops)
                 try:
                     other_hops_neighbors = elements[12].strip().split('[,\s]+')
+                    hops = []
                     for entry in other_hops_neighbors:
                         pair = entry.strip().split('/')
-                        dchrt_entries.append((int(pair[1]), int(pair[0])))
-                    results[target] = (neighbor, hops), dchrt_entries
+                        hops.append((int(pair[1]), int(pair[0])))
+                    dchrt_entries['hops'] = hops
                 except:
-                    results[target] = (neighbor, hops)
+                    pass
+
+                results[target] = dchrt_entries
 
         # Make sure we found something
         if (not results):
