@@ -667,6 +667,12 @@ class DummyBMC(LanBMC):
         self.fabric_lu_factor = lu_factor
         self.executed.append('fabric_config_set_link_users_factor')
 
+    def fabric_add_macaddr(self, nodeid=0, iface=0, macaddr=None):
+        self.executed.append('fabric_add_macaddr')
+
+    def fabric_rm_macaddr(self, nodeid=0, iface=0, macaddr=None):
+        self.executed.append('fabric_rm_macaddr')
+
 class Partition:
     def __init__(self, partition, type, offset=0,
             size=0, priority=0, daddr=0, in_use=None):
