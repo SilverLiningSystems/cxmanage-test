@@ -32,6 +32,16 @@
 
 node_0_ip=$1
 
+# check for hostname arg
+if [ $# -eq 0 ] ; then
+    echo "Please specify a host, I.E. \"sol_tabs 192.168.100.100\""
+    exit 1
+fi
+
+# check for xdotool, wmctrl commands
+command -v xdotool &>/dev/null || { echo >&2 "xdotool is required but not installed. Aborting."; exit 1; }
+command -v wmctrl &>/dev/null || { echo >&2 "wmctrl is required but not installed. Aborting."; exit 1; }
+
 for ip in `cxmanage ipinfo $node_0_ip | grep '\([0-9]\{1,3\}\.\)\{3\}[0-9]\{1,3\}' | grep -v from | awk {'print $3'}`
 do
 	echo $ip
