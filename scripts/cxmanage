@@ -52,6 +52,29 @@ PYIPMI_VERSION = '0.7.0'
 IPMITOOL_VERSION = '1.8.11.0-cx4'
 
 
+FWUPDATE_IMAGE_TYPES = ['PACKAGE'] + sorted([
+    'DEL',
+    'DEL1',
+    'S2_ELF',
+    'SOC_ELF',
+    'A9_UEFI',
+    'A9_UBOOT',
+    'A9_EXEC',
+    'A9_ELF',
+    'SOCDATA',
+    'DTB',
+    'CDB',
+    'UBOOTENV',
+    'SEL',
+    'BOOT_LOG',
+    'UEFI_ENV',
+    'DIAG_ELF',
+])
+
+FWUPDATE_EPILOG = """examples:
+  cxmanage -a fwupdate package ECX-1000_update.tar.gz 192.168.100.100"""
+
+
 def build_parser():
     """setup the argparse parser"""
     parser = argparse.ArgumentParser(
@@ -140,30 +163,13 @@ def build_parser():
     mcreset.set_defaults(func=mcreset_command)
 
     #fwupdate command
-    fwupdate = subparsers.add_parser(
-                'fwupdate', help='update firmware')
-
+    fwupdate = subparsers.add_parser('fwupdate', help='update firmware',
+            epilog=FWUPDATE_EPILOG,
+            formatter_class=argparse.RawDescriptionHelpFormatter)
     fwupdate.add_argument('image_type', metavar='IMAGE_TYPE',
-            help='type of image to update', type=lambda string: string.upper(),
-            choices = list(sorted([
-                'DEL',
-                'DEL1',
-                'S2_ELF',
-                'SOC_ELF',
-                'A9_UEFI',
-                'A9_UBOOT',
-                'A9_EXEC',
-                'A9_ELF',
-                'SOCDATA',
-                'DTB',
-                'CDB',
-                'UBOOTENV',
-                'SEL',
-                'BOOT_LOG',
-                'UEFI_ENV',
-                'DIAG_ELF',
-                'PACKAGE'
-            ])))
+            help='image type to use (%s)' % ", ".join(FWUPDATE_IMAGE_TYPES),
+            type=lambda string: string.upper(),
+            choices = FWUPDATE_IMAGE_TYPES)
     fwupdate.add_argument('filename', help='path to file to upload')
     fwupdate.add_argument('--partition',
             help='Specify partition to update', default='INACTIVE',
