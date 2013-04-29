@@ -283,10 +283,13 @@ class Node(object):
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
 
-    def mc_reset(self):
+    def mc_reset(self, wait=False):
         """Sends a Master Control reset command to the node.
 
         >>> node.mc_reset()
+
+        :param wait: Wait for the node to come back up.
+        :type wait: boolean
 
         :raises Exception: If the BMC command contains errors.
         :raises IPMIError: If there is an IPMI error communicating with the BMC.
@@ -298,6 +301,30 @@ class Node(object):
                 raise Exception(result.error)
         except IpmiError as e:
             raise IpmiError(self._parse_ipmierror(e))
+
+        if wait:
+            deadline = time.time() + 300.0
+
+            # Wait for it to go down...
+            while time.time() < deadline:
+                time.sleep(1)
+                try:
+                    self.bmc.get_info_basic()
+                except IpmiError:
+                    break
+            else:
+                raise Exception("Reset timed out")
+
+            # Now wait to come back up!
+            while time.time() < deadline:
+                time.sleep(1)
+                try:
+                    self.bmc.get_info_basic()
+                    break
+                except IpmiError:
+                    pass
+            else:
+                raise Exception("Reset timed out")
 
     def get_sensors(self, search=""):
         """Get a list of sensor objects that match search criteria.
