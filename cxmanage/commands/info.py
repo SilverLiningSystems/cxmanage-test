@@ -37,8 +37,6 @@ def info_command(args):
         return info_basic_command(args)
     elif args.info_type == 'ubootenv':
         return info_ubootenv_command(args)
-    elif args.info_type == 'dump':
-        return info_dump_command(args)
 
 
 def info_basic_command(args):
@@ -97,28 +95,6 @@ def info_ubootenv_command(args):
             print "[ U-Boot Environment from %s ]" % node_strings[node]
             for variable in ubootenv.variables:
                 print "%s=%s" % (variable, ubootenv.variables[variable])
-            print
-
-    if not args.quiet and errors:
-        print "Some errors occured during the command.\n"
-
-    return len(errors) > 0
-
-
-def info_dump_command(args):
-    tftp = get_tftp(args)
-    nodes = get_nodes(args, tftp)
-
-    if not args.quiet:
-        print "Getting info dump..."
-    results, errors = run_command(args, nodes, "info_dump")
-
-    # Print results
-    node_strings = get_node_strings(args, results, justify=False)
-    for node in nodes:
-        if node in results:
-            print "[ Info dump from %s ]" % node_strings[node]
-            print results[node]
             print
 
     if not args.quiet and errors:

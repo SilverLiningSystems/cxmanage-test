@@ -146,12 +146,6 @@ class FabricTest(unittest.TestCase):
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_versions"])
 
-    def test_info_dump(self):
-        """ Test info_dump command """
-        self.fabric.info_dump()
-        for node in self.nodes:
-            self.assertEqual(node.executed, ["info_dump"])
-
     def test_get_ubootenv(self):
         """ Test get_ubootenv command """
         self.fabric.get_ubootenv()
@@ -406,9 +400,6 @@ class DummyNode(object):
                 self.a9boot_version = "v0.0.0"
                 self.uboot_version = "v0.0.0"
         return Result()
-
-    def info_dump(self):
-        self.executed.append("info_dump")
 
     def ipmitool_command(self, ipmitool_args):
         self.executed.append(("ipmitool_command", ipmitool_args))

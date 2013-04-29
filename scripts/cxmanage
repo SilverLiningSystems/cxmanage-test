@@ -262,7 +262,7 @@ def build_parser():
     info = subparsers.add_parser('info', help='get host info')
     info.add_argument('info_type', nargs='?',
             type=lambda string: string.lower(),
-            choices=['basic', 'ubootenv', 'dump'])
+            choices=['basic', 'ubootenv'])
     info.set_defaults(func=info_command)
 
     #ipmitool command

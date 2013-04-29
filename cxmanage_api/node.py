@@ -43,7 +43,6 @@ from cxmanage_api import temp_file
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
-from cxmanage_api.infodump import get_info_dump
 from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
@@ -827,18 +826,6 @@ class Node(object):
 
         """
         return vars(self.get_versions())
-
-    def info_dump(self):
-        """Returns an info dump from this target.
-
-        .. seealso::
-            `Info Dump <infodump.html>`_
-
-        :return: Chassis, FRU, Sensor, Firmware, CDB, Registers info and more.
-        :rtype: string
-
-        """
-        return get_info_dump(self)
 
     def ipmitool_command(self, ipmitool_args):
         """Send a raw ipmitool command to the node.
