@@ -1205,7 +1205,7 @@ class Node(object):
             raise TftpException("Node failed to reach TFTP server")
 
         return results
- 
+
     def get_fabric_linkmap(self):
         """Gets the src and destination of each link on a node.
 
