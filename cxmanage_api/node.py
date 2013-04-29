@@ -306,14 +306,7 @@ class Node(object):
             deadline = time.time() + 300.0
 
             # Wait for it to go down...
-            while time.time() < deadline:
-                time.sleep(1)
-                try:
-                    self.bmc.get_info_basic()
-                except IpmiError:
-                    break
-            else:
-                raise Exception("Reset timed out")
+            time.sleep(60)
 
             # Now wait to come back up!
             while time.time() < deadline:
