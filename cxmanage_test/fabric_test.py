@@ -278,6 +278,24 @@ class FabricTest(unittest.TestCase):
             for i in range(0, 5):
                 self.assertIn(('get_fabric_link_stats', i), node.executed)
 
+    def test_get_linkmap(self):
+        """Test the get_linkmap method"""
+        maps = self.fabric.get_linkmap()
+        for nn, node in self.fabric.nodes.items():
+            self.assertIn('get_fabric_linkmap', node.executed)
+
+    def test_get_routing_table(self):
+        """Test the get_routing_table method"""
+        maps = self.fabric.get_routing_table()
+        for nn, node in self.fabric.nodes.items():
+            self.assertIn('get_fabric_routing_table', node.executed)
+            
+    def test_get_depth_chart(self):
+        """Test the depth_chart method"""
+        maps = self.fabric.get_depth_chart()
+        for nn, node in self.fabric.nodes.items():
+            self.assertIn('get_fabric_depth_chart', node.executed)
+
     def test_get_link_users_factor(self):
         """Test the get_link_users_factor method
 
@@ -461,6 +479,31 @@ class DummyNode(object):
                  'FS_LC%s_TDRPSCNT' % link: '0x0',
                  'FS_LC%s_TPKTSCNT' % link: '0x1'
         }
+
+    def get_fabric_linkmap(self):
+        self.executed.append('get_fabric_linkmap')
+        results = {}
+        for n in range(0, NUM_NODES):
+            results[n] = {n: {1: 2, 3: 1, 4: 3}}
+        return results
+
+    def get_fabric_routing_table(self):
+        self.executed.append('get_fabric_routing_table')
+        results = {}
+        for n in range(0, NUM_NODES):
+            results[n] = {n: {1: [0, 0, 0, 3, 0],
+                              2: [0, 3, 0, 0, 2],
+                              3: [0, 2, 0, 0, 3]}}
+        return results
+
+    def get_fabric_depth_chart(self):
+        self.executed.append('get_fabric_depth_chart')
+        results = {}
+        for n in range(0, NUM_NODES):
+            results[n] = {n: {1: {'shortest': (0, 0)},
+                              2: {'hops': [(3, 1)], 'shortest': (0, 0)},
+                              3: {'hops': [(2, 1)], 'shortest': (0, 0)}}}
+        return results
 
     def get_uplink(self, iface):
         self.executed.append(('get_uplink', iface))

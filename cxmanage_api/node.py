@@ -1223,33 +1223,12 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = temp_file()
-        basename = os.path.basename(filename)
-
         try:
-            result = self.bmc.fabric_get_linkmap(basename)
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
-            self.ecme_tftp.get_file(basename, filename)
-        except (IpmiError, TftpException):
-            # Fall back and use our tftp server
-            try:
-                result = self.bmc.fabric_get_linkmap(basename,
-                        self.tftp_address)
-            except IpmiError as e:
-                raise IpmiError(self._parse_ipmierror(e))
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
-
-            deadline = time.time() + 10
-            while time.time() < deadline:
-                try:
-                    time.sleep(1)
-                    self.tftp.get_file(src=basename, dest=filename)
-                    if (os.path.getsize(filename) > 0):
-                        break
-                except (TftpException, IOError):
-                    pass
+            filename = self._run_fabric_command(
+                function_name='fabric_info_get_link_map',
+            )
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
 
         results = {}
         for line in open(filename):
@@ -1275,33 +1254,12 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = temp_file()
-        basename = os.path.basename(filename)
-
         try:
-            result = self.bmc.fabric_get_routingtable(basename)
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
-            self.ecme_tftp.get_file(basename, filename)
-        except (IpmiError, TftpException):
-            # Fall back and use our tftp server
-            try:
-                result = self.bmc.fabric_get_routingtable(basename,
-                        self.tftp_address)
-            except IpmiError as e:
-                raise IpmiError(self._parse_ipmierror(e))
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
-
-            deadline = time.time() + 10
-            while time.time() < deadline:
-                try:
-                    time.sleep(1)
-                    self.tftp.get_file(src=basename, dest=filename)
-                    if (os.path.getsize(filename) > 0):
-                        break
-                except (TftpException, IOError):
-                    pass
+            filename = self._run_fabric_command(
+                function_name='fabric_info_get_routing_table',
+            )
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
 
         results = {}
         for line in open(filename):
@@ -1331,33 +1289,12 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = temp_file()
-        basename = os.path.basename(filename)
-
         try:
-            result = self.bmc.fabric_get_depthchart(basename)
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
-            self.ecme_tftp.get_file(basename, filename)
-        except (IpmiError, TftpException):
-            # Fall back and use our tftp server
-            try:
-                result = self.bmc.fabric_get_depthchart(basename,
-                        self.tftp_address)
-            except IpmiError as e:
-                raise IpmiError(self._parse_ipmierror(e))
-            if hasattr(result, "error"):
-                raise IpmiError(result.error)
-
-            deadline = time.time() + 10
-            while time.time() < deadline:
-                try:
-                    time.sleep(1)
-                    self.tftp.get_file(src=basename, dest=filename)
-                    if (os.path.getsize(filename) > 0):
-                        break
-                except (TftpException, IOError):
-                    pass
+            filename = self._run_fabric_command(
+                function_name='fabric_info_get_depth_chart',
+            )
+        except IpmiError as e:
+            raise IpmiError(self._parse_ipmierror(e))
 
         results = {}
         for line in open(filename):

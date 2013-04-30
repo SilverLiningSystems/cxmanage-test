@@ -314,6 +314,30 @@ class NodeTest(unittest.TestCase):
             for x in node.bmc.executed:
                 self.assertEqual(x, "fabric_config_get_uplink_info")
 
+    def test_get_fabric_linkmap(self):
+        """ Test node.get_fabric_linkmap method """
+        for node in self.nodes:
+            result = node.get_fabric_linkmap()
+
+            for x in node.bmc.executed:
+                self.assertEqual(x, "fabric_info_get_link_map")
+
+    def test_get_fabric_routing_table(self):
+        """ Test node.get_fabric_routing_table method """
+        for node in self.nodes:
+            result = node.get_fabric_routing_table()
+
+            for x in node.bmc.executed:
+                self.assertEqual(x, "fabric_info_get_routing_table")
+
+    def test_get_fabric_depth_chart(self):
+        """ Test node.get_fabric_depth_chart method """
+        for node in self.nodes:
+            result = node.get_fabric_depth_chart()
+
+            for x in node.bmc.executed:
+                self.assertEqual(x, "fabric_info_get_depth_chart")
+
     def test_get_fabric_link_stats(self):
         """ Test node.get_fabric_link_stats() """
         for node in self.nodes:
@@ -497,6 +521,101 @@ class DummyBMC(LanBMC):
                 self.type = "TestBoard"
                 self.revision = "0"
         return Result()
+
+    def fabric_info_get_link_map(self, filename, tftp_addr=None):
+        """Upload a link_map file from the node to TFTP"""
+        self.executed.append('fabric_info_get_link_map')
+
+        if not(tftp_addr):
+            raise IpmiError('No tftp address!')
+
+        link_map = []
+        link_map.append('Link 1: Node 2')
+        link_map.append('Link 3: Node 1')
+        link_map.append('Link 4: Node 3')
+ 
+        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
+        with open('%s/%s' % (work_dir, filename), 'w') as lm_file:
+            for lmap in link_map:
+                lm_file.write(lmap + '\n')
+            lm_file.close()
+
+        # Upload to tftp
+        address, port = tftp_addr.split(":")
+        port = int(port)
+        tftp = ExternalTftp(address, port)
+        tftp.put_file("%s/%s" % (work_dir, filename), filename)
+
+        shutil.rmtree(work_dir)
+
+    def fabric_info_get_routing_table(self, filename, tftp_addr=None):
+        """Upload a routing_table file from the node to TFTP"""
+        self.executed.append('fabric_info_get_routing_table')
+
+        if not(tftp_addr):
+            raise IpmiError('No tftp address!')
+
+        routing_table = []
+        routing_table.append('Node 1: rt - 0.2.0.3.2')
+        routing_table.append('Node 2: rt - 0.3.0.1.2')
+        routing_table.append('Node 3: rt - 0.2.0.1.3')
+        routing_table.append('Node 12: rt - 0.2.0.0.1')
+        routing_table.append('Node 13: rt - 0.2.0.0.1')
+        routing_table.append('Node 14: rt - 0.2.0.0.1')
+        routing_table.append('Node 15: rt - 0.2.0.0.1')
+ 
+        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
+        with open('%s/%s' % (work_dir, filename), 'w') as rt_file:
+            for rtable in routing_table:
+                rt_file.write(rtable + '\n')
+            rt_file.close()
+
+        # Upload to tftp
+        address, port = tftp_addr.split(":")
+        port = int(port)
+        tftp = ExternalTftp(address, port)
+        tftp.put_file("%s/%s" % (work_dir, filename), filename)
+
+        shutil.rmtree(work_dir)
+
+    def fabric_info_get_depth_chart(self, filename, tftp_addr=None):
+        """Upload a depth_chart file from the node to TFTP"""
+        self.executed.append('fabric_info_get_depth_chart')
+
+        if not(tftp_addr):
+            raise IpmiError('No tftp address!')
+
+        depth_chart = []
+        depth_chart.append('Node 1: Shortest Distance 0 hops via neighbor 0: other hops/neighbors -')
+        depth_chart.append('Node 2: Shortest Distance 0 hops via neighbor 0: other hops/neighbors - 1/3')
+        depth_chart.append('Node 3: Shortest Distance 0 hops via neighbor 0: other hops/neighbors - 1/2')
+        depth_chart.append('Node 4: Shortest Distance 2 hops via neighbor 6: other hops/neighbors - 3/7')
+        depth_chart.append('Node 5: Shortest Distance 3 hops via neighbor 4: other hops/neighbors -')
+        depth_chart.append('Node 6: Shortest Distance 1 hops via neighbor 2: other hops/neighbors -')
+        depth_chart.append('Node 7: Shortest Distance 2 hops via neighbor 6: other hops/neighbors - 3/4')
+        depth_chart.append('Node 8: Shortest Distance 3 hops via neighbor 10: other hops/neighbors - 4/11')
+        depth_chart.append('Node 9: Shortest Distance 4 hops via neighbor 8: other hops/neighbors -')
+        depth_chart.append('Node 10: Shortest Distance 2 hops via neighbor 6: other hops/neighbors -')
+        depth_chart.append('Node 11: Shortest Distance 3 hops via neighbor 10: other hops/neighbors - 4/8')
+        depth_chart.append('Node 12: Shortest Distance 4 hops via neighbor 14: other hops/neighbors - 5/15')
+        depth_chart.append('Node 13: Shortest Distance 5 hops via neighbor 12: other hops/neighbors -')
+        depth_chart.append('Node 14: Shortest Distance 3 hops via neighbor 10: other hops/neighbors -')
+        depth_chart.append('Node 15: Shortest Distance 4 hops via neighbor 14: other hops/neighbors - 5/12')
+
+ 
+        work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
+        with open('%s/%s' % (work_dir, filename), 'w') as dc_file:
+            for dchart in depth_chart:
+                dc_file.write(dchart + '\n')
+            dc_file.close()
+
+        # Upload to tftp
+        address, port = tftp_addr.split(":")
+        port = int(port)
+        tftp = ExternalTftp(address, port)
+        tftp.put_file("%s/%s" % (work_dir, filename), filename)
+
+        shutil.rmtree(work_dir)
 
     def fabric_get_link_stats(self, filename, tftp_addr=None,
         link=None):
