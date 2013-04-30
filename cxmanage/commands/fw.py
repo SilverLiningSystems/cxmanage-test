@@ -28,6 +28,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+from pkg_resources import parse_version
+
 from cxmanage import get_tftp, get_nodes, get_node_strings, run_command, \
         prompt_yes
 
@@ -60,6 +62,18 @@ def fwupdate_command(args):
 
     def do_reset():
         """ Reset and wait. Returns True on failure. """
+        if not args.quiet:
+            print "Checking ECME versions..."
+
+        results, errors = run_command(args, nodes, "get_versions")
+
+        for result in results.values():
+            version = result.ecme_version.lstrip("v")
+            if parse_version(version) < parse_version("1.2.0"):
+                print "ERROR: MC reset is unsafe on ECME version v%s" % version
+                print "Please power cycle the system and start a new fwupdate."
+                return True
+            
         if not args.quiet:
             print "Resetting nodes..."
 
