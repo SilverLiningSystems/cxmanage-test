@@ -37,6 +37,40 @@ from cxmanage_api.firmware_package import FirmwarePackage
 
 def fwupdate_command(args):
     """update firmware on a cluster or host"""
+    def do_update():
+        """ Do a single firmware check+update. Returns True on failure. """
+        if not args.force:
+            if not args.quiet:
+                print "Checking hosts..."
+
+            results, errors = run_command(args, nodes, "_check_firmware",
+                    package, args.partition, args.priority)
+
+            if errors:
+                print "ERROR: Firmware update aborted."
+                return True
+
+        if not args.quiet:
+            print "Updating firmware..."
+
+        results, errors = run_command(args, nodes, "update_firmware", package,
+                args.partition, args.priority)
+
+        return bool(errors)
+
+    def do_reset():
+        """ Reset and wait. Returns True on failure. """
+        if not args.quiet:
+            print "Resetting nodes..."
+
+        results, errors = run_command(args, nodes, "mc_reset", True)
+
+        if errors:
+            print "ERROR: MC reset failed. Backup partitions not updated."
+            return True
+
+        return False
+
     # Get firmware package
     if args.image_type == "PACKAGE":
         package = FirmwarePackage(args.filename)
@@ -68,26 +102,18 @@ def fwupdate_command(args):
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp, verify_prompt=True)
 
-    if not args.force:
-        if not args.quiet:
-            print "Checking hosts..."
+    failure = do_update()
 
-        results, errors = run_command(args, nodes, "_check_firmware", package,
-                args.partition, args.priority)
-        if errors:
-            print "ERROR: Firmware update aborted."
+    if args.full:
+        failure = do_reset()
+        if failure:
             return True
+        failure = do_update()
 
-    if not args.quiet:
-        print "Updating firmware..."
-
-    results, errors = run_command(args, nodes, "update_firmware", package,
-            args.partition, args.priority)
-
-    if not args.quiet and not errors:
+    if not args.quiet and not failure:
         print "Command completed successfully.\n"
 
-    return len(errors) > 0
+    return failure
 
 
 def fwinfo_command(args):

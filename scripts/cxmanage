@@ -62,6 +62,8 @@ PARSER_EPILOG = """examples:
 FWUPDATE_EPILOG = """examples:
   cxmanage -a fwupdate package ECX-1000_update.tar.gz 192.168.1.1"""
 
+FULLUPDATE_EPILOG = """examples:
+  cxmanage -a fullupdate package ECX-1000_update.tar.gz 192.168.1.1"""
 
 FWUPDATE_IMAGE_TYPES = ['PACKAGE'] + sorted([
     'DEL',
@@ -174,43 +176,53 @@ def build_parser():
     mcreset.set_defaults(func=mcreset_command)
 
     #fwupdate command
-    fwupdate = subparsers.add_parser('fwupdate', help='update firmware',
+    fwupdate = subparsers.add_parser('fwupdate', help='update firmware (quick)',
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog=FWUPDATE_EPILOG)
-    fwupdate.add_argument('image_type', metavar='IMAGE_TYPE',
-            help='image type to use (%s)' % ", ".join(FWUPDATE_IMAGE_TYPES),
-            type=lambda string: string.upper(),
-            choices = FWUPDATE_IMAGE_TYPES)
-    fwupdate.add_argument('filename', help='path to file to upload')
-    fwupdate.add_argument('--partition',
-            help='Specify partition to update', default='INACTIVE',
-            type=lambda string: string.upper(),
-            choices = list([
-                'FIRST',
-                'SECOND',
-                'BOTH',
-                'OLDEST',
-                'NEWEST',
-                'INACTIVE'
-            ]))
-    simg_args = fwupdate.add_mutually_exclusive_group()
-    simg_args.add_argument('--force-simg',
-            help='Force addition of SIMG header',
-            default=False, action='store_true')
-    simg_args.add_argument('--skip-simg',
-            help='Skip addition of SIMG header',
-            default=False, action='store_true')
-    fwupdate.add_argument('--priority',
-            help='Priority for SIMG header', default=None, type=int)
-    fwupdate.add_argument('-d', '--daddr',
-            help='Destination address for SIMG',
-            default=None, type=lambda x : int(x, 16))
-    fwupdate.add_argument('--skip-crc32',
-            help='Skip crc32 calculation for SIMG',
-            default=False, action='store_true')
-    fwupdate.add_argument('--version', dest='fw_version',
-            help='Version for SIMG header', default=None)
-    fwupdate.set_defaults(func=fwupdate_command)
+    fwupdate.set_defaults(func=fwupdate_command, full=False)
+
+    #fullupdate command
+    fullupdate = subparsers.add_parser('fullupdate',
+            help='update primary AND backup partitions (will reset MC)',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog=FULLUPDATE_EPILOG)
+    fullupdate.set_defaults(func=fwupdate_command, full=True)
+
+    #shared fwupdate/fullupdate args
+    for command in [fwupdate, fullupdate]:
+        command.add_argument('image_type', metavar='IMAGE_TYPE',
+                help='image type to use (%s)' % ", ".join(FWUPDATE_IMAGE_TYPES),
+                type=lambda string: string.upper(),
+                choices = FWUPDATE_IMAGE_TYPES)
+        command.add_argument('filename', help='path to file to upload')
+        command.add_argument('--partition',
+                help='Specify partition to update', default='INACTIVE',
+                type=lambda string: string.upper(),
+                choices = list([
+                    'FIRST',
+                    'SECOND',
+                    'BOTH',
+                    'OLDEST',
+                    'NEWEST',
+                    'INACTIVE'
+                ]))
+        simg_args = command.add_mutually_exclusive_group()
+        simg_args.add_argument('--force-simg',
+                help='Force addition of SIMG header',
+                default=False, action='store_true')
+        simg_args.add_argument('--skip-simg',
+                help='Skip addition of SIMG header',
+                default=False, action='store_true')
+        command.add_argument('--priority',
+                help='Priority for SIMG header', default=None, type=int)
+        command.add_argument('-d', '--daddr',
+                help='Destination address for SIMG',
+                default=None, type=lambda x : int(x, 16))
+        command.add_argument('--skip-crc32',
+                help='Skip crc32 calculation for SIMG',
+                default=False, action='store_true')
+        command.add_argument('--version', dest='fw_version',
+                help='Version for SIMG header', default=None)
 
     #fwinfo command
     fwinfo = subparsers.add_parser('fwinfo', help='get FW info')
@@ -248,13 +260,9 @@ def build_parser():
 
     #info command
     info = subparsers.add_parser('info', help='get host info')
-    info.add_argument('info_type', metavar='INFO_TYPE', nargs='?',
-            help='info type to get', type=lambda string: string.lower(),
-            choices=list(sorted([
-                'basic',
-                'ubootenv',
-                'dump'
-            ])))
+    info.add_argument('info_type', nargs='?',
+            type=lambda string: string.lower(),
+            choices=['basic', 'ubootenv'])
     info.set_defaults(func=info_command)
 
     #ipmitool command

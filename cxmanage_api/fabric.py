@@ -254,17 +254,20 @@ class Fabric(object):
         """
         self._run_command(async, "set_power_policy", state)
 
-    def mc_reset(self, async=False):
+    def mc_reset(self, wait=False, async=False):
         """Resets the management controller on all nodes.
 
         >>> fabric.mc_reset()
+
+        :param wait: Wait for the nodes to come back up.
+        :type wait: boolean
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Command object (can get status, etc.).
         :type async: boolean
 
         """
-        self._run_command(async, "mc_reset")
+        self._run_command(async, "mc_reset", wait)
 
     def get_sensors(self, search="", async=False):
         """Gets sensors from all nodes.
@@ -556,28 +559,6 @@ class Fabric(object):
         """
         return self._run_command(asynchronous, "ipmitool_command",
                                  ipmitool_args)
-
-    def info_dump(self, async=False):
-        """Dumps info from all nodes.
-
-        >>> fabric.info_dump()
-        >>> {0: n0dump, 1: n1dump, 2: n2dump, 3: n3dump}
-        >>> #
-        >>> # Output condensed for brevity ...
-        >>> #
-
-        .. seealso::
-            `Info Dump <node.html#cxmanage_api.node.Node.info_dump>`_
-
-        :param async: Flag that determines if the command result (dictionary)
-                      is returned or a Task object (can get status, etc.).
-        :type async: boolean
-
-        :returns: Info dump for each node. (quite large)
-        :rtype: dictionary or Task object
-
-        """
-        return self._run_command(async, "info_dump")
 
     def get_ubootenv(self, async=False):
         """Gets the u-boot environment from all nodes.

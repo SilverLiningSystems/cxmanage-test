@@ -91,7 +91,6 @@ Example code::
     get_ubootenv
     get_versions
     get_versions_dict
-    info_dump
     ipmitool_command
     is_updatable
     mc_reset
@@ -169,7 +168,6 @@ API Docs & Code Examples
     Cxmanage API Exceptions <cx_exceptions>
     Firmware Package <firmware_package>
     Image <image>
-    Info Dump <infodump>
     Internal/External TFTP <tftp>
     SIMG <simg>
     U-Boot Environment <ubootenv>

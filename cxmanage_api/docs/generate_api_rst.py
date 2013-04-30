@@ -43,7 +43,6 @@ BLACKLIST = ['__init__']
 TITLES = {
           'simg' : 'SIMG',
           'crc32' : 'CRC32',
-          'infodump' : 'Info Dump',
           'ubootenv' : 'U-Boot Environment',
          }
 
