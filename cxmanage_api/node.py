@@ -637,6 +637,8 @@ class Node(object):
         if (priority == None):
             priority = self._get_next_priority(fwinfo, package)
 
+        updated_partitions = []
+
         for image in package.images:
             if (image.type == "UBOOTENV"):
                 # Get partitions
@@ -666,6 +668,7 @@ class Node(object):
                 except (ValueError, Exception):
                     self._upload_image(image, running_part, priority)
 
+                updated_partitions += [running_part, factory_part]
             else:
                 # Get the partitions
                 if (partition_arg == "BOTH"):
@@ -680,8 +683,34 @@ class Node(object):
                 for partition in partitions:
                     self._upload_image(image, partition, priority)
 
+                updated_partitions += partitions
+
         if package.version:
             self.bmc.set_firmware_version(package.version)
+
+        # Post verify
+        fwinfo = self.get_firmware_info()
+        for old_partition in updated_partitions:
+            partition_id = int(old_partition.partition)
+            new_partition = fwinfo[partition_id]
+
+            if new_partition.type != old_partition.type:
+                raise Exception("Update failed (partition %i, type changed)"
+                        % partition_id)
+
+            if int(new_partition.priority, 16) != priority:
+                raise Exception("Update failed (partition %i, wrong priority)"
+                        % partition_id)
+
+            if int(new_partition.flags, 16) & 2 != 0:
+                raise Exception("Update failed (partition %i, not activated)"
+                        % partition_id)
+
+            result = self.bmc.check_firmware(partition_id)
+            if not hasattr(result, "crc32") or result.error != None:
+                raise Exception("Update failed (partition %i, post-crc32 fail)"
+                        % partition_id)
+
 
     def config_reset(self):
         """Resets configuration to factory defaults.

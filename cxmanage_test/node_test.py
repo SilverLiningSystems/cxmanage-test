@@ -39,7 +39,8 @@ from pyipmi import IpmiError
 from pyipmi.bmc import LanBMC
 
 from cxmanage_test import TestImage, TestSensor, random_file
-from cxmanage_api.simg import create_simg
+from cxmanage_api import temp_file
+from cxmanage_api.simg import create_simg, get_simg_header
 from cxmanage_api.node import Node
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.ubootenv import UbootEnv
@@ -49,13 +50,13 @@ from cxmanage_api.cx_exceptions import IPDiscoveryError
 
 NUM_NODES = 4
 ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES + 1)]
+TFTP = InternalTftp()
 
 class NodeTest(unittest.TestCase):
     """ Tests involving cxmanage Nodes """
 
     def setUp(self):
-        tftp = InternalTftp()
-        self.nodes = [Node(ip_address=ip, tftp=tftp, bmc=DummyBMC,
+        self.nodes = [Node(ip_address=ip, tftp=TFTP, bmc=DummyBMC,
                 image=TestImage, ubootenv=DummyUbootEnv,
                 ipretriever=DummyIPRetriever, verbose=True)
                 for ip in ADDRESSES]
@@ -187,16 +188,16 @@ class NodeTest(unittest.TestCase):
             for partition in changed_partitions:
                 self.assertEqual(partition.updates, 1)
                 self.assertEqual(partition.retrieves, 0)
-                self.assertEqual(partition.checks, 1)
+                self.assertEqual(partition.checks, 2)
                 self.assertEqual(partition.activates, 1)
 
             self.assertEqual(ubootenv_partition.updates, 1)
             self.assertEqual(ubootenv_partition.retrieves, 1)
-            self.assertEqual(ubootenv_partition.checks, 1)
+            self.assertEqual(ubootenv_partition.checks, 2)
             self.assertEqual(ubootenv_partition.activates, 1)
 
-            self.assertEqual(node.bmc.executed[-1],
-                    ("set_firmware_version", "0.0.1"))
+            self.assertTrue(("set_firmware_version", "0.0.1")
+                    in node.bmc.executed)
 
     def test_config_reset(self):
         """ Test node.config_reset method """
@@ -404,6 +405,16 @@ class DummyBMC(LanBMC):
         self.executed.append(("update_firmware", filename,
                 partition, image_type, tftp_addr))
         self.partitions[partition].updates += 1
+
+        localfile = temp_file()
+        TFTP.get_file(filename, localfile)
+
+        contents = open(localfile).read()
+        simg = get_simg_header(contents)
+        self.partitions[partition].fwinfo.offset = "%8x" % simg.imgoff
+        self.partitions[partition].fwinfo.size = "%8x" % simg.imglen
+        self.partitions[partition].fwinfo.priority = "%8x" % simg.priority
+        self.partitions[partition].fwinfo.daddr = "%8x" % simg.daddr
 
         class Result:
             def __init__(self):
@@ -672,6 +683,7 @@ class DummyBMC(LanBMC):
 
     def fabric_rm_macaddr(self, nodeid=0, iface=0, macaddr=None):
         self.executed.append('fabric_rm_macaddr')
+
 
 class Partition:
     def __init__(self, partition, type, offset=0,
