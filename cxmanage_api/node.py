@@ -1155,12 +1155,12 @@ class Node(object):
         # Parse addresses from ipinfo file
         results = {}
         for line in open(filename):
-            node_id = line.replace('Node ', '')[0]
+            node_id = int(line.replace('Node ', '')[0])
             ul_info = line.replace('Node %s:' % node_id, '').strip().split(',')
             node_data = {}
             for ul in ul_info:
                 data = tuple(ul.split())
-                node_data[data[0]] = data[1]
+                node_data[data[0]] = int(data[1])
             results[node_id] = node_data
 
         # Make sure we found something
