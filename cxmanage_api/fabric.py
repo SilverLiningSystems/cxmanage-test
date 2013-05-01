@@ -739,7 +739,8 @@ class Fabric(object):
         """
         # This command is a case where we should avoid using _run_command,
         # because we can just add the macaddr using primary node
-        self.primary_node.bmc.fabric_add_macaddr(nodeid, iface, macaddr)
+        self.primary_node.bmc.fabric_add_macaddr(nodeid=nodeid, iface=iface,
+                macaddr=macaddr)
 
     def rm_macaddr(self, nodeid, iface, macaddr):
         """Remove a macaddr to a node/interface in the fabric.
@@ -756,7 +757,8 @@ class Fabric(object):
         """
         # This command is a case where we should avoid using _run_command,
         # because we can just add the macaddr using primary node
-        self.primary_node.bmc.fabric_rm_macaddr(nodeid, iface, macaddr)
+        self.primary_node.bmc.fabric_rm_macaddr(nodeid=nodeid, iface=iface,
+                macaddr=macaddr)
 
     def get_linkspeed_policy(self):
         """Get the global linkspeed policy for the fabric. In the partition

@@ -143,7 +143,7 @@ class Node(object):
 
         """
         if self._node_id == None:
-            self._node_id = self.bmc.get_fabric_node_id()
+            self._node_id = self.bmc.fabric_get_node_id()
         return self._node_id
 
     @node_id.setter
@@ -160,7 +160,7 @@ class Node(object):
         """Gets a dictionary of MAC addresses for this node. The dictionary
         maps each port/interface to a list of MAC addresses for that interface.
 
-        >>> node.get_macaddrs()
+        >>> node.get_mac_addresses()
         {
          0: ['fc:2f:40:3b:ec:40'],
          1: ['fc:2f:40:3b:ec:41'],
@@ -173,39 +173,35 @@ class Node(object):
         """
         return self.get_fabric_macaddrs()[self.node_id]
 
-    def set_interface_mac_address(self, interface, macaddr):
-        """set mac address for an interface
+    def add_macaddr(self, iface, macaddr):
+        """Add mac address on an interface
 
-        >>> node.set_interface_mac_address(interface, macaddr)
-        fc:2f:40:d8:e3:14
+        >>> node.add_macaddr(iface, macaddr)
 
-        :return: The Node's current mac address for specified interface
-        :rtype: string
-
-        :raises IpmiError: If errors in the command occur with BMC communication.
-
-        """
-        try:
-            return self.bmc.set_node_interface_macaddr(interface, macaddr)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
-
-    def get_interface_mac_address(self, interface):
-        """Return mac address for an interface
-
-        >>> node.get_interface_mac_address(interface)
-        fc:2f:40:d8:e3:14
-
-        :return: The Node's current mac address for specified interface
-        :rtype: string
+        :param iface: Interface to add to
+        :type iface: integer
+        :param macaddr: MAC address to add
+        :type macaddr: string
 
         :raises IpmiError: If errors in the command occur with BMC communication.
 
         """
-        try:
-            return self.bmc.get_node_interface_macaddr(interface)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        self.bmc.fabric_add_macaddr(iface=iface, macaddr=macaddr)
+
+    def rm_macaddr(self, iface, macaddr):
+        """Remove mac address from an interface
+
+        >>> node.rm_macaddr(iface, macaddr)
+
+        :param iface: Interface to remove from
+        :type iface: integer
+        :param macaddr: MAC address to remove
+        :type macaddr: string
+
+        :raises IpmiError: If errors in the command occur with BMC communication.
+
+        """
+        self.bmc.fabric_rm_macaddr(iface=iface, macaddr=macaddr)
 
     def get_power(self):
         """Returns the power status for this node.
