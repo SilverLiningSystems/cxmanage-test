@@ -47,7 +47,7 @@ from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
         PriorityIncrementError, NoPartitionError, TransferFailure, \
-        ImageSizeError, PartitionInUseError, IPDiscoveryError
+        ImageSizeError, PartitionInUseError
 
 
 class Node(object):
@@ -1360,8 +1360,8 @@ class Node(object):
         except (IpmiError, TftpException):
             # Fall back and use TFTP server
             self.tftp.put_file(filename, basename)
-            result = self.bmc.update_firmware(basename, partition_id, image.type,
-                    self.tftp_address)
+            result = self.bmc.update_firmware(basename, partition_id,
+                    image.type, self.tftp_address)
             if (not hasattr(result, "tftp_handle_id")):
                 raise AttributeError("Failed to start firmware upload")
             self._wait_for_transfer(result.tftp_handle_id)
@@ -1408,7 +1408,8 @@ class Node(object):
             time.sleep(1)
             result = self.bmc.get_firmware_status(handle)
             if (not hasattr(result, "status")):
-                raise AttributeError("Failed to retrieve firmware transfer status")
+                raise AttributeError(
+                        "Failed to retrieve firmware transfer status")
 
         if (result.status != "Complete"):
             raise TransferFailure("Node reported TFTP transfer failure")
@@ -1474,7 +1475,8 @@ class Node(object):
                             "%s image is too large for partition %i"
                             % (image.type, int(partition.partition)))
 
-                if image.type in ["CDB", "BOOT_LOG"] and partition.in_use == "1":
+                if (image.type in ["CDB", "BOOT_LOG"] and
+                        partition.in_use == "1"):
                     raise PartitionInUseError(
                             "Can't upload to a CDB/BOOT_LOG partition that's in use")
 
