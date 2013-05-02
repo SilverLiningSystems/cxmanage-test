@@ -1025,7 +1025,7 @@ class Node(object):
 
         """
         filename = self._run_fabric_command(
-            function_name='fabric_get_link_stats',
+            function_name='fabric_get_linkstats',
             link=link
         )
         results = {}
