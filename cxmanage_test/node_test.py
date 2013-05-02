@@ -343,7 +343,7 @@ class NodeTest(unittest.TestCase):
         """ Test node.get_fabric_link_stats() """
         for node in self.nodes:
             result = node.get_fabric_link_stats()
-            self.assertEqual(node.bmc.executed[0], ('get_fabric_link_stats', 0))
+            self.assertEqual(node.bmc.executed[0], ('fabric_get_linkstats', 0))
 
     def test_get_server_ip(self):
         """ Test node.get_server_ip method """
@@ -628,10 +628,10 @@ class DummyBMC(LanBMC):
 
         shutil.rmtree(work_dir)
 
-    def fabric_get_link_stats(self, filename, tftp_addr=None,
+    def fabric_get_linkstats(self, filename, tftp_addr=None,
         link=None):
         """Upload a link_stats file from the node to TFTP"""
-        self.executed.append(('get_fabric_link_stats', link))
+        self.executed.append(('fabric_get_linkstats', link))
 
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
