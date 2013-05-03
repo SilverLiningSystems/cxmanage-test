@@ -100,7 +100,7 @@ class Fabric(object):
         >>> fabric.tftp
         <cxmanage_api.tftp.InternalTftp object at 0x7f5ebbd20b10>
 
-        :return: The tftfp server.
+        :return: The tftp server.
         :rtype: `Tftp <tftp.html>`_
 
         """
@@ -717,7 +717,7 @@ class Fabric(object):
     def add_macaddr(self, nodeid, iface, macaddr):
         """Add a new macaddr to a node/interface in the fabric.
 
-        >>> fabric.add_mac_address (3, 1, "66:55:44:33:22:11")
+        >>> fabric.add_macaddr(3, 1, "66:55:44:33:22:11")
 
         :param nodeid: Node id to which the macaddr is to be added
         :type nodeid: integer
@@ -733,7 +733,7 @@ class Fabric(object):
     def rm_macaddr(self, nodeid, iface, macaddr):
         """Remove a macaddr to a node/interface in the fabric.
 
-        >>> fabric.rm_mac_address (3, 1, "66:55:44:33:22:11")
+        >>> fabric.rm_macaddr(3, 1, "66:55:44:33:22:11")
 
         :param nodeid: Node id from which the macaddr is to be remove
         :type nodeid: integer
@@ -885,7 +885,7 @@ class Fabric(object):
         return dpthcharts
 
     def _run_on_all_nodes(self, async, name, *args):
-        """Start a command on the given nodes."""
+        """Start a command on all nodes."""
         tasks = {}
         for node_id, node in self.nodes.iteritems():
             tasks[node_id] = self.task_queue.put(getattr(node, name), *args)
