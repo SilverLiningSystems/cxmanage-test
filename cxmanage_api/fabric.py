@@ -363,14 +363,11 @@ class Fabric(object):
                       is returned or a Command object (can get status, etc.).
         :type async: boolean
 
-        :return: THe firmware info for all nodes.
+        :return: The firmware info for all nodes.
         :rtype: dictionary or `Task <tasks.html>`__
 
         """
-        results = {}
-        for node_number, info in self.get_firmware_info(async=async).items():
-            results[node_number] = [vars(partition) for partition in info]
-        return results
+        return self._run_on_all_nodes(async, "get_firmware_info_dict")
 
     def is_updatable(self, package, partition_arg="INACTIVE", priority=None,
                        async=False):
@@ -525,10 +522,7 @@ class Fabric(object):
         :rtype: dictionary or `Task <tasks.html>`__
 
         """
-        results = {}
-        for node_number, info in self.get_versions(async=async).items():
-            results[node_number] = vars(info)
-        return results
+        return self._run_on_all_nodes(async, "get_versions_dict")
 
     def ipmitool_command(self, ipmitool_args, asynchronous=False):
         """Run an arbitrary IPMItool command on all nodes.
