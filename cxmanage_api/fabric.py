@@ -823,20 +823,21 @@ class Fabric(object):
         self.primary_node.bmc.fabric_config_set_uplink(uplink=uplink,
                 iface=iface)
 
-    def get_link_stats(self):
-        """Get the link_stats for each link on each node in the fabric.
+    def get_link_stats(self, link=0, async=False):
+        """Get the link_stats for each node in the fabric.
+
+        :param link: The link to get stats for (0-4).
+        :type link: integer
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Task object (can get status, etc.).
+        :type async: boolean
 
         :returns: The link_stats for each link on each node.
         :rtype: dictionary
 
         """
-        link_stats = {}
-        for nn, node in self.nodes.items():
-            link_stats[nn] = {}
-            for l in range(0, 5):
-                link_stats[nn][l] = node.get_fabric_link_stats(link=l)
-
-        return link_stats
+        return self._run_on_all_nodes(async, "get_fabric_link_stats", link)
 
     def get_linkmap(self, async=False):
         """Get the linkmap for each node in the fabric.
