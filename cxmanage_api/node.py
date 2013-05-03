@@ -1209,9 +1209,6 @@ class Node(object):
         :rtype: float
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just get the info from a primary node (fabric config).
-
         try:
             return self.bmc.fabric_get_linkspeed(link=link, actual=actual)
         except IpmiError as e:

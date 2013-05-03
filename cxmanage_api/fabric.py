@@ -158,8 +158,6 @@ class Fabric(object):
         :rtype: dictionary
 
         """
-        # This command is a special case and should avoid using _run_command,
-        # because we can just get the info from one node.
         return self.primary_node.get_fabric_macaddrs()
 
     def get_uplink_info(self):
@@ -181,8 +179,6 @@ class Fabric(object):
         :rtype: dictionary
 
         """
-        # This command is a special case and should avoid using _run_command,
-        # because we can just get the info from one node.
         return self.primary_node.get_fabric_uplink_info()
 
     def get_power(self, async=False):
@@ -199,7 +195,7 @@ class Fabric(object):
         :rtype: dictionary or `Task <tasks.html>`__
 
         """
-        return self._run_command(async, "get_power")
+        return self._run_on_all_nodes(async, "get_power")
 
     def set_power(self, mode, async=False):
         """Send an IPMI power command to all nodes.
@@ -219,7 +215,7 @@ class Fabric(object):
         :type async: boolean
 
         """
-        self._run_command(async, "set_power", mode)
+        self._run_on_all_nodes(async, "set_power", mode)
 
     def get_power_policy(self, async=False):
         """Gets the power policy from all nodes.
@@ -235,7 +231,7 @@ class Fabric(object):
         :rtype: dictionary or `Task <tasks.html>`__
 
         """
-        return self._run_command(async, "get_power_policy")
+        return self._run_on_all_nodes(async, "get_power_policy")
 
     def set_power_policy(self, state, async=False):
         """Sets the power policy on all nodes.
@@ -252,7 +248,7 @@ class Fabric(object):
         :type async: boolean
 
         """
-        self._run_command(async, "set_power_policy", state)
+        self._run_on_all_nodes(async, "set_power_policy", state)
 
     def mc_reset(self, wait=False, async=False):
         """Resets the management controller on all nodes.
@@ -267,7 +263,7 @@ class Fabric(object):
         :type async: boolean
 
         """
-        self._run_command(async, "mc_reset", wait)
+        self._run_on_all_nodes(async, "mc_reset", wait)
 
     def get_sensors(self, search="", async=False):
         """Gets sensors from all nodes.
@@ -311,7 +307,7 @@ class Fabric(object):
         :type async: boolean
 
         """
-        return self._run_command(async, "get_sensors", search)
+        return self._run_on_all_nodes(async, "get_sensors", search)
 
     def get_firmware_info(self, async=False):
         """Gets the firmware info from all nodes.
@@ -332,7 +328,7 @@ class Fabric(object):
         :rtype: dictionary or `Task <tasks.html>`__
 
         """
-        return self._run_command(async, "get_firmware_info")
+        return self._run_on_all_nodes(async, "get_firmware_info")
 
     def get_firmware_info_dict(self, async=False):
         """Gets the firmware info from all nodes.
@@ -398,7 +394,7 @@ class Fabric(object):
         :rtype: dictionary or `Task <tasks.html>`__
 
         """
-        return self._run_command(async, "is_updatable", package,
+        return self._run_on_all_nodes(async, "is_updatable", package,
                                  partition_arg, priority)
 
     def update_firmware(self, package, partition_arg="INACTIVE",
@@ -417,7 +413,7 @@ class Fabric(object):
                       is returned or a Command object (can get status, etc.).
         :type async: boolean
         """
-        self._run_command(async, "update_firmware", package,
+        self._run_on_all_nodes(async, "update_firmware", package,
                           partition_arg, priority)
 
     def config_reset(self, async=False):
@@ -431,7 +427,7 @@ class Fabric(object):
         :type async: boolean
 
         """
-        self._run_command(async, "config_reset")
+        self._run_on_all_nodes(async, "config_reset")
 
     def set_boot_order(self, boot_args, async=False):
         """Sets the boot order on all nodes.
@@ -445,7 +441,7 @@ class Fabric(object):
         :type async: boolean
 
         """
-        self._run_command(async, "set_boot_order", boot_args)
+        self._run_on_all_nodes(async, "set_boot_order", boot_args)
 
     def get_boot_order(self, async=False):
         """Gets the boot order from all nodes.
@@ -466,7 +462,7 @@ class Fabric(object):
         :rtype: dictionary or `Task <tasks.html>`__
 
         """
-        return self._run_command(async, "get_boot_order")
+        return self._run_on_all_nodes(async, "get_boot_order")
 
     def get_versions(self, async=False):
         """Gets the version info from all nodes.
@@ -490,7 +486,7 @@ class Fabric(object):
         :rtype: dictionary or `Task <tasks.html>`__
 
         """
-        return self._run_command(async, "get_versions")
+        return self._run_on_all_nodes(async, "get_versions")
 
     def get_versions_dict(self, async=False):
         """Gets the version info from all nodes.
@@ -557,7 +553,7 @@ class Fabric(object):
         :rtype: string
 
         """
-        return self._run_command(asynchronous, "ipmitool_command",
+        return self._run_on_all_nodes(asynchronous, "ipmitool_command",
                                  ipmitool_args)
 
     def get_ubootenv(self, async=False):
@@ -579,7 +575,7 @@ class Fabric(object):
         :rtype: dictionary or `Task <command.html>`_
 
         """
-        return self._run_command(async, "get_ubootenv")
+        return self._run_on_all_nodes(async, "get_ubootenv")
 
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
             password="1Password", aggressive=False, async=False):
@@ -612,8 +608,8 @@ class Fabric(object):
         :rtype: dictionary or `Task <command.html>`_
 
         """
-        return self._run_command(async, "get_server_ip", interface, ipv6, user,
-                password, aggressive)
+        return self._run_on_all_nodes(async, "get_server_ip", interface, ipv6,
+                user, password, aggressive)
 
     @property
     def primary_node(self):
@@ -691,8 +687,6 @@ class Fabric(object):
         >>> fabric.update_config()
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just get the info from a primary node (fabric config).
         self.primary_node.bmc.fabric_config_update_config()
 
     def get_linkspeed(self):
@@ -706,8 +700,6 @@ class Fabric(object):
         :rtype: float
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just get the info from a primary node (fabric config).
         return self.primary_node.bmc.fabric_config_get_linkspeed()
 
     def set_linkspeed(self, linkspeed):
@@ -720,8 +712,6 @@ class Fabric(object):
         :type linkspeed: float
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just get the info from a primary node (fabric config).
         self.primary_node.bmc.fabric_config_set_linkspeed(linkspeed)
 
     def add_macaddr(self, nodeid, iface, macaddr):
@@ -737,8 +727,6 @@ class Fabric(object):
         :type macaddr: string
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just add the macaddr using primary node
         self.primary_node.bmc.fabric_add_macaddr(nodeid=nodeid, iface=iface,
                 macaddr=macaddr)
 
@@ -755,8 +743,6 @@ class Fabric(object):
         :type macaddr: string
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just add the macaddr using primary node
         self.primary_node.bmc.fabric_rm_macaddr(nodeid=nodeid, iface=iface,
                 macaddr=macaddr)
 
@@ -772,8 +758,6 @@ class Fabric(object):
         :rtype: integer
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just get the info from a primary node (fabric config).
         return self.primary_node.bmc.fabric_config_get_linkspeed_policy()
 
     def set_linkspeed_policy(self, ls_policy):
@@ -787,8 +771,6 @@ class Fabric(object):
         :type linkspeed: integer
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just get the info from a primary node (fabric config).
         self.primary_node.bmc.fabric_config_set_linkspeed_policy(ls_policy)
 
     def get_link_users_factor(self):
@@ -803,8 +785,6 @@ class Fabric(object):
         :rtype: integer
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just get the info from a primary node (fabric config).
         return self.primary_node.bmc.fabric_config_get_link_users_factor()
 
     def set_link_users_factor(self, lu_factor):
@@ -818,8 +798,6 @@ class Fabric(object):
         :type lu_factor: integer
 
         """
-        # This command is a case where we should avoid using _run_command,
-        # because we can just get the info from a primary node (fabric config).
         self.primary_node.bmc.fabric_config_set_link_users_factor(lu_factor)
 
     def get_uplink(self, iface=0):
@@ -906,7 +884,7 @@ class Fabric(object):
 
         return dpthcharts
 
-    def _run_command(self, async, name, *args):
+    def _run_on_all_nodes(self, async, name, *args):
         """Start a command on the given nodes."""
         tasks = {}
         for node_id, node in self.nodes.iteritems():
