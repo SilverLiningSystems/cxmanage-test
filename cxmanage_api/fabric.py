@@ -820,10 +820,8 @@ class Fabric(object):
         :type iface: integer
 
         """
-        self.primary_node.bmc.fabric_config_set_uplink(
-            uplink=uplink,
-            iface=iface
-        )
+        self.primary_node.bmc.fabric_config_set_uplink(uplink=uplink,
+                iface=iface)
 
     def get_link_stats(self):
         """Get the link_stats for each link on each node in the fabric.
@@ -840,43 +838,44 @@ class Fabric(object):
 
         return link_stats
 
-    def get_linkmap(self):
+    def get_linkmap(self, async=False):
         """Get the linkmap for each node in the fabric.
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Task object (can get status, etc.).
+        :type async: boolean
 
         :returns: The linkmap for each node.
         :rtype: dectionary
 
         """
-        linkmaps = {}
-        for nn, node in self.nodes.items():
-            linkmaps[nn] = node.get_fabric_linkmap()
+        return self._run_on_all_nodes(async, "get_fabric_linkmap")
 
-        return linkmaps
-
-    def get_routing_table(self):
+    def get_routing_table(self, async=False):
         """Get the routing_table for the fabric.
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Task object (can get status, etc.).
+        :type async: boolean
 
         :returns: The routing_table for the fabric.
         :rtype: dictionary
 
         """
-        rt_tables = {}
-        for nn, node in self.nodes.items():
-            rt_tables[nn] = node.get_fabric_routing_table()
-        return rt_tables
+        return self._run_on_all_nodes(async, "get_fabric_routing_table")
 
-    def get_depth_chart(self):
+    def get_depth_chart(self, async=False):
         """Get the depth_chart for the fabric.
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Task object (can get status, etc.).
+        :type async: boolean
 
         :returns: The depth_chart for the fabric.
         :rtype: dictionary
 
         """
-        dpthcharts = {}
-        for nn, node in self.nodes.items():
-            dpthcharts[nn] = node.get_fabric_depth_chart()
-
-        return dpthcharts
+        return self._run_on_all_nodes(async, "get_fabric_depth_chart")
 
     def _run_on_all_nodes(self, async, name, *args):
         """Start a command on all nodes."""
