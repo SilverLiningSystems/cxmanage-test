@@ -315,34 +315,34 @@ class NodeTest(unittest.TestCase):
             for x in node.bmc.executed:
                 self.assertEqual(x, "fabric_config_get_uplink_info")
 
-    def test_get_fabric_linkmap(self):
-        """ Test node.get_fabric_linkmap method """
+    def test_get_linkmap(self):
+        """ Test node.get_linkmap method """
         for node in self.nodes:
-            result = node.get_fabric_linkmap()
+            result = node.get_linkmap()
 
             for x in node.bmc.executed:
                 self.assertEqual(x, "fabric_info_get_link_map")
 
-    def test_get_fabric_routing_table(self):
-        """ Test node.get_fabric_routing_table method """
+    def test_get_routing_table(self):
+        """ Test node.get_routing_table method """
         for node in self.nodes:
-            result = node.get_fabric_routing_table()
+            result = node.get_routing_table()
 
             for x in node.bmc.executed:
                 self.assertEqual(x, "fabric_info_get_routing_table")
 
-    def test_get_fabric_depth_chart(self):
-        """ Test node.get_fabric_depth_chart method """
+    def test_get_depth_chart(self):
+        """ Test node.get_depth_chart method """
         for node in self.nodes:
-            result = node.get_fabric_depth_chart()
+            result = node.get_depth_chart()
 
             for x in node.bmc.executed:
                 self.assertEqual(x, "fabric_info_get_depth_chart")
 
-    def test_get_fabric_link_stats(self):
-        """ Test node.get_fabric_link_stats() """
+    def test_get_link_stats(self):
+        """ Test node.get_link_stats() """
         for node in self.nodes:
-            result = node.get_fabric_link_stats()
+            result = node.get_link_stats()
             self.assertEqual(node.bmc.executed[0], ('fabric_get_linkstats', 0))
 
     def test_get_server_ip(self):

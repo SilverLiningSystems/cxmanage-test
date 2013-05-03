@@ -1012,7 +1012,7 @@ class Node(object):
 
         return results
 
-    def get_fabric_link_stats(self, link=0):
+    def get_link_stats(self, link=0):
         """Gets the linkstats for the link specified.
 
         :param link: The link to get stats for (0-4).
@@ -1049,7 +1049,7 @@ class Node(object):
 
         return results
 
-    def get_fabric_linkmap(self):
+    def get_linkmap(self):
         """Gets the src and destination of each link on a node.
 
         :return: Returns a map of link_id->node_id.
@@ -1080,7 +1080,7 @@ class Node(object):
 
         return results
 
-    def get_fabric_routing_table(self):
+    def get_routing_table(self):
         """Gets the routing table as instantiated in the fabric switch.
 
         :return: Returns a map of node_id->rt_entries.
@@ -1113,7 +1113,7 @@ class Node(object):
 
         return results
 
-    def get_fabric_depth_chart(self):
+    def get_depth_chart(self):
         """Gets a table indicating the distance from a given node to all other
         nodes on each fabric link.
 

@@ -837,7 +837,7 @@ class Fabric(object):
         :rtype: dictionary
 
         """
-        return self._run_on_all_nodes(async, "get_fabric_link_stats", link)
+        return self._run_on_all_nodes(async, "get_link_stats", link)
 
     def get_linkmap(self, async=False):
         """Get the linkmap for each node in the fabric.
@@ -850,7 +850,7 @@ class Fabric(object):
         :rtype: dectionary
 
         """
-        return self._run_on_all_nodes(async, "get_fabric_linkmap")
+        return self._run_on_all_nodes(async, "get_linkmap")
 
     def get_routing_table(self, async=False):
         """Get the routing_table for the fabric.
@@ -863,7 +863,7 @@ class Fabric(object):
         :rtype: dictionary
 
         """
-        return self._run_on_all_nodes(async, "get_fabric_routing_table")
+        return self._run_on_all_nodes(async, "get_routing_table")
 
     def get_depth_chart(self, async=False):
         """Get the depth_chart for the fabric.
@@ -876,7 +876,7 @@ class Fabric(object):
         :rtype: dictionary
 
         """
-        return self._run_on_all_nodes(async, "get_fabric_depth_chart")
+        return self._run_on_all_nodes(async, "get_depth_chart")
 
     def _run_on_all_nodes(self, async, name, *args):
         """Start a command on all nodes."""
