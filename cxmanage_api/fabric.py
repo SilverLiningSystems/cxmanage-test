@@ -139,6 +139,20 @@ class Fabric(object):
             self._discover_nodes(self.ip_address)
         return self._nodes
 
+    @property
+    def primary_node(self):
+        """The node to use for fabric config operations.
+
+        Today, this is always node 0.
+
+        >>> fabric.primary_node
+        <cxmanage_api.node.Node object at 0x210d790>
+
+        :return: Node object for primary node
+        :rtype: Node object
+        """
+        return self.nodes[0]
+
     def get_mac_addresses(self):
         """Gets MAC addresses from all nodes.
 
@@ -605,20 +619,6 @@ class Fabric(object):
         return self._run_on_all_nodes(async, "get_server_ip", interface, ipv6,
                 user, password, aggressive)
 
-    @property
-    def primary_node(self):
-        """The node to use for fabric config operations.
-
-        Today, this is always node 0.
-
-        >>> fabric.primary_node
-        <cxmanage_api.node.Node object at 0x210d790>
-
-        :return: Node object for primary node
-        :rtype: Node object
-        """
-        return self.nodes[0]
-
     def get_ipsrc(self):
         """Return the ipsrc for the fabric.
 
@@ -658,22 +658,6 @@ class Fabric(object):
         :rtype: string
         """
         return self.primary_node.bmc.fabric_config_get_ip_addr_base()
-
-    def _discover_nodes(self, ip_address, username="admin", password="admin"):
-        """Gets the nodes of this fabric by pulling IP info from a BMC."""
-        node = self.node(ip_address=ip_address, username=username,
-                         password=password, tftp=self.tftp,
-                         ecme_tftp_port=self.ecme_tftp_port,
-                         verbose=self.verbose)
-        ipinfo = node.get_fabric_ipinfo()
-        for node_id, node_address in ipinfo.iteritems():
-            self._nodes[node_id] = self.node(ip_address=node_address,
-                                            username=username,
-                                            password=password,
-                                            tftp=self.tftp,
-                                            ecme_tftp_port=self.ecme_tftp_port,
-                                            verbose=self.verbose)
-            self._nodes[node_id].node_id = node_id
 
     def update_config(self):
         """Push out updated configuration data for all nodes in the fabric.
@@ -898,6 +882,22 @@ class Fabric(object):
             if errors:
                 raise CommandFailedError(results, errors)
             return results
+
+    def _discover_nodes(self, ip_address, username="admin", password="admin"):
+        """Gets the nodes of this fabric by pulling IP info from a BMC."""
+        node = self.node(ip_address=ip_address, username=username,
+                         password=password, tftp=self.tftp,
+                         ecme_tftp_port=self.ecme_tftp_port,
+                         verbose=self.verbose)
+        ipinfo = node.get_fabric_ipinfo()
+        for node_id, node_address in ipinfo.iteritems():
+            self._nodes[node_id] = self.node(ip_address=node_address,
+                                            username=username,
+                                            password=password,
+                                            tftp=self.tftp,
+                                            ecme_tftp_port=self.ecme_tftp_port,
+                                            verbose=self.verbose)
+            self._nodes[node_id].node_id = node_id
 
 
 # End of file: ./fabric.py
