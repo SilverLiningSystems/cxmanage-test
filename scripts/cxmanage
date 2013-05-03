@@ -48,8 +48,8 @@ from cxmanage.commands.ipmitool import ipmitool_command
 from cxmanage.commands.ipdiscover import ipdiscover_command
 
 
-PYIPMI_VERSION = '0.7.0'
-IPMITOOL_VERSION = '1.8.11.0-cx4'
+PYIPMI_VERSION = '0.7.1'
+IPMITOOL_VERSION = '1.8.11.0-cx5'
 
 
 PARSER_EPILOG = """examples:

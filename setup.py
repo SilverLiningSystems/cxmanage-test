@@ -42,7 +42,7 @@ setup(
     install_requires=[
                         'tftpy',
                         'pexpect',
-                        'pyipmi>=0.7.0',
+                        'pyipmi>=0.7.1',
                         'argparse',
                         'sphinx',
                         'cloud_sptheme'
