@@ -134,7 +134,8 @@ class UbootEnv:
                         bootdevice = "%i:%i" % (dev, part)
                     except ValueError:
                         bootdevice = str(int(arg[4:]))
-                    commands.append("setenv devnum %s && run init_scsi && run bootcmd_scsi"
+                    commands.append(
+                            "setenv devnum %s && run init_scsi && run bootcmd_scsi"
                             % bootdevice)
 
         if retry and reset:

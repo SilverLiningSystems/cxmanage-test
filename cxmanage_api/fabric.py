@@ -108,6 +108,7 @@ class Fabric(object):
 
     @tftp.setter
     def tftp(self, value):
+        """ Set the TFTP server for this fabric (and all nodes) """
         self._tftp = value
 
         if not self._nodes:
