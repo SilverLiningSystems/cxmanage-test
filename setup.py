@@ -44,9 +44,10 @@ setup(
                         'pexpect',
                         'pyipmi>=0.7.1',
                         'argparse',
-                        'sphinx',
-                        'cloud_sptheme'
     ],
+    extras_require={
+        'docs': ['sphinx', 'cloud_sptheme'],
+    },
     classifiers=[
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 2.7']
