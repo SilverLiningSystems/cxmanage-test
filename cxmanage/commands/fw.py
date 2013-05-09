@@ -47,7 +47,6 @@ def fwupdate_command(args):
 
             results, errors = run_command(args, nodes, "_check_firmware",
                     package, args.partition, args.priority)
-
             if errors:
                 print "ERROR: Firmware update aborted."
                 return True
@@ -57,8 +56,11 @@ def fwupdate_command(args):
 
         results, errors = run_command(args, nodes, "update_firmware", package,
                 args.partition, args.priority)
+        if errors:
+            print "ERROR: Firmware update failed."
+            return True
 
-        return bool(errors)
+        return False
 
     def do_reset():
         """ Reset and wait. Returns True on failure. """
@@ -66,6 +68,9 @@ def fwupdate_command(args):
             print "Checking ECME versions..."
 
         results, errors = run_command(args, nodes, "get_versions")
+        if errors:
+            print "ERROR: MC reset aborted. Backup partitions not updated."
+            return True
 
         for result in results.values():
             version = result.ecme_version.lstrip("v")
@@ -78,14 +83,12 @@ def fwupdate_command(args):
             print "Resetting nodes..."
 
         results, errors = run_command(args, nodes, "mc_reset", True)
-
         if errors:
             print "ERROR: MC reset failed. Backup partitions not updated."
             return True
 
         return False
 
-    # Get firmware package
     if args.image_type == "PACKAGE":
         package = FirmwarePackage(args.filename)
     else:
@@ -104,7 +107,6 @@ def fwupdate_command(args):
             print "ERROR: %s" % e
             return True
 
-    # Print all_nodes warning/confirmation
     if not args.all_nodes:
         if args.force:
             print 'WARNING: Updating firmware without --all-nodes is dangerous.'
@@ -116,18 +118,17 @@ def fwupdate_command(args):
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp, verify_prompt=True)
 
-    failure = do_update()
+    errors = do_update()
 
-    if args.full:
-        failure = do_reset()
-        if failure:
-            return True
-        failure = do_update()
+    if args.full and not errors:
+        errors = do_reset()
+        if not errors:
+            errors = do_update()
 
-    if not args.quiet and not failure:
+    if not args.quiet and not errors:
         print "Command completed successfully.\n"
 
-    return failure
+    return errors
 
 
 def fwinfo_command(args):
