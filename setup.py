@@ -33,7 +33,7 @@ from setuptools import setup
 
 setup(
     name='cxmanage',
-    version='0.8.1',
+    version='0.8.2',
     packages=['cxmanage', 'cxmanage.commands', 'cxmanage_api'],
     scripts=['scripts/cxmanage', 'scripts/sol_tabs'],
     description='Calxeda Management Utility',
