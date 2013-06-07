@@ -1351,10 +1351,14 @@ class Node(object):
         filename = image.render_to_simg(priority, daddr)
         basename = os.path.basename(filename)
 
-        try:
-            self.bmc.register_firmware_write(basename, partition_id, image.type)
-            self.ecme_tftp.put_file(filename, basename)
-        except (IpmiError, TftpException):
+        for x in xrange(2):
+            try:
+                self.bmc.register_firmware_write(basename, partition_id, image.type)
+                self.ecme_tftp.put_file(filename, basename)
+                break
+            except (IpmiError, TftpException):
+                pass
+        else:
             # Fall back and use TFTP server
             self.tftp.put_file(filename, basename)
             result = self.bmc.update_firmware(basename, partition_id,
@@ -1376,10 +1380,14 @@ class Node(object):
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
 
-        try:
-            self.bmc.register_firmware_read(basename, partition_id, image_type)
-            self.ecme_tftp.get_file(basename, filename)
-        except (IpmiError, TftpException):
+        for x in xrange(2):
+            try:
+                self.bmc.register_firmware_read(basename, partition_id, image_type)
+                self.ecme_tftp.get_file(basename, filename)
+                break
+            except (IpmiError, TftpException):
+                pass
+        else:
             # Fall back and use TFTP server
             result = self.bmc.retrieve_firmware(basename, partition_id,
                     image_type, self.tftp_address)
