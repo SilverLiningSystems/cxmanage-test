@@ -137,7 +137,8 @@ class Fabric(object):
 
         """
         if not self._nodes:
-            self._discover_nodes(self.ip_address)
+            self.refresh()
+
         return self._nodes
 
     @property
@@ -153,6 +154,23 @@ class Fabric(object):
         :rtype: Node object
         """
         return self.nodes[0]
+
+    def refresh(self):
+        """Gets the nodes of this fabric by pulling IP info from a BMC."""
+        self._nodes = {}
+        node = self.node(ip_address=self.ip_address, username=self.username,
+                         password=self.password, tftp=self.tftp,
+                         ecme_tftp_port=self.ecme_tftp_port,
+                         verbose=self.verbose)
+        ipinfo = node.get_fabric_ipinfo()
+        for node_id, node_address in ipinfo.iteritems():
+            self._nodes[node_id] = self.node(ip_address=node_address,
+                                            username=self.username,
+                                            password=self.password,
+                                            tftp=self.tftp,
+                                            ecme_tftp_port=self.ecme_tftp_port,
+                                            verbose=self.verbose)
+            self._nodes[node_id].node_id = node_id
 
     def get_mac_addresses(self):
         """Gets MAC addresses from all nodes.
@@ -883,22 +901,6 @@ class Fabric(object):
             if errors:
                 raise CommandFailedError(results, errors)
             return results
-
-    def _discover_nodes(self, ip_address, username="admin", password="admin"):
-        """Gets the nodes of this fabric by pulling IP info from a BMC."""
-        node = self.node(ip_address=ip_address, username=username,
-                         password=password, tftp=self.tftp,
-                         ecme_tftp_port=self.ecme_tftp_port,
-                         verbose=self.verbose)
-        ipinfo = node.get_fabric_ipinfo()
-        for node_id, node_address in ipinfo.iteritems():
-            self._nodes[node_id] = self.node(ip_address=node_address,
-                                            username=username,
-                                            password=password,
-                                            tftp=self.tftp,
-                                            ecme_tftp_port=self.ecme_tftp_port,
-                                            verbose=self.verbose)
-            self._nodes[node_id].node_id = node_id
 
 
 # End of file: ./fabric.py
