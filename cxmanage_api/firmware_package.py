@@ -30,6 +30,7 @@
 
 
 import os
+import sys
 import tarfile
 import ConfigParser
 import pkg_resources
@@ -78,13 +79,14 @@ class FirmwarePackage:
             if "package" in config.sections():
                 cxmanage_ver = config.get("package",
                         "required_cxmanage_version")
-                try:
-                    pkg_resources.require("cxmanage>=%s" % cxmanage_ver)
-                except pkg_resources.VersionConflict:
-                    # @todo: CxmanageVersionError?
-                    raise ValueError(
-                            "%s requires cxmanage version %s or later."
-                            % (filename, cxmanage_ver))
+                if sys.platform != 'win32':
+                    try:
+                        pkg_resources.require("cxmanage>=%s" % cxmanage_ver)
+                    except pkg_resources.VersionConflict:
+                        # @todo: CxmanageVersionError?
+                        raise ValueError(
+                                "%s requires cxmanage version %s or later."
+                                % (filename, cxmanage_ver))
 
                 if config.has_option("package", "required_socman_version"):
                     self.required_socman_version = config.get("package",

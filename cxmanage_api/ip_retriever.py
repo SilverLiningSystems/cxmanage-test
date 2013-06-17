@@ -39,7 +39,8 @@ from time import sleep
 
 from cxmanage_api.cx_exceptions import IPDiscoveryError
 
-from pexpect import TIMEOUT, EOF
+if sys.platform != 'win32':
+    from pexpect import TIMEOUT, EOF
 from pyipmi import make_bmc
 from pyipmi.server import Server
 from pyipmi.bmc import LanBMC

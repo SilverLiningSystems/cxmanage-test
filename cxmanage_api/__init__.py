@@ -36,7 +36,7 @@ import tempfile
 
 
 WORK_DIR = tempfile.mkdtemp(prefix="cxmanage_api-")
-atexit.register(lambda: shutil.rmtree(WORK_DIR))
+atexit.register(lambda: shutil.rmtree(WORK_DIR, ignore_errors=True))
 
 
 def temp_file():

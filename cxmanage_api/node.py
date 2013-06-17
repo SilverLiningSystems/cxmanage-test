@@ -648,13 +648,13 @@ class Node(object):
                 # Update running ubootenv
                 old_ubootenv_image = self._download_image(running_part)
                 old_ubootenv = self.ubootenv(open(
-                                        old_ubootenv_image.filename).read())
+                                        old_ubootenv_image.filename, "rb").read())
                 try:
-                    ubootenv = self.ubootenv(open(image.filename).read())
+                    ubootenv = self.ubootenv(open(image.filename, "rb").read())
                     ubootenv.set_boot_order(old_ubootenv.get_boot_order())
 
                     filename = temp_file()
-                    with open(filename, "w") as f:
+                    with open(filename, "wb") as f:
                         f.write(ubootenv.get_contents())
                     ubootenv_image = self.image(filename, image.type, False,
                                            image.daddr, image.skip_crc32,
@@ -754,7 +754,7 @@ class Node(object):
         priority = max(int(x.priority, 16) for x in [first_part, active_part])
 
         filename = temp_file()
-        with open(filename, "w") as f:
+        with open(filename, "wb") as f:
             f.write(ubootenv.get_contents())
 
         ubootenv_image = self.image(filename, image.type, False, image.daddr,
@@ -894,7 +894,7 @@ class Node(object):
         fwinfo = self.get_firmware_info()
         partition = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
         image = self._download_image(partition)
-        return self.ubootenv(open(image.filename).read())
+        return self.ubootenv(open(image.filename, "rb").read())
 
     def get_fabric_ipinfo(self):
         """Gets what ip information THIS node knows about the Fabric.

@@ -75,7 +75,7 @@ class Image:
             raise ValueError("File %s does not exist" % filename)
 
         if (simg == None):
-            contents = open(filename).read()
+            contents = open(filename, "rb").read()
             self.simg = has_simg(contents)
         else:
             self.simg = simg
@@ -104,7 +104,7 @@ class Image:
         filename = self.filename
         # Create new image if necessary
         if (not self.simg):
-            contents = open(filename).read()
+            contents = open(filename, "rb").read()
             # Figure out daddr
             if (self.daddr != None):
                 daddr = self.daddr
@@ -114,11 +114,11 @@ class Image:
                     skip_crc32=self.skip_crc32, align=align,
                     version=self.version)
             filename = temp_file()
-            with open(filename, "w") as f:
+            with open(filename, "wb") as f:
                 f.write(simg)
 
         # Make sure the simg was built correctly
-        if (not valid_simg(open(filename).read())):
+        if (not valid_simg(open(filename, "rb").read())):
             raise InvalidImageError("%s is not a valid SIMG" %
                     os.path.basename(self.filename))
 
@@ -137,7 +137,7 @@ class Image:
         if (self.simg):
             return os.path.getsize(self.filename)
         else:
-            contents = open(self.filename).read()
+            contents = open(self.filename, "rb").read()
             align = (self.type in ["CDB", "BOOT_LOG"])
             simg = create_simg(contents, skip_crc32=True, align=align)
             return len(simg)
@@ -167,7 +167,7 @@ class Image:
 
         if (self.type in ["CDB", "BOOT_LOG"]):
             # Look for "CDBH"
-            contents = open(self.filename).read()
+            contents = open(self.filename, "rb").read()
             if (self.simg):
                 contents = get_simg_contents(contents)
             if (contents[:4] != "CDBH"):
