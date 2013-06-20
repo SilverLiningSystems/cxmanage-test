@@ -509,17 +509,6 @@ class Node(object):
             if (entry.version == ""):
                 entry.version = "Unknown"
 
-        # Flag CDB as "in use" based on socman info
-        for a in range(1, len(fwinfo)):
-            previous = fwinfo[a - 1]
-            current = fwinfo[a]
-            if (current.type.split()[1][1:-1] == "CDB" and
-                    current.in_use == "Unknown"):
-                if (previous.type.split()[1][1:-1] != "SOC_ELF"):
-                    current.in_use = "1"
-                else:
-                    current.in_use = previous.in_use
-
         return fwinfo
 
     def get_firmware_info_dict(self):
