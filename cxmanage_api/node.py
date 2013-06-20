@@ -217,10 +217,7 @@ class Node(object):
         :rtype: boolean
 
         """
-        try:
-            return self.bmc.get_chassis_status().power_on
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.get_chassis_status().power_on
 
     def set_power(self, mode):
         """Send an IPMI power command to this target.
@@ -238,10 +235,7 @@ class Node(object):
         :type mode: string
 
         """
-        try:
-            self.bmc.set_chassis_power(mode=mode)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        self.bmc.set_chassis_power(mode=mode)
 
     def get_power_policy(self):
         """Return power status reported by IPMI.
@@ -255,10 +249,7 @@ class Node(object):
         :raises IpmiError: If errors in the command occur with BMC communication.
 
         """
-        try:
-            return self.bmc.get_chassis_status().power_restore_policy
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.get_chassis_status().power_restore_policy
 
     def set_power_policy(self, state):
         """Set default power state for Linux side.
@@ -273,10 +264,7 @@ class Node(object):
         :type state: string
 
         """
-        try:
-            self.bmc.set_chassis_policy(state)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        self.bmc.set_chassis_policy(state)
 
     def mc_reset(self, wait=False):
         """Sends a Master Control reset command to the node.
@@ -290,12 +278,7 @@ class Node(object):
         :raises IPMIError: If there is an IPMI error communicating with the BMC.
 
         """
-        try:
-            result = self.bmc.mc_reset("cold")
-            if (hasattr(result, "error")):
-                raise Exception(result.error)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        self.bmc.mc_reset("cold")
 
         if wait:
             deadline = time.time() + 300.0
@@ -357,11 +340,8 @@ class Node(object):
         :rtype: dictionary of pyipmi objects
 
         """
-        try:
-            sensors = [x for x in self.bmc.sdr_list()
-                        if search.lower() in x.sensor_name.lower()]
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        sensors = [x for x in self.bmc.sdr_list()
+                   if search.lower() in x.sensor_name.lower()]
 
         if (len(sensors) == 0):
             if (search == ""):
@@ -519,30 +499,28 @@ class Node(object):
         :raises IpmiError: If errors in the command occur with BMC communication.
 
         """
-        try:
-            fwinfo = [x for x in self.bmc.get_firmware_info()
-                      if hasattr(x, "partition")]
-            if (len(fwinfo) == 0):
-                raise NoFirmwareInfoError("Failed to retrieve firmware info")
+        fwinfo = [x for x in self.bmc.get_firmware_info()
+                  if hasattr(x, "partition")]
+        if (len(fwinfo) == 0):
+            raise NoFirmwareInfoError("Failed to retrieve firmware info")
 
-            # Clean up the fwinfo results
-            for entry in fwinfo:
-                if (entry.version == ""):
-                    entry.version = "Unknown"
+        # Clean up the fwinfo results
+        for entry in fwinfo:
+            if (entry.version == ""):
+                entry.version = "Unknown"
 
-            # Flag CDB as "in use" based on socman info
-            for a in range(1, len(fwinfo)):
-                previous = fwinfo[a - 1]
-                current = fwinfo[a]
-                if (current.type.split()[1][1:-1] == "CDB" and
-                        current.in_use == "Unknown"):
-                    if (previous.type.split()[1][1:-1] != "SOC_ELF"):
-                        current.in_use = "1"
-                    else:
-                        current.in_use = previous.in_use
-            return fwinfo
-        except IpmiError as error_details:
-            raise IpmiError(self._parse_ipmierror(error_details))
+        # Flag CDB as "in use" based on socman info
+        for a in range(1, len(fwinfo)):
+            previous = fwinfo[a - 1]
+            current = fwinfo[a]
+            if (current.type.split()[1][1:-1] == "CDB" and
+                    current.in_use == "Unknown"):
+                if (previous.type.split()[1][1:-1] != "SOC_ELF"):
+                    current.in_use = "1"
+                else:
+                    current.in_use = previous.in_use
+
+        return fwinfo
 
     def get_firmware_info_dict(self):
         """Gets firmware info for each partition on the Node.
@@ -713,22 +691,20 @@ class Node(object):
         :raises Exception: If there are errors within the command response.
 
         """
-        try:
-            # Reset CDB
-            result = self.bmc.reset_firmware()
-            if (hasattr(result, "error")):
-                raise Exception(result.error)
+        # Reset CDB
+        result = self.bmc.reset_firmware()
+        if (hasattr(result, "error")):
+            raise Exception(result.error)
+        
+        # Reset ubootenv
+        fwinfo = self.get_firmware_info()
+        running_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
+        factory_part = self._get_partition(fwinfo, "UBOOTENV", "SECOND")
+        image = self._download_image(factory_part)
+        self._upload_image(image, running_part)
 
-            # Reset ubootenv
-            fwinfo = self.get_firmware_info()
-            running_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
-            factory_part = self._get_partition(fwinfo, "UBOOTENV", "SECOND")
-            image = self._download_image(factory_part)
-            self._upload_image(image, running_part)
-            # Clear SEL
-            self.bmc.sel_clear()
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        # Clear SEL
+        self.bmc.sel_clear()
 
     def set_boot_order(self, boot_args):
         """Sets boot-able device order for this node.
@@ -784,10 +760,7 @@ class Node(object):
         :raises Exception: If there are errors within the command response.
 
         """
-        try:
-            result = self.bmc.get_info_basic()
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        result = self.bmc.get_info_basic()
 
         fwinfo = self.get_firmware_info()
         components = [("cdb_version", "CDB"),
@@ -905,12 +878,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_config_get_ip_info',
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_config_get_ip_info'
+        )
 
         # Parse addresses from ipinfo file
         results = {}
@@ -941,13 +911,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_config_get_mac_addresses'
-            )
-
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_config_get_mac_addresses'
+        )
 
         # Parse addresses from ipinfo file
         results = {}
@@ -1055,12 +1021,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_info_get_link_map',
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_info_get_link_map',
+        )
 
         results = {}
         for line in open(filename):
@@ -1086,12 +1049,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_info_get_routing_table',
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_info_get_routing_table',
+        )
 
         results = {}
         for line in open(filename):
@@ -1121,12 +1081,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_info_get_depth_chart',
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_info_get_depth_chart',
+        )
 
         results = {}
         for line in open(filename):
@@ -1205,10 +1162,7 @@ class Node(object):
         :rtype: float
 
         """
-        try:
-            return self.bmc.fabric_get_linkspeed(link=link, actual=actual)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.fabric_get_linkspeed(link=link, actual=actual)
 
     def get_uplink(self, iface=0):
         """Get the uplink a MAC will use when transmitting a packet out of the
@@ -1226,10 +1180,7 @@ class Node(object):
         :raises IpmiError: When any errors are encountered.
 
         """
-        try:
-            return self.bmc.fabric_config_get_uplink(iface=iface)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.fabric_config_get_uplink(iface=iface)
 
     def set_uplink(self, uplink=0, iface=0):
         """Set the uplink a MAC will use when transmitting a packet out of the
@@ -1248,13 +1199,10 @@ class Node(object):
         :raises IpmiError: When any errors are encountered.
 
         """
-        try:
-            return self.bmc.fabric_config_set_uplink(
-                uplink=uplink,
-                iface=iface
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.fabric_config_set_uplink(
+            uplink=uplink,
+            iface=iface
+        )
 
     def _run_fabric_command(self, function_name, **kwargs):
         """Handles the basics of sending a node a command for fabric data."""
@@ -1265,15 +1213,11 @@ class Node(object):
             self.ecme_tftp.get_file(basename, filename)
 
         except (IpmiError, TftpException) as e:
-            try:
-                getattr(self.bmc, function_name)(
-                    filename=basename,
-                    tftp_addr=self.tftp_address,
-                    **kwargs
-                )
-
-            except IpmiError as e:
-                raise IpmiError(self._parse_ipmierror(e))
+            getattr(self.bmc, function_name)(
+                filename=basename,
+                tftp_addr=self.tftp_address,
+                **kwargs
+            )
 
             deadline = time.time() + 10
             while (time.time() < deadline):
@@ -1494,16 +1438,5 @@ class Node(object):
             raise PriorityIncrementError(
                             "Unable to increment SIMG priority, too high")
         return priority
-
-    def _parse_ipmierror(self, error_details):
-        """Parse a meaningful message from an IpmiError """
-        try:
-            error = str(error_details).lstrip().splitlines()[0].rstrip()
-            if (error.startswith('Error: ')):
-                error = error[7:]
-            return error
-        except IndexError:
-            return 'Unknown IPMItool error.'
-
 
 # End of file: ./node.py
