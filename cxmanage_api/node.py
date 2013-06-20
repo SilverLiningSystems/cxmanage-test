@@ -702,11 +702,7 @@ class Node(object):
                 raise Exception("Update failed (partition %i, not activated)"
                         % partition_id)
 
-            result = self.bmc.check_firmware(partition_id)
-            if not hasattr(result, "crc32") or result.error != None:
-                raise Exception("Update failed (partition %i, post-crc32 fail)"
-                        % partition_id)
-
+            self.bmc.check_firmware(partition_id)
 
     def config_reset(self):
         """Resets configuration to factory defaults.
@@ -1368,9 +1364,7 @@ class Node(object):
             self._wait_for_transfer(result.tftp_handle_id)
 
         # Verify crc and activate
-        result = self.bmc.check_firmware(partition_id)
-        if ((not hasattr(result, "crc32")) or (result.error != None)):
-            raise AttributeError("Node reported crc32 check failure")
+        self.bmc.check_firmware(partition_id)
         self.bmc.activate_firmware(partition_id)
 
     def _download_image(self, partition):
