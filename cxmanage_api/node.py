@@ -595,6 +595,8 @@ class Node(object):
 
         """
         fwinfo = self.get_firmware_info()
+        num_ubootenv_partitions = len([x for x in fwinfo
+                                       if "UBOOTENV" in x.type])
 
         # Get the new priority
         if (priority == None):
@@ -603,7 +605,7 @@ class Node(object):
         updated_partitions = []
 
         for image in package.images:
-            if (image.type == "UBOOTENV"):
+            if image.type == "UBOOTENV" and num_ubootenv_partitions >= 2:
                 # Get partitions
                 running_part = self._get_partition(fwinfo, image.type, "FIRST")
                 factory_part = self._get_partition(fwinfo, image.type,
@@ -687,10 +689,13 @@ class Node(object):
         
         # Reset ubootenv
         fwinfo = self.get_firmware_info()
-        running_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
-        factory_part = self._get_partition(fwinfo, "UBOOTENV", "SECOND")
-        image = self._download_image(factory_part)
-        self._upload_image(image, running_part)
+        try:
+            running_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
+            factory_part = self._get_partition(fwinfo, "UBOOTENV", "SECOND")
+            image = self._download_image(factory_part)
+            self._upload_image(image, running_part)
+        except NoPartitionError:
+            pass # Only one partition? Don't mess with it!
 
         # Clear SEL
         self.bmc.sel_clear()
@@ -1350,6 +1355,8 @@ class Node(object):
         """Check if this host is ready for an update."""
         info = self.get_versions()
         fwinfo = self.get_firmware_info()
+        num_ubootenv_partitions = len([x for x in fwinfo
+                                       if "UBOOTENV" in x.type])
 
         # Check firmware version
         if package.version and info.firmware_version:
@@ -1394,7 +1401,8 @@ class Node(object):
 
         # Check partitions
         for image in package.images:
-            if ((image.type == "UBOOTENV") or (partition_arg == "BOTH")):
+            if (image.type == "UBOOTENV" and num_ubootenv_partitions >= 2
+                    or partition_arg == "BOTH"):
                 partitions = [self._get_partition(fwinfo, image.type, x)
                         for x in ["FIRST", "SECOND"]]
             else:
