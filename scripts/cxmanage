@@ -46,6 +46,7 @@ from cxmanage.commands.config import config_reset_command, config_boot_command
 from cxmanage.commands.info import info_command
 from cxmanage.commands.ipmitool import ipmitool_command
 from cxmanage.commands.ipdiscover import ipdiscover_command
+from cxmanage.commands.coredump import coredump_command
 
 
 PYIPMI_VERSION = '0.7.1'
@@ -283,6 +284,23 @@ def build_parser():
 
     parser.add_argument('hostname',
             help='nodes to operate on (see examples below)')
+
+    # Coredump command
+    coredump = subparsers.add_parser('coredump', help='Get all data from each node')
+    coredump.add_argument('sensor_name', help='Sensor name to read',
+            nargs='?', default='')
+    coredump.add_argument('-A', '--aggressive', action='store_true',
+            help='discover IPs aggressively')
+    coredump.add_argument('-U', '--server-user', type=str, default='user1',
+            metavar='USER', help='Server-side Linux username')
+    coredump.add_argument('-P', '--server-password', type=str,
+            default='1Password', metavar='PASSWORD',
+            help='Server-side Linux password')
+    coredump.add_argument('-6', '--ipv6', action='store_true',
+            help='Discover IPv6 addresses')
+    coredump.add_argument('-I', '--interface', type=str, default=None,
+            help='Network interface to check')
+    coredump.set_defaults(func=coredump_command)
 
     return parser
 
