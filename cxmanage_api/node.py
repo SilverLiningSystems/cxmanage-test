@@ -314,6 +314,9 @@ class Node(object):
             else:
                 raise Exception("Reset timed out")
 
+    def get_sel(self):
+        return self.bmc.sel_list()
+
     def get_sensors(self, search=""):
         """Get a list of sensor objects that match search criteria.
 

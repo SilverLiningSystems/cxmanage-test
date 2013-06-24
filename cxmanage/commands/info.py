@@ -28,7 +28,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
+from cxmanage import get_components, get_tftp, get_nodes, get_node_strings
+from cxmanage import run_command
 
 
 def info_command(args):
@@ -41,16 +42,7 @@ def info_command(args):
 
 def info_basic_command(args):
     """Print basic info"""
-    components = [
-        ("ecme_version", "ECME version"),
-        ("cdb_version", "CDB version"),
-        ("stage2_version", "Stage2boot version"),
-        ("bootlog_version", "Bootlog version"),
-        ("a9boot_version", "A9boot version"),
-        ("uboot_version", "Uboot version"),
-        ("ubootenv_version", "Ubootenv version"),
-        ("dtb_version", "DTB version")
-    ]
+    components = get_components()
 
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
