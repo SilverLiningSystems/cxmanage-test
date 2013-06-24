@@ -45,9 +45,8 @@ from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
-        NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
-        PriorityIncrementError, NoPartitionError, TransferFailure, \
-        ImageSizeError, PartitionInUseError
+        SocmanVersionError, FirmwareConfigError, PriorityIncrementError, \
+        NoPartitionError, TransferFailure, ImageSizeError, PartitionInUseError
 
 
 class Node(object):
@@ -495,14 +494,11 @@ class Node(object):
         :return: Returns a list of FWInfo objects for each
         :rtype: list
 
-        :raises NoFirmwareInfoError: If no fw info exists for any partition.
         :raises IpmiError: If errors in the command occur with BMC communication.
 
         """
         fwinfo = [x for x in self.bmc.get_firmware_info()
                   if hasattr(x, "partition")]
-        if (len(fwinfo) == 0):
-            raise NoFirmwareInfoError("Failed to retrieve firmware info")
 
         # Clean up the fwinfo results
         for entry in fwinfo:
@@ -548,7 +544,6 @@ class Node(object):
         :return: Returns a list of FWInfo objects for each
         :rtype: list
 
-        :raises NoFirmwareInfoError: If no fw info exists for any partition.
         :raises IpmiError: If errors in the command occur with BMC communication.
 
         """
