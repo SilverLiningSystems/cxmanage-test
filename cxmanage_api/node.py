@@ -1403,7 +1403,9 @@ class Node(object):
                     raise PartitionInUseError(
                             "Can't upload to a CDB/BOOT_LOG partition that's in use")
 
-        return True
+        # Try a TFTP download. Would try an upload too, but nowhere to put it.
+        partition = self._get_partition(fwinfo, "SOC_ELF", "FIRST")
+        self._download_image(partition)
 
     def _get_next_priority(self, fwinfo, package):
         """ Get the next priority """
