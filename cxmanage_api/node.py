@@ -674,13 +674,10 @@ class Node(object):
         >>> node.config_reset()
 
         :raises IpmiError: If errors in the command occur with BMC communication.
-        :raises Exception: If there are errors within the command response.
 
         """
         # Reset CDB
         result = self.bmc.reset_firmware()
-        if (hasattr(result, "error")):
-            raise Exception(result.error)
         
         # Reset ubootenv
         fwinfo = self.get_firmware_info()
@@ -1292,8 +1289,6 @@ class Node(object):
             self.tftp.put_file(filename, basename)
             result = self.bmc.update_firmware(basename, partition_id,
                     image.type, self.tftp_address)
-            if (not hasattr(result, "tftp_handle_id")):
-                raise AttributeError("Failed to start firmware upload")
             self._wait_for_transfer(result.tftp_handle_id)
 
         # Verify crc and activate
@@ -1318,8 +1313,6 @@ class Node(object):
             # Fall back and use TFTP server
             result = self.bmc.retrieve_firmware(basename, partition_id,
                     image_type, self.tftp_address)
-            if (not hasattr(result, "tftp_handle_id")):
-                raise AttributeError("Failed to start firmware download")
             self._wait_for_transfer(result.tftp_handle_id)
             self.tftp.get_file(basename, filename)
 
@@ -1331,17 +1324,12 @@ class Node(object):
         """Wait for a firmware transfer to finish."""
         deadline = time.time() + 180
         result = self.bmc.get_firmware_status(handle)
-        if (not hasattr(result, "status")):
-            raise AttributeError('Failed to retrieve firmware transfer status')
 
         while (result.status == "In progress"):
             if (time.time() >= deadline):
                 raise TimeoutError("Transfer timed out after 3 minutes")
             time.sleep(1)
             result = self.bmc.get_firmware_status(handle)
-            if (not hasattr(result, "status")):
-                raise AttributeError(
-                        "Failed to retrieve firmware transfer status")
 
         if (result.status != "Complete"):
             raise TransferFailure("Node reported TFTP transfer failure")
