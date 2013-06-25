@@ -28,8 +28,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_components, get_tftp, get_nodes, get_node_strings
-from cxmanage import run_command
+from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
+from cxmanage import COMPONENTS
 
 
 def info_command(args):
@@ -42,7 +42,7 @@ def info_command(args):
 
 def info_basic_command(args):
     """Print basic info"""
-    components = get_components()
+    components = COMPONENTS
 
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)

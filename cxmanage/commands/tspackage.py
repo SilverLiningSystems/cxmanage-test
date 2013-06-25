@@ -9,11 +9,13 @@ import shutil
 import tarfile
 import tempfile
 
-from cxmanage import get_tftp, get_nodes, run_command, get_components
+from cxmanage import get_tftp, get_nodes, run_command
+from cxmanage import COMPONENTS
 
 
 def tspackage_command(args):
-    """ Get information pertaining to each node. This includes:
+    """Get information pertaining to each node.
+    This includes:
     Version info (like cxmanage info)
     MAC addresses
     Sensor readings
@@ -32,7 +34,6 @@ def tspackage_command(args):
     ~/virtual_testenv/workspace/cx_manage_util/scripts/cxmanage
 
     """
-
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
@@ -84,18 +85,16 @@ def tspackage_command(args):
     # The original files are already archived, so we can delete them.
     shutil.rmtree(temp_dir)
 
-    return 0
-
 
 def write_version_info(args, nodes):
-    """ Write the version info (like cxmanage info) for each node
+    """Write the version info (like cxmanage info) for each node
     to their respective files.
 
     """
     info_results, _ = run_command(args, nodes, "get_versions")
 
     # This will be used when writing version info to file
-    components = get_components()
+    components = COMPONENTS
 
     for node in nodes:
         lines = []  # The lines of text to write to file
@@ -103,8 +102,8 @@ def write_version_info(args, nodes):
         # Since this is the first line of the file, we don't need a \n
         write_to_file(
             node,
-            "[ Version Info for Node " + str(node.node_id) + " ]",
-            False
+            "[ Version Info for Node %d ]" % node.node_id,
+            add_newlines=False
         )
 
         lines.append("ECME IP Address    : %s" % node.ip_address)
@@ -130,7 +129,7 @@ def write_version_info(args, nodes):
 
 
 def write_mac_addrs(args, nodes):
-    """ Write the MAC addresses for each node to their respective files. """
+    """Write the MAC addresses for each node to their respective files."""
     mac_addr_results, _ = run_command(
         args,
         nodes,
@@ -140,7 +139,7 @@ def write_mac_addrs(args, nodes):
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ MAC Addresses for Node " + str(node.node_id) + " ]")
+        lines.append("\n[ MAC Addresses for Node %d ]" % node.node_id)
 
         if node in mac_addr_results:
             for port in mac_addr_results[node][node.node_id]:
@@ -151,12 +150,12 @@ def write_mac_addrs(args, nodes):
                     )
         else:
             lines.append("\nWARNING: No MAC addresses found!")
+
         write_to_file(node, lines)
 
 
 def write_sensor_info(args, nodes):
-    """ Write sensor information for each node to their respective files. """
-
+    """Write sensor information for each node to their respective files."""
     args.sensor_name = ""
 
     results, _ = run_command(args, nodes, "get_sensors",
@@ -166,7 +165,7 @@ def write_sensor_info(args, nodes):
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ Sensors for Node " + str(node.node_id) + " ]")
+        lines.append("\n[ Sensors for Node %d ]" % node.node_id)
 
         if node in results:
             for sensor_name, sensor in results[node].iteritems():
@@ -187,16 +186,15 @@ def write_sensor_info(args, nodes):
         for sensor_name, readings in sensors.iteritems():
             for reading_node, reading, suffix in readings:
                 if reading_node.ip_address == node.ip_address:
-                    lines.append(
-                        "%s: %.2f %s" %
-                        (sensor_name, reading, suffix)
-                    )
+                    left_side = "{:<18}".format(sensor_name)
+                    right_side = ": %.2f %s" % (reading, suffix)
+                    lines.append(left_side + right_side)
 
         write_to_file(node, lines)
 
 
 def write_fwinfo(args, nodes):
-    """ Write information about each node's firware partitions
+    """Write information about each node's firware partitions
     to its respective file.
 
     """
@@ -205,7 +203,7 @@ def write_fwinfo(args, nodes):
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ Firmware Info for Node " + str(node.node_id) + " ]")
+        lines.append("\n[ Firmware Info for Node %d ]" % node.node_id)
 
         if node in results:
             first_partition = True  # The first partiton doesn't need \n
@@ -230,13 +228,13 @@ def write_fwinfo(args, nodes):
 
 
 def write_boot_order(args, nodes):
-    """ Write the boot order of each node to their respective files. """
+    """Write the boot order of each node to their respective files."""
     results, _ = run_command(args, nodes, "get_boot_order")
 
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ Boot Order for Node " + str(node.node_id) + " ]")
+        lines.append("\n[ Boot Order for Node %d ]" % node.node_id)
 
         if node in results:
             lines.append(", ".join(results[node]))
@@ -247,15 +245,13 @@ def write_boot_order(args, nodes):
 
 
 def write_sel(args, nodes):
-    """ Write the SEL for each node to their respective files. """
+    """Write the SEL for each node to their respective files."""
     results, _ = run_command(args, nodes, "get_sel")
 
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append(
-            "\n[ System Event Log for Node " + str(node.node_id) + " ]"
-        )
+        lines.append("\n[ System Event Log for Node %d ]" % node.node_id)
 
         try:
             if node in results:
@@ -271,13 +267,13 @@ def write_sel(args, nodes):
 
 
 def write_depth_chart(args, nodes):
-    """ Write the depth chart for each node to their respective files. """
+    """Write the depth chart for each node to their respective files."""
     depth_results, _ = run_command(args, nodes, "get_depth_chart")
 
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ Depth Chart for Node " + str(node.node_id) + " ]")
+        lines.append("\n[ Depth Chart for Node %d ]" % node.node_id)
 
         if node in depth_results:
             depth_chart = depth_results[node]
@@ -297,7 +293,7 @@ def write_depth_chart(args, nodes):
                         for entry in subchart[subkey]:
                             lines.append(
                                 "  " + str(subkey) +
-                                " : " + str(entry)
+                                "   : " + str(entry)
                             )
 
         else:
@@ -307,14 +303,13 @@ def write_depth_chart(args, nodes):
 
 
 def write_routing_table(args, nodes):
-    """ Write the routing table for each node to their respective files. """
-    routing_results, _ = run_command(
-        args, nodes, "get_routing_table")
+    """Write the routing table for each node to their respective files."""
+    routing_results, _ = run_command(args, nodes, "get_routing_table")
 
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ Routing Table for Node " + str(node.node_id) + " ]")
+        lines.append("\n[ Routing Table for Node %d ]" % node.node_id)
 
         if node in routing_results:
             table = routing_results[node]
@@ -327,7 +322,7 @@ def write_routing_table(args, nodes):
 
 
 def write_to_file(node, to_write, add_newlines=True):
-    """ Append to_write to an info file for every node in nodes.
+    """Append to_write to an info file for every node in nodes.
 
     :param node: Node object to write about
     :type node: Node object
@@ -339,7 +334,6 @@ def write_to_file(node, to_write, add_newlines=True):
     :type add_newlines: bool
 
     """
-
     with open("node" + str(node.node_id) + ".txt", 'a') as node_file:
         if add_newlines:
             # join() doesn't add a newline before the first item
@@ -350,7 +344,7 @@ def write_to_file(node, to_write, add_newlines=True):
 
 
 def archive(directory_to_archive, destination):
-    """ Creates a .tar containing everything in the directory_to_archive.
+    """Creates a .tar containing everything in the directory_to_archive.
     The .tar is saved to destination with the same name as the original
     directory_to_archive, but with .tar appended.
 
@@ -361,7 +355,6 @@ def archive(directory_to_archive, destination):
     :type destination: string
 
     """
-
     os.chdir(os.path.dirname(directory_to_archive))
 
     tar_name = os.path.basename(directory_to_archive) + ".tar"

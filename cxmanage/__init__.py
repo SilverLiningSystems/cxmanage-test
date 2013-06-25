@@ -324,17 +324,14 @@ def _print_command_status(tasks, counter):
     sys.stdout.flush()
 
 
-def get_components():
-    """ Return the components list needed for ipinfo. """
-    components = [
-        ("ecme_version", "ECME version"),
-        ("cdb_version", "CDB version"),
-        ("stage2_version", "Stage2boot version"),
-        ("bootlog_version", "Bootlog version"),
-        ("a9boot_version", "A9boot version"),
-        ("uboot_version", "Uboot version"),
-        ("ubootenv_version", "Ubootenv version"),
-        ("dtb_version", "DTB version")
-    ]
-
-    return components
+# These are needed for ipinfo and whenever version information is printed
+COMPONENTS = [
+    ("ecme_version", "ECME version"),
+    ("cdb_version", "CDB version"),
+    ("stage2_version", "Stage2boot version"),
+    ("bootlog_version", "Bootlog version"),
+    ("a9boot_version", "A9boot version"),
+    ("uboot_version", "Uboot version"),
+    ("ubootenv_version", "Ubootenv version"),
+    ("dtb_version", "DTB version")
+]

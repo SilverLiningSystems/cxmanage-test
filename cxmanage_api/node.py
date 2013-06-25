@@ -315,6 +315,11 @@ class Node(object):
                 raise Exception("Reset timed out")
 
     def get_sel(self):
+        """Get the system event log for this node.
+
+        :returns: The node's system event log
+        :rtype: string
+        """
         return self.bmc.sel_list()
 
     def get_sensors(self, search=""):
