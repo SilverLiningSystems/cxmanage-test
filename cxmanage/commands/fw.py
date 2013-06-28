@@ -55,7 +55,8 @@ def fwupdate_command(args):
             print "Updating firmware..."
 
         results, errors = run_command(args, nodes, "update_firmware", package,
-                args.partition, args.priority)
+                args.partition, args.priority, args.no_log,
+                args.log_directory)
         if errors:
             print "ERROR: Firmware update failed."
             return True

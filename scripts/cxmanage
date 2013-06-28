@@ -196,6 +196,13 @@ def build_parser():
                 'NEWEST',
                 'INACTIVE'
             ]))
+    fwupdate.add_argument('--no_log',
+        help='Do NOT save a record of the firmware update to file(s).',
+        action='store_true')
+    fwupdate.add_argument('--log_directory',
+        help='Save firmware update logs to the given directory',
+        default='fwupdate_logs')
+
     simg_args = fwupdate.add_mutually_exclusive_group()
     simg_args.add_argument('--force-simg',
             help='Force addition of SIMG header',
