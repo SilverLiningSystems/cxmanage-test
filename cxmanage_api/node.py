@@ -581,7 +581,7 @@ class Node(object):
                 NoPartitionError, ImageSizeError, PartitionInUseError):
             return False
 
-    def update_firmware(self, package, save_to, partition_arg="INACTIVE",
+    def update_firmware(self, package, partition_arg="INACTIVE",
                           priority=None):
         """ Update firmware on this target.
 
@@ -593,8 +593,6 @@ class Node(object):
 
         :param  package: Firmware package to deploy.
         :type package: `FirmwarePackage <firmware_package.html>`_
-        :param save_to: Path to the directory logs should be saved to
-        :type save_to: string
         :param partition_arg: Partition to upgrade to.
         :type partition_arg: string
 
@@ -606,16 +604,20 @@ class Node(object):
         num_ubootenv_partitions = len([x for x in fwinfo
                                        if "UBOOTENV" in x.type])
 
-         
-        new_filename = "node%d_fwupdate.log" % self.node_id
-        new_filepath = os.path.join(save_to, new_filename)
+        new_directory = "~/.cxmanage/logs/%s" % self.ip_address
+        new_directory = os.path.expanduser(new_directory)
+        if not os.path.exists(new_directory):
+            os.makedirs(new_directory)
+
+        timestamp = time.strftime("%Y%m%d%H%M%S")
+        new_filename = "%s-fwupdate.log" % timestamp
+        new_filepath = os.path.join(new_directory, new_filename)
 
         logger = loggers.FileLogger(new_filepath)
 
         logger.info(
             "Firmware Update Log for Node %d" % self.node_id
         )
-        logger.info(time.strftime("%m/%d/%Y  %H:%M:%S"))
         logger.info("ECME IP address: " + self.ip_address)
 
         version_info = self.get_versions()
