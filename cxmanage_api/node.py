@@ -31,10 +31,8 @@
 
 import os
 import re
-import sys
 import time
 import shutil
-import logging
 import tempfile
 import subprocess
 
@@ -43,7 +41,7 @@ from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC as BMC
 from tftpy.TftpShared import TftpException
 
-from cxmanage_api.filelogger import FileLogger
+from cxmanage_api import loggers
 from cxmanage_api import temp_file
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.image import Image as IMAGE
@@ -612,26 +610,25 @@ class Node(object):
         new_filename = "node%d_fwupdate.log" % self.node_id
         new_filepath = os.path.join(save_to, new_filename)
 
-        logger = FileLogger(new_filepath)
+        logger = loggers.FileLogger(new_filepath)
 
-        logger.log(
-            "Firmware Update Log for Node %d" % self.node_id,
-            add_newlines=False
+        logger.info(
+            "Firmware Update Log for Node %d" % self.node_id
         )
-        logger.log(time.strftime("%m/%d/%Y  %H:%M:%S"))
-        logger.log("ECME IP address: " + self.ip_address)
+        logger.info(time.strftime("%m/%d/%Y  %H:%M:%S"))
+        logger.info("ECME IP address: " + self.ip_address)
 
         version_info = self.get_versions()
-        logger.log(
+        logger.info(
             "\nOld firmware version: " + \
             version_info.firmware_version)
             
         if package.version:
-            logger.log("New firmware version: " + package.version)
+            logger.info("New firmware version: " + package.version)
         else:
-            logger.log("New firmware version name unavailable.")
+            logger.info("New firmware version name unavailable.")
             
-        logger.log(
+        logger.info(
             "\n[ Pre-Update Firmware Info for Node %d ]" % 
             self.node_id
         )
@@ -639,7 +636,7 @@ class Node(object):
         results = self.get_firmware_info()
 
         for partition in results:
-            logger.log("\nPartition : %s" % partition.partition)
+            logger.info("\nPartition : %s" % partition.partition)
             info_string = "Type      : %s" % partition.type + \
             "\nOffset    : %s" % partition.offset + \
             "\nSize      : %s" % partition.size + \
@@ -648,18 +645,18 @@ class Node(object):
             "\nFlags     : %s" % partition.flags + \
             "\nVersion   : %s" % partition.version + \
             "\nIn Use    : %s" % partition.in_use
-            logger.log(info_string)
+            logger.info(info_string)
 
         # Get the new priority
         if (priority == None):
             priority = self._get_next_priority(fwinfo, package)
 
-        logger.log(
+        logger.info(
             "\nPriority: " + str(priority)
         )
 
         images_to_upload = len(package.images)
-        logger.log(
+        logger.info(
             "package.images: Images to upload: %d" % images_to_upload 
         )
 
@@ -667,13 +664,13 @@ class Node(object):
 
         image_uploading = 1
         for image in package.images:
-            logger.log(
+            logger.info(
                 "\nUploading image %d of %d" % 
                 (image_uploading, images_to_upload)
             )
             
             if image.type == "UBOOTENV" and num_ubootenv_partitions >= 2:
-                logger.log(
+                logger.info(
                    "Trying ubootenv for image %d..." % image_uploading
                 )
 
@@ -683,7 +680,7 @@ class Node(object):
                         "SECOND")
 
                 # Extra \n's here for ease of reading output
-                logger.log(
+                logger.info(
                     "\nFirst ('FIRST') partition:\n" + \
                     str(running_part) + \
                     "\n\nSecond ('FACTORY') partition:\n" + \
@@ -694,7 +691,7 @@ class Node(object):
                 self._upload_image(image, factory_part, priority)
     
                 # Extra \n for output formatting
-                logger.log(
+                logger.info(
                     "\nDone uploading factory image"
                 )
 
@@ -703,7 +700,7 @@ class Node(object):
                 old_ubootenv = self.ubootenv(open(
                                         old_ubootenv_image.filename).read())
                 
-                logger.log( 
+                logger.info( 
                    "Done getting old ubootenv image"
                 )
 
@@ -711,7 +708,7 @@ class Node(object):
                     ubootenv = self.ubootenv(open(image.filename).read())
                     ubootenv.set_boot_order(old_ubootenv.get_boot_order())
 
-                    logger.log(
+                    logger.info(
                         "Set boot order to " + old_ubootenv.get_boot_order()
                     )
 
@@ -724,7 +721,7 @@ class Node(object):
                     self._upload_image(ubootenv_image, running_part,
                             priority)
 
-                    logger.log(
+                    logger.info(
                         "Done uploading ubootenv image to first " + \
                         "partition ('running partition')"
                     )
@@ -733,7 +730,7 @@ class Node(object):
 
                 updated_partitions += [running_part, factory_part]
             else:
-                logger.log(
+                logger.info(
                    "Using Non-ubootenv for image %d..." %
                    image_uploading
                 )
@@ -752,7 +749,7 @@ class Node(object):
 
                 updated_partitions += partitions
             
-            logger.log(
+            logger.info(
                 "Done uploading image %d of %d" %
                 (image_uploading, images_to_upload)
             )
@@ -761,7 +758,7 @@ class Node(object):
         if package.version:
             self.bmc.set_firmware_version(package.version)
 
-            logger.log("") # For readability
+            logger.info("") # For readability
 
         # Post verify
         fwinfo = self.get_firmware_info()
@@ -770,7 +767,7 @@ class Node(object):
             new_partition = fwinfo[partition_id]
 
             if new_partition.type != old_partition.type:
-                logger.log(
+                logger.error(
                     "Update failed (partition %i, type changed)"
                     % partition_id
                 )
@@ -778,7 +775,7 @@ class Node(object):
                         % partition_id)
 
             if int(new_partition.priority, 16) != priority:
-                logger.log(
+                logger.error(
                     "Update failed (partition %i, wrong priority)"
                     % partition_id
                 )
@@ -786,7 +783,7 @@ class Node(object):
                         % partition_id)
 
             if int(new_partition.flags, 16) & 2 != 0:
-                logger.log(
+                logger.error(
                     "Update failed (partition %i, not activated)"
                     % partition_id
                 )
@@ -794,11 +791,11 @@ class Node(object):
                         % partition_id)
 
             self.bmc.check_firmware(partition_id)
-            logger.log(
+            logger.info(
                 "Check complete for partition %d" % partition_id
             )
 
-        logger.log(
+        logger.info(
             "\nDone updating firmware."
         )
 
@@ -1325,19 +1322,6 @@ class Node(object):
             uplink=uplink,
             iface=iface
         )
-
-
-    def _append_to_file(self, filename, string_to_append, add_newline=True):
-        """Appends string_to_append to filename.
-        If add_newline is true, a \n will be added to the beginning of
-        string_to_append.
-
-        """
-        with open(filename, "a") as open_file:
-            if add_newline == True:
-                open_file.write("\n" + string_to_append)
-            else:
-                open_file.write(string_to_append)
 
 
     def _run_fabric_command(self, function_name, **kwargs):
