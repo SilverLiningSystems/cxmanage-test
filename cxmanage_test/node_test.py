@@ -61,6 +61,12 @@ class NodeTest(unittest.TestCase):
                 ipretriever=DummyIPRetriever, verbose=True)
                 for ip in ADDRESSES]
 
+        # Give each node a node_id
+        count = 0
+        for node in self.nodes:
+            node.node_id = count
+            count = count + 1
+
         # Set up an internal server
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage_node_test-")
 
