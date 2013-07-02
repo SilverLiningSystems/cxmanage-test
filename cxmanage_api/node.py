@@ -600,9 +600,6 @@ class Node(object):
                                         changed.
 
         """
-        fwinfo = self.get_firmware_info()
-        num_ubootenv_partitions = len([x for x in fwinfo
-                                       if "UBOOTENV" in x.type])
 
         new_directory = "~/.cxmanage/logs/%s" % self.ip_address
         new_directory = os.path.expanduser(new_directory)
@@ -628,16 +625,18 @@ class Node(object):
         if package.version:
             logger.info("New firmware version: " + package.version)
         else:
-            logger.info("New firmware version name unavailable.")
-            
+            logger.warn("New firmware version name unavailable.")
+           
         logger.info(
             "\n[ Pre-Update Firmware Info for Node %d ]" % 
             self.node_id
         )
 
-        results = self.get_firmware_info()
+        fwinfo = self.get_firmware_info()
+        num_ubootenv_partitions = len([x for x in fwinfo
+                                       if "UBOOTENV" in x.type])
 
-        for partition in results:
+        for partition in fwinfo:
             logger.info("\nPartition : %s" % partition.partition)
             info_string = "Type      : %s" % partition.type + \
             "\nOffset    : %s" % partition.offset + \
