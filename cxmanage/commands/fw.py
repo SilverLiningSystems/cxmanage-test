@@ -28,6 +28,11 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+
+import os
+import sys
+import time
+
 from pkg_resources import parse_version
 
 from cxmanage import get_tftp, get_nodes, get_node_strings, run_command, \
@@ -54,9 +59,19 @@ def fwupdate_command(args):
         if not args.quiet:
             print "Updating firmware..."
 
+        # Create a directory for the firmware update logs
+        timestamp = time.strftime("%Y%m%d%H%M%S")
+        dir_name = "fwupdate_fabric_%s_" % nodes[0].ip_address
+        dir_name = dir_name + timestamp
+        dir_path = os.path.expanduser(os.path.join("~/", ".cxmanage", dir_name))
+
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        args.dir_path = dir_path
+
         results, errors = run_command(args, nodes, "update_firmware", package,
-                args.partition, args.priority, args.no_log,
-                args.log_directory)
+                args.dir_path, args.partition, args.priority)
         if errors:
             print "ERROR: Firmware update failed."
             return True

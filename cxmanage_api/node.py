@@ -31,8 +31,10 @@
 
 import os
 import re
+import sys
 import time
 import shutil
+import logging
 import tempfile
 import subprocess
 
@@ -41,6 +43,7 @@ from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC as BMC
 from tftpy.TftpShared import TftpException
 
+from cxmanage_api.filelogger import FileLogger
 from cxmanage_api import temp_file
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.image import Image as IMAGE
@@ -580,9 +583,8 @@ class Node(object):
                 NoPartitionError, ImageSizeError, PartitionInUseError):
             return False
 
-    def update_firmware(self, package, partition_arg="INACTIVE",
-                          priority=None, no_log=False,
-                          log_directory=""):
+    def update_firmware(self, package, save_to, partition_arg="INACTIVE",
+                          priority=None):
         """ Update firmware on this target.
 
         >>> from cxmanage_api.firmware_package import FirmwarePackage
@@ -593,10 +595,10 @@ class Node(object):
 
         :param  package: Firmware package to deploy.
         :type package: `FirmwarePackage <firmware_package.html>`_
+        :param save_to: Path to the directory logs should be saved to
+        :type save_to: string
         :param partition_arg: Partition to upgrade to.
         :type partition_arg: string
-        :param save_log: True to save a log of what happens, False otherwise
-        :type save_log: bool
 
         :raises PriorityIncrementError: If the SIMG Header priority cannot be
                                         changed.
@@ -606,155 +608,112 @@ class Node(object):
         num_ubootenv_partitions = len([x for x in fwinfo
                                        if "UBOOTENV" in x.type])
 
-        save_log = not no_log
-        if save_log == True:
-            # Make a temporary file to hold the log
-            temp_dir = tempfile.mkdtemp()
-            _, filename = tempfile.mkstemp(dir=temp_dir)
-            logfile = open(filename, "a")            
+         
+        new_filename = "node%d_fwupdate.log" % self.node_id
+        new_filepath = os.path.join(save_to, new_filename)
 
-            title = "Firmware Update Log for Node %d" % self.node_id
-            self._append_to_file(
-                filename,
-                title,
-                add_newline=False
-            )
+        logger = FileLogger(new_filepath)
 
-            # The additional \n's here are intentional.
-            start_info = time.strftime("%m/%d/%Y  %H:%M:%S")
-            start_info = start_info + \
-                ("\nECME IP address: " + self.ip_address)
+        logger.log(
+            "Firmware Update Log for Node %d" % self.node_id,
+            add_newlines=False
+        )
+        logger.log(time.strftime("%m/%d/%Y  %H:%M:%S"))
+        logger.log("ECME IP address: " + self.ip_address)
+
+        version_info = self.get_versions()
+        logger.log(
+            "\nOld firmware version: " + \
+            version_info.firmware_version)
             
-            version_info = self.get_versions()
-            start_info = start_info + "\nOld firmware version: " + \
-                version_info.firmware_version
+        if package.version:
+            logger.log("New firmware version: " + package.version)
+        else:
+            logger.log("New firmware version name unavailable.")
             
-            if package.version:
-                start_info = start_info + \
-                    "\nNew firmware version: " + package.version
-            else:
-                start_info = start_info + \
-                    "\nNew firmware version name unavailable."
-                
-            start_info = start_info + \
-                ("\n\n[ Pre-Update Firmware Info for Node %d ]" % 
-                 self.node_id)
+        logger.log(
+            "\n[ Pre-Update Firmware Info for Node %d ]" % 
+            self.node_id
+        )
 
-            self._append_to_file(
-                filename,
-                start_info 
-            )
+        results = self.get_firmware_info()
 
-            results = self.get_firmware_info()
-
-            first_partition = True  # \n's are intentional
-            for partition in results:
-                if first_partition:
-                    self._append_to_file(
-                        filename,
-                        "\nPartition : %s" % partition.partition,
-                        add_newline=True
-                    )
-                    first_partition = False
-                else:
-                    self._append_to_file(
-                        filename,
-                        "\nPartition : %s" % partition.partition)
-                info_string = "Type      : %s" % partition.type + \
-                "\nOffset    : %s" % partition.offset + \
-                "\nSize      : %s" % partition.size + \
-                "\nPriority  : %s" % partition.priority + \
-                "\nDaddr     : %s" % partition.daddr + \
-                "\nFlags     : %s" % partition.flags + \
-                "\nVersion   : %s" % partition.version + \
-                "\nIn Use    : %s" % partition.in_use
-                self._append_to_file(
-                    filename,
-                    info_string
-                )
+        for partition in results:
+            logger.log("\nPartition : %s" % partition.partition)
+            info_string = "Type      : %s" % partition.type + \
+            "\nOffset    : %s" % partition.offset + \
+            "\nSize      : %s" % partition.size + \
+            "\nPriority  : %s" % partition.priority + \
+            "\nDaddr     : %s" % partition.daddr + \
+            "\nFlags     : %s" % partition.flags + \
+            "\nVersion   : %s" % partition.version + \
+            "\nIn Use    : %s" % partition.in_use
+            logger.log(info_string)
 
         # Get the new priority
         if (priority == None):
             priority = self._get_next_priority(fwinfo, package)
 
-        if save_log == True:
-            self._append_to_file(
-                filename, 
-                "\nPriority: " + str(priority)
+        logger.log(
+            "\nPriority: " + str(priority)
         )
 
-
-        if save_log == True:
-            images_to_upload = len(package.images)
-            self._append_to_file(
-                filename,
-                "package.images: Images to upload: %d" % images_to_upload 
+        images_to_upload = len(package.images)
+        logger.log(
+            "package.images: Images to upload: %d" % images_to_upload 
         )
 
         updated_partitions = []
 
         image_uploading = 1
         for image in package.images:
-            if save_log == True:
-                # Extra \n here is intentional.
-                self._append_to_file(
-                    filename,
-                    "\nUploading image %d of %d" % 
-                    (image_uploading, images_to_upload)
+            logger.log(
+                "\nUploading image %d of %d" % 
+                (image_uploading, images_to_upload)
             )
             
             if image.type == "UBOOTENV" and num_ubootenv_partitions >= 2:
-                if save_log == True:
-                    self._append_to_file(
-                        filename, 
-                       "Trying ubootenv for image %d..." % image_uploading
-                    )
+                logger.log(
+                   "Trying ubootenv for image %d..." % image_uploading
+                )
 
                 # Get partitions
                 running_part = self._get_partition(fwinfo, image.type, "FIRST")
                 factory_part = self._get_partition(fwinfo, image.type,
                         "SECOND")
 
-                if save_log == True:
-                    # Extra \n's here for ease of reading output
-                    self._append_to_file(
-                        filename, 
-                        "\nFirst ('FIRST') partition:\n" + \
-                        str(running_part) + \
-                        "\n\nSecond ('FACTORY') partition:\n" + \
-                        str(factory_part)
-                    )
+                # Extra \n's here for ease of reading output
+                logger.log(
+                    "\nFirst ('FIRST') partition:\n" + \
+                    str(running_part) + \
+                    "\n\nSecond ('FACTORY') partition:\n" + \
+                    str(factory_part)
+                )
                 
                 # Update factory ubootenv
                 self._upload_image(image, factory_part, priority)
     
-                if save_log == True:
-                    # Extra \n for output formatting
-                    self._append_to_file(
-                        filename,                 
-                        "\nDone uploading factory image"
-                    )
+                # Extra \n for output formatting
+                logger.log(
+                    "\nDone uploading factory image"
+                )
 
                 # Update running ubootenv
                 old_ubootenv_image = self._download_image(running_part)
                 old_ubootenv = self.ubootenv(open(
                                         old_ubootenv_image.filename).read())
                 
-                if save_log == True:
-                    self._append_to_file(
-                        filename, 
-                        "Done getting old ubootenv image"
-                    )
+                logger.log( 
+                   "Done getting old ubootenv image"
+                )
 
                 try:
                     ubootenv = self.ubootenv(open(image.filename).read())
                     ubootenv.set_boot_order(old_ubootenv.get_boot_order())
 
-                    if save_log == True:
-                        self._append_to_file(
-                            filename, 
-                            "Set boot order to " + old_ubootenv.get_boot_order()
-                        )
+                    logger.log(
+                        "Set boot order to " + old_ubootenv.get_boot_order()
+                    )
 
                     filename = temp_file()
                     with open(filename, "w") as f:
@@ -765,23 +724,19 @@ class Node(object):
                     self._upload_image(ubootenv_image, running_part,
                             priority)
 
-                    if save_log == True:
-                        self._append_to_file(
-                            filename, 
-                            "Done uploading ubootenv image to first " + \
-                            "partition ('running partition')"
-                        )
+                    logger.log(
+                        "Done uploading ubootenv image to first " + \
+                        "partition ('running partition')"
+                    )
                 except (ValueError, Exception):
                     self._upload_image(image, running_part, priority)
 
                 updated_partitions += [running_part, factory_part]
             else:
-                if save_log == True:
-                    self._append_to_file(
-                        filename, 
-                       "Using Non-ubootenv for image %d..." %
-                       image_uploading
-                    )
+                logger.log(
+                   "Using Non-ubootenv for image %d..." %
+                   image_uploading
+                )
                 # Get the partitions
                 if (partition_arg == "BOTH"):
                     partitions = [self._get_partition(fwinfo, image.type,
@@ -797,23 +752,16 @@ class Node(object):
 
                 updated_partitions += partitions
             
-            if save_log == True:
-                self._append_to_file(
-                    filename,
-                    "Done uploading image %d of %d" %
-                    (image_uploading, images_to_upload)
-                )
-                image_uploading = image_uploading + 1      
+            logger.log(
+                "Done uploading image %d of %d" %
+                (image_uploading, images_to_upload)
+            )
+            image_uploading = image_uploading + 1      
 
         if package.version:
             self.bmc.set_firmware_version(package.version)
 
-            if save_log == True:
-                # For readability
-                self._append_to_file(
-                    filename,
-                    ""
-                )
+            logger.log("") # For readability
 
         # Post verify
         fwinfo = self.get_firmware_info()
@@ -822,59 +770,39 @@ class Node(object):
             new_partition = fwinfo[partition_id]
 
             if new_partition.type != old_partition.type:
-                if save_log == True:
-                    self._append_to_file(
-                        filename, 
-                        "Update failed (partition %i, type changed)"
-                        % partition_id
-                        )
+                logger.log(
+                    "Update failed (partition %i, type changed)"
+                    % partition_id
+                )
                 raise Exception("Update failed (partition %i, type changed)"
                         % partition_id)
 
             if int(new_partition.priority, 16) != priority:
-                if save_log == True:
-                    self._append_to_file(
-                        filename, 
-                            "Update failed (partition %i, wrong priority)"
-                            % partition_id
-                        )
+                logger.log(
+                    "Update failed (partition %i, wrong priority)"
+                    % partition_id
+                )
                 raise Exception("Update failed (partition %i, wrong priority)"
                         % partition_id)
 
             if int(new_partition.flags, 16) & 2 != 0:
-                if save_log == True:
-                    self._append_to_file(
-                        filename,
-                            "Update failed (partition %i, not activated)"
-                            % partition_id
-                    )
+                logger.log(
+                    "Update failed (partition %i, not activated)"
+                    % partition_id
+                )
                 raise Exception("Update failed (partition %i, not activated)"
                         % partition_id)
 
             self.bmc.check_firmware(partition_id)
-            if save_log == True:
-                self._append_to_file(
-                    filename,
-                    "Check complete for partition %d" % partition_id
-                )
-
-        if save_log == True:
-            self._append_to_file(
-                filename,
-                "\nDone updating firmware." # Extra \n intentional
+            logger.log(
+                "Check complete for partition %d" % partition_id
             )
-            logfile.close()
-            
-            if not os.path.isdir(log_directory):
-                os.mkdir(log_directory)
-                
-            new_filename = "node%d_fwupdate.txt" % self.node_id
-            new_path = os.path.join(log_directory, new_filename)
-            shutil.copyfile(filename, new_path)
-            print("\nLog saved to " + new_path)
-            
-            os.remove(filename)
 
+        logger.log(
+            "\nDone updating firmware."
+        )
+
+        print("\nLog saved to " + new_filepath)
 
     def config_reset(self):
         """Resets configuration to factory defaults.
