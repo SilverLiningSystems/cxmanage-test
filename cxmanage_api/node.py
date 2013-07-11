@@ -1097,6 +1097,27 @@ class Node(object):
     def get_link_stats(self, link=0):
         """Gets the linkstats for the link specified.
 
+        >>> node.get_link_stats()
+        {'FS_LC0_BYTE_CNT_0': '0x0',
+         'FS_LC0_BYTE_CNT_1': '0x0',
+         'FS_LC0_CFG_0': '0x1000d07f',
+         'FS_LC0_CFG_1': '0x105f',
+         'FS_LC0_CM_RXDATA_0': '0x0',
+         'FS_LC0_CM_RXDATA_1': '0x0',
+         'FS_LC0_CM_TXDATA_0': '0x82000002',
+         'FS_LC0_CM_TXDATA_1': '0x0',
+         'FS_LC0_PKT_CNT_0': '0x0',
+         'FS_LC0_PKT_CNT_1': '0x0',
+         'FS_LC0_RDRPSCNT': '0x3e791',
+         'FS_LC0_RERRSCNT': '0x0',
+         'FS_LC0_RMCSCNT': '0x173b923',
+         'FS_LC0_RPKTSCNT': '0x0',
+         'FS_LC0_RUCSCNT': '0x43cab',
+         'FS_LC0_SC_STAT': '0x0',
+         'FS_LC0_STATE': '0x1033',
+         'FS_LC0_TDRPSCNT': '0x0',
+         'FS_LC0_TPKTSCNT': '0x1'}
+
         :param link: The link to get stats for (0-4).
         :type link: integer
 
