@@ -829,6 +829,33 @@ class Fabric(object):
     def get_link_stats(self, link=0, async=False):
         """Get the link_stats for each node in the fabric.
 
+        >>> fabric.get_link_stats()
+        {0: {'FS_LC0_BYTE_CNT_0': '0x0',
+          'FS_LC0_BYTE_CNT_1': '0x0',
+          'FS_LC0_CFG_0': '0x1000d07f',
+          'FS_LC0_CFG_1': '0x105f',
+          'FS_LC0_CM_RXDATA_0': '0x0',
+          'FS_LC0_CM_RXDATA_1': '0x0',
+          'FS_LC0_CM_TXDATA_0': '0x82000002',
+          'FS_LC0_CM_TXDATA_1': '0x0',
+          'FS_LC0_PKT_CNT_0': '0x0',
+          'FS_LC0_PKT_CNT_1': '0x0',
+          'FS_LC0_RDRPSCNT': '0x3e89f',
+          'FS_LC0_RERRSCNT': '0x0',
+          'FS_LC0_RMCSCNT': '0x174b9bf',
+          'FS_LC0_RPKTSCNT': '0x0',
+          'FS_LC0_RUCSCNT': '0x43e9b',
+          'FS_LC0_SC_STAT': '0x0',
+          'FS_LC0_STATE': '0x1033',
+          'FS_LC0_TDRPSCNT': '0x0',
+          'FS_LC0_TPKTSCNT': '0x1'},
+         }}
+        >>> #
+        >>> # Output trimmed for brevity ...
+        >>> # The data shown for node 0 is the same type of data presented for each
+        >>> # node in  the fabric.
+        >>> #
+
         :param link: The link to get stats for (0-4).
         :type link: integer
 
@@ -870,6 +897,20 @@ class Fabric(object):
 
     def get_depth_chart(self, async=False):
         """Get the depth_chart for the fabric.
+
+        >>> fabric.get_depth_chart()
+        {0: {1: {'shortest': (0, 0)},
+          2: {'others': [(3, 1)], 'shortest': (0, 0)},
+          3: {'others': [(2, 1)], 'shortest': (0, 0)}},
+         1: {0: {'shortest': (1, 0)},
+          2: {'others': [(3, 2)], 'shortest': (0, 1)},
+          3: {'others': [(2, 2)], 'shortest': (0, 1)}},
+         2: {0: {'others': [(3, 1)], 'shortest': (2, 0)},
+          1: {'shortest': (0, 1)},
+          3: {'others': [(0, 1)], 'shortest': (2, 0)}},
+         3: {0: {'others': [(2, 1)], 'shortest': (3, 0)},
+          1: {'shortest': (0, 1)},
+          2: {'others': [(0, 1)], 'shortest': (3, 0)}}}
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
