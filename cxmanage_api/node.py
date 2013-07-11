@@ -621,14 +621,14 @@ class Node(object):
         logger.info(
             "\nOld firmware version: " + \
             version_info.firmware_version)
-            
+
         if package.version:
             logger.info("New firmware version: " + package.version)
         else:
             logger.warn("New firmware version name unavailable.")
-           
+
         logger.info(
-            "\n[ Pre-Update Firmware Info for Node %d ]" % 
+            "\n[ Pre-Update Firmware Info for Node %d ]" %
             self.node_id
         )
 
@@ -658,7 +658,7 @@ class Node(object):
 
         images_to_upload = len(package.images)
         logger.info(
-            "package.images: Images to upload: %d" % images_to_upload 
+            "package.images: Images to upload: %d" % images_to_upload
         )
 
         updated_partitions = []
@@ -666,10 +666,10 @@ class Node(object):
         image_uploading = 1
         for image in package.images:
             logger.info(
-                "\nUploading image %d of %d" % 
+                "\nUploading image %d of %d" %
                 (image_uploading, images_to_upload)
             )
-            
+
             if image.type == "UBOOTENV" and num_ubootenv_partitions >= 2:
                 logger.info(
                    "Trying ubootenv for image %d..." % image_uploading
@@ -687,10 +687,10 @@ class Node(object):
                     "\n\nSecond ('FACTORY') partition:\n" + \
                     str(factory_part)
                 )
-                
+
                 # Update factory ubootenv
                 self._upload_image(image, factory_part, priority)
-    
+
                 # Extra \n for output formatting
                 logger.info(
                     "\nDone uploading factory image"
@@ -700,8 +700,8 @@ class Node(object):
                 old_ubootenv_image = self._download_image(running_part)
                 old_ubootenv = self.ubootenv(open(
                                         old_ubootenv_image.filename).read())
-                
-                logger.info( 
+
+                logger.info(
                    "Done getting old ubootenv image"
                 )
 
@@ -749,17 +749,17 @@ class Node(object):
                     self._upload_image(image, partition, priority)
 
                 updated_partitions += partitions
-            
+
             logger.info(
                 "Done uploading image %d of %d" %
                 (image_uploading, images_to_upload)
             )
-            image_uploading = image_uploading + 1      
+            image_uploading = image_uploading + 1
 
         if package.version:
             self.bmc.set_firmware_version(package.version)
 
-            logger.info("") # For readability
+            logger.info("")  # For readability
 
         # Post verify
         fwinfo = self.get_firmware_info()
@@ -812,7 +812,7 @@ class Node(object):
         """
         # Reset CDB
         result = self.bmc.reset_firmware()
-        
+
         # Reset ubootenv
         fwinfo = self.get_firmware_info()
         try:
@@ -821,7 +821,7 @@ class Node(object):
             image = self._download_image(factory_part)
             self._upload_image(image, running_part)
         except NoPartitionError:
-            pass # Only one partition? Don't mess with it!
+            pass  # Only one partition? Don't mess with it!
 
         # Clear SEL
         self.bmc.sel_clear()
@@ -1270,7 +1270,7 @@ class Node(object):
         or if sent to a primary node, the linkspeed setting for the
         Profile 0 of the currently active Configuration.
 
-        >>> fabric.get_linkspeed()
+        >>> node.get_linkspeed()
         2.5
 
         :param link: The fabric link number to read the linkspeed for.
@@ -1278,7 +1278,7 @@ class Node(object):
         :param actual: WhetherThe fabric link number to read the linkspeed for.
         :type actual: boolean
 
-        :return: Linkspeed for the fabric..
+        :return: Linkspeed for the fabric.
         :rtype: float
 
         """
@@ -1288,7 +1288,7 @@ class Node(object):
         """Get the uplink a MAC will use when transmitting a packet out of the
         cluster.
 
-        >>> fabric.get_uplink(iface=1)
+        >>> node.get_uplink(iface=1)
         0
 
         :param iface: The interface for the uplink.
@@ -1309,7 +1309,7 @@ class Node(object):
         >>> #
         >>> # Set eth0 to uplink 1 ...
         >>> #
-        >>> fabric.set_uplink(uplink=1,iface=0)
+        >>> node.set_uplink(uplink=1,iface=0)
 
         :param uplink: The uplink to set.
         :type uplink: integer
