@@ -1155,6 +1155,9 @@ class Node(object):
     def get_linkmap(self):
         """Gets the src and destination of each link on a node.
 
+        >>> node.get_linkmap()
+        {1: 2, 3: 1, 4: 3}
+
         :return: Returns a map of link_id->node_id.
         :rtype: dictionary
 
