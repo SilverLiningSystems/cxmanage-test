@@ -1220,6 +1220,11 @@ class Node(object):
         """Gets a table indicating the distance from a given node to all other
         nodes on each fabric link.
 
+        >>> node.get_depth_chart()
+        {1: {'shortest': (0, 0)},
+         2: {'others': [(3, 1)], 'shortest': (0, 0)},
+         3: {'others': [(2, 1)], 'shortest': (0, 0)}}
+
         :return: Returns a map of target->(neighbor, hops),
                                   [other (neighbors,hops)]
         :rtype: dictionary
