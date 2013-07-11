@@ -302,6 +302,18 @@ class Node(object):
     def get_sel(self):
         """Get the system event log for this node.
 
+        >>> node.get_sel()
+        ['1 | 06/21/2013 | 16:13:31 | System Event #0xf4 |',
+         '0 | 06/27/2013 | 20:25:18 | System Boot Initiated #0xf1 | Initiated by power up | Asserted',
+         '1 | 06/27/2013 | 20:25:35 | Watchdog 2 #0xfd | Hard reset | Asserted',
+         '2 | 06/27/2013 | 20:25:18 | System Boot Initiated #0xf1 | Initiated by power up | Asserted',
+         '3 | 06/27/2013 | 21:01:13 | System Event #0xf4 |',
+         ...
+        ]
+        >>> #
+        >>> # Output trimmed for brevity
+        >>> #
+
         :returns: The node's system event log
         :rtype: string
         """
