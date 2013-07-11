@@ -172,6 +172,7 @@ API Docs & Code Examples
     SIMG <simg>
     U-Boot Environment <ubootenv>
     IP Retriever <ip_retriever>
+    Loggers <loggers>
 
 ``Code Examples``
 
