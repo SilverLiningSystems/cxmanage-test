@@ -815,7 +815,7 @@ class Fabric(object):
     def set_uplink(self, uplink=0, iface=0):
         """Set the uplink for an interface to xmit a packet out of the cluster.
 
-        >>> fabric.set_uplink(0,0)
+        >>> fabric.set_uplink(uplink=0,iface=0)
 
         :param uplink: The uplink to set.
         :type uplink: integer
@@ -872,6 +872,9 @@ class Fabric(object):
     def get_linkmap(self, async=False):
         """Get the linkmap for each node in the fabric.
 
+        >>> fabric.get_linkmap()
+        {0: {1: 2, 3: 1, 4: 3}, 1: {3: 0}, 2: {3: 0, 4: 3}, 3: {3: 0, 4: 2}}
+
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
         :type async: boolean
@@ -884,6 +887,12 @@ class Fabric(object):
 
     def get_routing_table(self, async=False):
         """Get the routing_table for the fabric.
+
+        >>> fabric.get_routing_table()
+        {0: {1: [0, 0, 0, 3, 0], 2: [0, 3, 0, 0, 2], 3: [0, 2, 0, 0, 3]},
+         1: {0: [0, 0, 0, 3, 0], 2: [0, 0, 0, 2, 0], 3: [0, 0, 0, 2, 0]},
+         2: {0: [0, 0, 0, 3, 2], 1: [0, 0, 0, 2, 0], 3: [0, 0, 0, 2, 3]},
+         3: {0: [0, 0, 0, 3, 2], 1: [0, 0, 0, 2, 0], 2: [0, 0, 0, 2, 3]}}
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
