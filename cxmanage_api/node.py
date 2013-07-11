@@ -1186,6 +1186,9 @@ class Node(object):
     def get_routing_table(self):
         """Gets the routing table as instantiated in the fabric switch.
 
+        >>> node.get_routing_table()
+        {1: [0, 0, 0, 3, 0], 2: [0, 3, 0, 0, 2], 3: [0, 2, 0, 0, 3]}
+
         :return: Returns a map of node_id->rt_entries.
         :rtype: dictionary
 
