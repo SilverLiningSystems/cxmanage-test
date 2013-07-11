@@ -1024,6 +1024,20 @@ class Node(object):
     def get_fabric_macaddrs(self):
         """Gets what macaddr information THIS node knows about the Fabric.
 
+        >>> node.get_fabric_macaddrs()
+        {0: {0: ['fc:2f:40:ab:cd:cc'],
+          1: ['fc:2f:40:ab:cd:cd'],
+          2: ['fc:2f:40:ab:cd:ce']},
+         1: {0: ['fc:2f:40:3e:66:e0'],
+          1: ['fc:2f:40:3e:66:e1'],
+          2: ['fc:2f:40:3e:66:e2']},
+         2: {0: ['fc:2f:40:fd:37:34'],
+          1: ['fc:2f:40:fd:37:35'],
+          2: ['fc:2f:40:fd:37:36']},
+         3: {0: ['fc:2f:40:0e:4a:74'],
+          1: ['fc:2f:40:0e:4a:75'],
+          2: ['fc:2f:40:0e:4a:76']}}
+
         :return: Returns a map of node_ids->ports->mac_addresses.
         :rtype: dictionary
 
