@@ -77,9 +77,6 @@ class Fabric(object):
         if (not self.task_queue):
             self.task_queue = DEFAULT_TASK_QUEUE
 
-        if (not self._tftp):
-            self._tftp = InternalTftp()
-
     def __eq__(self, other):
         """__eq__() override."""
         return (isinstance(other, Fabric) and self.nodes == other.nodes)
@@ -104,6 +101,9 @@ class Fabric(object):
         :rtype: `Tftp <tftp.html>`_
 
         """
+        if (not self._tftp):
+            self._tftp = InternalTftp()
+
         return self._tftp
 
     @tftp.setter
