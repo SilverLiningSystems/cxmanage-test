@@ -183,10 +183,6 @@ class Fabric(object):
          3: ['fc:2f:40:88:b3:6c', 'fc:2f:40:88:b3:6d', 'fc:2f:40:88:b3:6e']
         }
 
-        :param async: Flag that determines if the command result (dictionary)
-                      is returned or a Task object (can get status, etc.).
-        :type async: boolean
-
         :return: The MAC addresses for each node.
         :rtype: dictionary
 
@@ -777,6 +773,50 @@ class Fabric(object):
         """
         self.primary_node.bmc.fabric_rm_macaddr(nodeid=nodeid, iface=iface,
                 macaddr=macaddr)
+
+    def set_macaddr_base(self, macaddr):
+        """ Set a base MAC address for a custom range.
+
+        >>> fabric.set_macaddr_base("66:55:44:33:22:11")
+
+        :param macaddr: mac address base to use
+        :type macaddr: string
+
+        """
+        self.primary_node.bmc.fabric_config_set_macaddr_base(macaddr=macaddr)
+
+    def get_macaddr_base(self):
+        """ Get the base MAC address for custom ranges.
+
+        >>> fabric.get_macaddr_base()
+        '08:00:00:00:08:5c'
+
+        :return: mac address base
+        :rtype: string
+        """
+        return self.primary_node.bmc.fabric_config_get_macaddr_base()
+
+    def set_macaddr_mask(self, mask):
+        """ Set MAC address mask for a custom range.
+
+        >>> fabric.set_macaddr_mask("ff:ff:ff:ff:ff:00")
+
+        :param macaddr: mac address mask to use
+        :type macaddr: string
+
+        """
+        self.primary_node.bmc.fabric_config_set_macaddr_mask(mask=mask)
+
+    def get_macaddr_mask(self):
+        """ Get the MAC address mask for custom ranges.
+
+        >>> fabric.get_macaddr_mask()
+        '08:00:00:00:08:5c'
+
+        :return: mac address mask
+        :rtype: string
+        """
+        return self.primary_node.bmc.fabric_config_get_macaddr_mask()
 
     def get_linkspeed_policy(self):
         """Get the global linkspeed policy for the fabric. In the partition
