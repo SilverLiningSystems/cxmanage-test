@@ -720,6 +720,7 @@ class Node(object):
                 try:
                     ubootenv = self.ubootenv(open(image.filename).read())
                     ubootenv.set_boot_order(old_ubootenv.get_boot_order())
+                    ubootenv.set_pxe_interface(old_ubootenv.get_pxe_interface())
 
                     logger.info(
                         "Set boot order to " + old_ubootenv.get_boot_order()
