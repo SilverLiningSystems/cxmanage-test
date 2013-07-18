@@ -407,6 +407,25 @@ class FabricTest(unittest.TestCase):
             else:
                 self.assertEqual(node.bmc.executed, [])
 
+    def test_composite_bmc(self):
+        """ Test the CompositeBMC member """
+        with self.assertRaises(AttributeError):
+            self.fabric.cbmc.fake_method
+
+        self.fabric.cbmc.set_chassis_power("off")
+        results = self.fabric.cbmc.get_chassis_status()
+
+        self.assertEqual(len(results), len(self.fabric.nodes))
+        for node_id in self.fabric.nodes:
+            self.assertFalse(results[node_id].power_on)
+
+        for node in self.fabric.nodes.values():
+            self.assertEqual(node.bmc.executed, [
+                ("set_chassis_power", "off"),
+                "get_chassis_status"
+            ])
+
+
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """
     def __init__(self, ip_address, username="admin", password="admin",

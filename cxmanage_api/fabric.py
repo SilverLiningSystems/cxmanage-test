@@ -56,6 +56,53 @@ class Fabric(object):
     :type node: `Node <node.html>`_
     """
 
+    class CompositeBMC(object):
+        """ Composite BMC object. Provides a mechanism to run BMC
+        commands in parallel across all nodes.
+        """
+
+        def __init__(self, fabric):
+            self.fabric = fabric
+
+        def __getattr__(self, name):
+            """ If the underlying BMCs have a method by this name, then return
+            a callable function that does it in parallel across all nodes.
+            """
+            nodes = self.fabric.nodes
+            task_queue = self.fabric.task_queue
+
+            for node in nodes.values():
+                if ((not hasattr(node.bmc, name)) or
+                    (not hasattr(getattr(node.bmc, name), "__call__"))):
+                    raise AttributeError(
+                        "'CompositeBMC' object has no attribute '%s'"
+                        % name
+                    )
+
+            def function(*args, **kwargs):
+                """ Run the named BMC command in parallel across all nodes. """
+                tasks = {}
+                for node_id, node in nodes.iteritems():
+                    tasks[node_id] = task_queue.put(
+                        getattr(node.bmc, name),
+                        *args,
+                        **kwargs
+                    )
+
+                results = {}
+                errors = {}
+                for node_id, task in tasks.items():
+                    task.join()
+                    if task.status == "Completed":
+                        results[node_id] = task.result
+                    else:
+                        errors[node_id] = task.error
+                if errors:
+                    raise CommandFailedError(results, errors)
+                return results
+
+            return function
+
     def __init__(self, ip_address, username="admin", password="admin",
                   tftp=None, ecme_tftp_port=5001, task_queue=None,
                   verbose=False, node=None):
@@ -68,6 +115,7 @@ class Fabric(object):
         self.task_queue = task_queue
         self.verbose = verbose
         self.node = node
+        self.cbmc = Fabric.CompositeBMC(self)
 
         self._nodes = {}
 
