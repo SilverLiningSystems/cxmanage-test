@@ -140,6 +140,18 @@ class FabricTest(unittest.TestCase):
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_boot_order"])
 
+    def test_set_pxe_interface(self):
+        """ Test set_pxe_interface command """
+        self.fabric.set_pxe_interface("eth0")
+        for node in self.nodes:
+            self.assertEqual(node.executed, [("set_pxe_interface", "eth0")])
+
+    def test_get_pxe_interface(self):
+        """ Test get_pxe_interface command """
+        self.fabric.get_pxe_interface()
+        for node in self.nodes:
+            self.assertEqual(node.executed, ["get_pxe_interface"])
+
     def test_get_versions(self):
         """ Test get_versions command """
         self.fabric.get_versions()
@@ -404,6 +416,13 @@ class DummyNode(object):
     def get_boot_order(self):
         self.executed.append("get_boot_order")
         return ["disk", "pxe"]
+
+    def set_pxe_interface(self, interface):
+        self.executed.append(("set_pxe_interface", interface))
+
+    def get_pxe_interface(self):
+        self.executed.append("get_pxe_interface")
+        return "eth0"
 
     def get_versions(self):
         self.executed.append("get_versions")

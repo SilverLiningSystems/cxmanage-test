@@ -276,6 +276,50 @@ class NodeTest(unittest.TestCase):
 
             self.assertEqual(result, ["disk", "pxe"])
 
+    def test_set_pxe_interface(self):
+        """ Test node.set_pxe_interface method """
+        for node in self.nodes:
+            node.set_pxe_interface("eth0")
+
+            partitions = node.bmc.partitions
+            ubootenv_partition = partitions[5]
+            unchanged_partitions = [x for x in partitions
+                    if x != ubootenv_partition]
+
+            self.assertEqual(ubootenv_partition.updates, 1)
+            self.assertEqual(ubootenv_partition.retrieves, 1)
+            self.assertEqual(ubootenv_partition.checks, 1)
+            self.assertEqual(ubootenv_partition.activates, 1)
+
+            for partition in unchanged_partitions:
+                self.assertEqual(partition.updates, 0)
+                self.assertEqual(partition.retrieves, 0)
+                self.assertEqual(partition.checks, 0)
+                self.assertEqual(partition.activates, 0)
+
+    def test_get_pxe_interface(self):
+        """ Test node.get_pxe_interface method """
+        for node in self.nodes:
+            result = node.get_pxe_interface()
+
+            partitions = node.bmc.partitions
+            ubootenv_partition = partitions[5]
+            unchanged_partitions = [x for x in partitions
+                    if x != ubootenv_partition]
+
+            self.assertEqual(ubootenv_partition.updates, 0)
+            self.assertEqual(ubootenv_partition.retrieves, 1)
+            self.assertEqual(ubootenv_partition.checks, 0)
+            self.assertEqual(ubootenv_partition.activates, 0)
+
+            for partition in unchanged_partitions:
+                self.assertEqual(partition.updates, 0)
+                self.assertEqual(partition.retrieves, 0)
+                self.assertEqual(partition.checks, 0)
+                self.assertEqual(partition.activates, 0)
+
+            self.assertEqual(result, "eth0")
+
     def test_get_versions(self):
         """ Test node.get_versions method """
         for node in self.nodes:

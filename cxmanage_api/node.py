@@ -874,6 +874,41 @@ class Node(object):
         """
         return self.get_ubootenv().get_boot_order()
 
+    def set_pxe_interface(self, interface):
+        """Sets pxe interface for this node.
+
+        >>> node.set_boot_order('eth0')
+
+        :param interface: Interface pass on to the uboot environment.
+        :type boot_args: string
+
+        """
+        fwinfo = self.get_firmware_info()
+        first_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
+        active_part = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
+
+        # Download active ubootenv, modify, then upload to first partition
+        image = self._download_image(active_part)
+        ubootenv = self.ubootenv(open(image.filename).read())
+        ubootenv.set_pxe_interface(interface)
+        priority = max(int(x.priority, 16) for x in [first_part, active_part])
+
+        filename = temp_file()
+        with open(filename, "w") as f:
+            f.write(ubootenv.get_contents())
+
+        ubootenv_image = self.image(filename, image.type, False, image.daddr,
+                                    image.skip_crc32, image.version)
+        self._upload_image(ubootenv_image, first_part, priority)
+
+    def get_pxe_interface(self):
+        """Returns the current pxe interface for this node.
+
+        >>> node.get_pxe_interface()
+        'eth0'
+        """
+        return self.get_ubootenv().get_pxe_interface()
+
     def get_versions(self):
         """Get version info from this node.
 

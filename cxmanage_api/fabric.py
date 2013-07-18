@@ -494,6 +494,41 @@ class Fabric(object):
         """
         return self._run_on_all_nodes(async, "get_boot_order")
 
+    def set_pxe_interface(self, interface, async=False):
+        """Sets the pxe interface on all nodes.
+
+        >>> fabric.set_pxe_interface(interface='eth0')
+
+        :param interface: Inteface for pxe requests
+        :type interface: string
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Command object (can get status, etc.).
+        :type async: boolean
+
+        """
+        self._run_on_all_nodes(async, "set_pxe_interface", interface)
+
+    def get_pxe_interface(self, async=False):
+        """Gets the pxe interface from all nodes.
+
+        >>> fabric.get_pxe_interface()
+        {
+         0: 'eth0',
+         1: 'eth0',
+         2: 'eth0',
+         3: 'eth0'
+        }
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Command object (can get status, etc.).
+        :type async: boolean
+
+        :returns: The boot order of each node on this fabric.
+        :rtype: dictionary or `Task <tasks.html>`__
+
+        """
+        return self._run_on_all_nodes(async, "get_pxe_interface")
+
     def get_versions(self, async=False):
         """Gets the version info from all nodes.
 

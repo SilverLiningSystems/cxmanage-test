@@ -42,7 +42,8 @@ from cxmanage.commands.mc import mcreset_command
 from cxmanage.commands.fw import fwupdate_command, fwinfo_command
 from cxmanage.commands.sensor import sensor_command
 from cxmanage.commands.fabric import ipinfo_command, macaddrs_command
-from cxmanage.commands.config import config_reset_command, config_boot_command
+from cxmanage.commands.config import config_reset_command, config_boot_command, \
+        config_pxe_command
 from cxmanage.commands.info import info_command
 from cxmanage.commands.ipmitool import ipmitool_command
 from cxmanage.commands.ipdiscover import ipdiscover_command
@@ -249,6 +250,11 @@ def build_parser():
     boot.add_argument('boot_order', help='boot order to use', default=[],
             type=lambda x: [] if x == 'none' else x.split(','))
     boot.set_defaults(func=config_boot_command)
+
+    pxe = config_subs.add_parser('pxe',
+            help='set pxe interface')
+    pxe.add_argument('interface', help='pxe interface to use')
+    pxe.set_defaults(func=config_pxe_command)
 
     #info command
     info = subparsers.add_parser('info', help='get host info')
