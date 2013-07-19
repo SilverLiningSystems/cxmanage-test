@@ -214,6 +214,22 @@ class Fabric(object):
         """
         return self.primary_node.get_fabric_uplink_info()
 
+    def get_uplink_speed(self, async=False):
+        """Gets the uplink speed of every node in the fabric.
+
+        >>> fabric.get_uplink_speed()
+        {0: 1, 1: 0, 2: 0, 3: 0}
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Task object (can get status, etc.).
+        :type async: boolean
+
+        :return: The uplink info for each node.
+        :rtype: dictionary
+
+        """
+        return self._run_on_all_nodes(async, "get_uplink_speed")
+
     def get_power(self, async=False):
         """Returns the power status for all nodes.
 
