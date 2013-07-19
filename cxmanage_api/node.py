@@ -1418,6 +1418,16 @@ class Node(object):
             iface=iface
         )
 
+    def get_uplink_speed(self):
+        """Get the uplink speed of this node.
+        >>> node.get_uplink_speed()
+        1
+
+        :return: The uplink speed of this node, in Gbps
+        :rtype: integer
+
+        """
+        return self.bmc.fabric_config_get_uplink_speed()
 
     def _run_fabric_command(self, function_name, **kwargs):
         """Handles the basics of sending a node a command for fabric data."""
