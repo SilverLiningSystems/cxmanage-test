@@ -49,7 +49,8 @@ from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         SocmanVersionError, FirmwareConfigError, PriorityIncrementError, \
-        NoPartitionError, TransferFailure, ImageSizeError, PartitionInUseError
+        NoPartitionError, TransferFailure, ImageSizeError, \
+        PartitionInUseError, UbootenvError
 
 
 class Node(object):
@@ -739,7 +740,7 @@ class Node(object):
                         "Done uploading ubootenv image to first " + \
                         "partition ('running partition')"
                     )
-                except (ValueError, Exception):
+                except (ValueError, UbootenvError):
                     self._upload_image(image, running_part, priority)
 
                 updated_partitions += [running_part, factory_part]

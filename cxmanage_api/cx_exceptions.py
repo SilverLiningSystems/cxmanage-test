@@ -259,26 +259,25 @@ class InvalidImageError(Exception):
         return self.msg
 
 
-class UnknownBootCmdError(Exception):
-    """Raised when the boot command is not: run bootcmd_pxe, run bootcmd_sata,
-       run bootcmd_mmc, setenv bootdevice, or reset.
+class UbootenvError(Exception):
+    """Raised when the UbootEnv class fails to interpret the ubootenv
+    environment variables.
 
-    >>> from cxmanage_api.cx_exceptions import UnknownBootCmdError
-    >>> raise UnknownBootCmdError('My custom exception text!')
+    >>> from cxmanage_api.cx_exceptions import UbootenvError
+    >>> raise UbootenvError('My custom exception text!')
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
-    cxmanage_api.cx_exceptions.UnknownBootCmdError: My custom exception text!
+    cxmanage_api.cx_exceptions.UbootenvError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
-    :raised: When the boot command is not: run bootcmd_pxe, run bootcmd_sata,
-             run bootcmd_mmc, setenv bootdevice, or reset.
+    :raised: When ubootenv settings are unrecognizable.
 
     """
 
     def __init__(self, msg):
-        """Default constructor for the UnknownBootCmdError class."""
-        super(UnknownBootCmdError, self).__init__()
+        """Default constructor for the UbootenvError class."""
+        super(UbootenvError, self).__init__()
         self.msg = msg
 
     def __str__(self):
