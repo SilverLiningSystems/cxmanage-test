@@ -847,6 +847,20 @@ class DummyBMC(LanBMC):
         self.fabric_lu_factor = lu_factor
         self.executed.append('fabric_config_set_link_users_factor')
 
+    def fabric_config_set_macaddr_base(self, macaddr):
+        self.executed.append(('fabric_config_set_macaddr_base', macaddr))
+
+    def fabric_config_get_macaddr_base(self):
+        self.executed.append('fabric_config_get_macaddr_base')
+        return "00:00:00:00:00:00"
+
+    def fabric_config_set_macaddr_mask(self, mask):
+        self.executed.append(('fabric_config_set_macaddr_mask', mask))
+
+    def fabric_config_get_macaddr_mask(self):
+        self.executed.append('fabric_config_get_macaddr_mask')
+        return "00:00:00:00:00:00"
+
     def fabric_add_macaddr(self, nodeid=0, iface=0, macaddr=None):
         self.executed.append('fabric_add_macaddr')
 

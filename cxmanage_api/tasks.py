@@ -43,7 +43,7 @@ class Task(object):
     :type args: list
     """
 
-    def __init__(self, method, *args):
+    def __init__(self, method, *args, **kwargs):
         """Default constructor for the Task class."""
         self.status = "Queued"
         self.result = None
@@ -51,6 +51,7 @@ class Task(object):
 
         self._method = method
         self._args = args
+        self._kwargs = kwargs
         self._finished = Event()
 
     def join(self):
@@ -70,7 +71,7 @@ class Task(object):
         """Execute this task. Should only be called by TaskWorker."""
         self.status = "In Progress"
         try:
-            self.result = self._method(*self._args)
+            self.result = self._method(*self._args, **self._kwargs)
             self.status = "Completed"
         except Exception as e:
             self.error = e
@@ -96,7 +97,7 @@ class TaskQueue(object):
         self._queue = deque()
         self._workers = 0
 
-    def put(self, method, *args):
+    def put(self, method, *args, **kwargs):
         """Add a task to the task queue, and spawn a worker if we're not full.
 
         :param method: Named method to run.
@@ -110,7 +111,7 @@ class TaskQueue(object):
         """
         self._lock.acquire()
 
-        task = Task(method, *args)
+        task = Task(method, *args, **kwargs)
         self._queue.append(task)
 
         if self._workers < self.threads:

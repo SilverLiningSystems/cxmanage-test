@@ -33,7 +33,7 @@ from setuptools import setup
 
 setup(
     name='cxmanage',
-    version='0.8.2',
+    version='0.9.0',
     packages=['cxmanage', 'cxmanage.commands', 'cxmanage_api'],
     scripts=['scripts/cxmanage', 'scripts/sol_tabs'],
     description='Calxeda Management Utility',
@@ -42,7 +42,7 @@ setup(
     install_requires=[
                         'tftpy',
                         'pexpect',
-                        'pyipmi>=0.7.1',
+                        'pyipmi>=0.8.0',
                         'argparse',
     ],
     extras_require={
