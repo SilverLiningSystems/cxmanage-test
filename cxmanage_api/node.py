@@ -1427,7 +1427,7 @@ class Node(object):
         :rtype: integer
 
         """
-        return self.bmc.fabric_config_get_uplink_speed()
+        return self.bmc.fabric_get_uplink_speed()
 
     def _run_fabric_command(self, function_name, **kwargs):
         """Handles the basics of sending a node a command for fabric data."""
