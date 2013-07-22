@@ -1429,6 +1429,17 @@ class Node(object):
         """
         return self.bmc.fabric_get_uplink_speed()
 
+    def get_uplink_info(self):
+        """Get the uplink information for this node.
+        >>> node.get_uplink_info()
+        'Node 0: eth0 0, eth1 0, mgmt 0'
+
+        :return: The uplink information for this node
+        :rtype: string
+
+        """
+        return self.bmc.fabric_get_uplink_info().strip()
+
     def _run_fabric_command(self, function_name, **kwargs):
         """Handles the basics of sending a node a command for fabric data."""
         filename = temp_file()

@@ -193,16 +193,14 @@ class Fabric(object):
         """
         return self.primary_node.get_fabric_macaddrs()
 
-    def get_uplink_info(self):
+    def get_uplink_info(self, async=False):
         """Gets the fabric uplink info.
 
         >>> fabric.get_uplink_info()
-        {
-         0: {0: 0, 1: 0, 2: 0}
-         1: {0: 0, 1: 0, 2: 0}
-         2: {0: 0, 1: 0, 2: 0}
-         3: {0: 0, 1: 0, 2: 0}
-        }
+        {0: 'Node 0: eth0 0, eth1 0, mgmt 0',
+         1: 'Node 1: eth0 0, eth1 0, mgmt 0',
+         2: 'Node 2: eth0 0, eth1 0, mgmt 0',
+         3: 'Node 3: eth0 0, eth1 0, mgmt 0'}
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
@@ -212,7 +210,7 @@ class Fabric(object):
         :rtype: dictionary
 
         """
-        return self.primary_node.get_fabric_uplink_info()
+        return self._run_on_all_nodes(async, "get_uplink_info")
 
     def get_uplink_speed(self, async=False):
         """Gets the uplink speed of every node in the fabric.
