@@ -50,8 +50,8 @@ from cxmanage.commands.ipdiscover import ipdiscover_command
 from cxmanage.commands.tspackage import tspackage_command
 
 
-PYIPMI_VERSION = '0.7.1'
-IPMITOOL_VERSION = '1.8.11.0-cx5'
+PYIPMI_VERSION = '0.8.0'
+IPMITOOL_VERSION = '1.8.11.0-cx7'
 
 
 PARSER_EPILOG = """examples:
