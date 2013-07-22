@@ -724,7 +724,7 @@ class Node(object):
                     ubootenv.set_pxe_interface(old_ubootenv.get_pxe_interface())
 
                     logger.info(
-                        "Set boot order to " + old_ubootenv.get_boot_order()
+                        "Set boot order to %s" % old_ubootenv.get_boot_order()
                     )
 
                     filename = temp_file()
