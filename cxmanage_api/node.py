@@ -1672,4 +1672,59 @@ class Node(object):
                             "Unable to increment SIMG priority, too high")
         return priority
 
+    def get_chip_name(self):
+        """Returns the name of the "server-side" chip used by this node.
+
+        >>> node.get_chip_name
+        'Highbank'
+
+        :rtype: string
+
+        Currently we check the firmware version to determine whether the chip
+        used by this node is Highbank or Midway.
+
+        """
+        versions = self.get_versions()
+        fwversion = versions.firmware_version
+
+        if "1000" in fwversion:
+            return "Highbank"
+        elif "2000" in fwversion:
+            return "Midway"
+        else:
+            # Cannot tell chip from firmware version; default to Highbank
+            return "Highbank"
+
+    def get_components(self):
+        """Get a list of tuples that map InfoBasicResult object attributes to 
+        nicely-formatted strings.
+
+        :rtype: list of tuples
+
+        The first item in a tuple is the name of an attribute of a 
+        pyipmi.info.InfoBasicResult object. The second item is a
+        human-readable, ready-to-print string describing that attribute.
+
+        """
+        components = []
+        components.append(("ecme_version", "ECME version"))
+        components.append(("cdb_version", "CDB version"))
+        components.append(("stage2_version", "Stage2boot version"))
+        components.append(("bootlog_version", "Bootlog version"))
+        if self.get_chip_name() == "Highbank":
+            components.append(
+                ("a9boot_version", "A9boot version")
+            )
+        elif self.get_chip_name() == "Midway":
+            # InfoBasicResult objects still reference the A15 as A9
+            components.append(
+                ("a9boot_version", "A15boot version")
+            )
+        components.append(("uboot_version", "Uboot version"))
+        components.append(("ubootenv_version", "Ubootenv version"))
+        components.append(("dtb_version", "DTB version"))
+
+        return components
+
+
 # End of file: ./node.py

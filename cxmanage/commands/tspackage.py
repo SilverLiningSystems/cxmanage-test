@@ -10,7 +10,6 @@ import tarfile
 import tempfile
 
 from cxmanage import get_tftp, get_nodes, run_command
-from cxmanage import COMPONENTS
 
 
 def tspackage_command(args):
@@ -93,8 +92,6 @@ def write_version_info(args, nodes):
     """
     info_results, _ = run_command(args, nodes, "get_versions")
 
-    # This will be used when writing version info to file
-    components = COMPONENTS
 
     for node in nodes:
         lines = []  # The lines of text to write to file
@@ -118,6 +115,9 @@ def write_version_info(args, nodes):
                 "Firmware version   : %s" %
                 info_result.firmware_version
             )
+
+            # Get mappings between attributes and formatted strings
+            components = node.get_components()
             for var, description in components:
                 if hasattr(info_result, var):
                     version = getattr(info_result, var)

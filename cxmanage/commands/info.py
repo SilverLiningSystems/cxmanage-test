@@ -29,7 +29,6 @@
 # DAMAGE.
 
 from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
-from cxmanage import COMPONENTS
 
 
 def info_command(args):
@@ -42,7 +41,6 @@ def info_command(args):
 
 def info_basic_command(args):
     """Print basic info"""
-    components = COMPONENTS
 
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
@@ -56,6 +54,9 @@ def info_basic_command(args):
     for node in nodes:
         if node in results:
             result = results[node]
+            # Get mappings between attributes and formatted strings
+            components = node.get_components()
+
             print "[ Info from %s ]" % node_strings[node]
             print "Hardware version   : %s" % result.hardware_version
             print "Firmware version   : %s" % result.firmware_version
