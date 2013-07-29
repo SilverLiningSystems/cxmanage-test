@@ -9,7 +9,7 @@ import shutil
 import tarfile
 import tempfile
 
-from cxmanage import get_tftp, get_nodes, run_command
+from cxmanage import get_tftp, get_nodes, run_command, COMPONENTS
 
 
 def tspackage_command(args):
@@ -117,7 +117,7 @@ def write_version_info(args, nodes):
             )
 
             # Get mappings between attributes and formatted strings
-            components = node.get_components()
+            components = COMPONENTS
             for var, description in components:
                 if hasattr(info_result, var):
                     version = getattr(info_result, var)

@@ -28,7 +28,9 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+
 from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
+from cxmanage import COMPONENTS
 
 
 def info_command(args):
@@ -55,11 +57,12 @@ def info_basic_command(args):
         if node in results:
             result = results[node]
             # Get mappings between attributes and formatted strings
-            components = node.get_components()
+            components = COMPONENTS
 
             print "[ Info from %s ]" % node_strings[node]
             print "Hardware version   : %s" % result.hardware_version
             print "Firmware version   : %s" % result.firmware_version
+            # var is the variable, string is the printable string of var
             for var, string in components:
                 if hasattr(result, var):
                     version = getattr(result, var)

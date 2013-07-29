@@ -322,3 +322,18 @@ def _print_command_status(tasks, counter):
     dots = "".join(["." for x in range(counter % 4)]).ljust(3)
     sys.stdout.write(message % (successes, errors, nodes_left, dots))
     sys.stdout.flush()
+
+
+# These are needed for ipinfo and whenever version information is printed
+COMPONENTS = [
+    ("ecme_version", "ECME version"),
+    ("cdb_version", "CDB version"),
+    ("stage2_version", "Stage2boot version"),
+    ("bootlog_version", "Bootlog version"),
+    ("a9boot_version", "A9boot version"),
+    ("a15boot_version", "A15boot version"),
+    ("uboot_version", "Uboot version"),
+    ("ubootenv_version", "Ubootenv version"),
+    ("dtb_version", "DTB version")
+]
+

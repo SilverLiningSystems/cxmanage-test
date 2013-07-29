@@ -930,15 +930,24 @@ class Node(object):
 
         """
         result = self.bmc.get_info_basic()
-
         fwinfo = self.get_firmware_info()
-        components = [("cdb_version", "CDB"),
-                      ("stage2_version", "S2_ELF"),
-                      ("bootlog_version", "BOOT_LOG"),
-                      ("a9boot_version", "A9_EXEC"),
-                      ("uboot_version", "A9_UBOOT"),
-                      ("ubootenv_version", "UBOOTENV"),
-                      ("dtb_version", "DTB")]
+
+        # components maps variables to firmware partition types
+        components = [
+            ("cdb_version", "CDB"),
+            ("stage2_version", "S2_ELF"),
+            ("bootlog_version", "BOOT_LOG")
+        ]
+        # Use A9 or A15 if on Highbank or Midway, respectively
+        if self.get_chip_name() == "Highbank":
+            components.append(("a9boot_version", "A9_EXEC"))
+        elif self.get_chip_name() == "Midway":
+            # The BMC (and fwinfo) still reference the A15 as an A9
+            components.append(("a15boot_version", "A9_EXEC"))
+        components.append(("uboot_version", "A9_UBOOT"))
+        components.append(("ubootenv_version", "UBOOTENV"))
+        components.append(("dtb_version", "DTB"))
+        
         for var, ptype in components:
             try:
                 partition = self._get_partition(fwinfo, ptype, "ACTIVE")
@@ -1684,47 +1693,15 @@ class Node(object):
         used by this node is Highbank or Midway.
 
         """
-        versions = self.get_versions()
-        fwversion = versions.firmware_version
+        result = self.bmc.get_info_basic()
+        fw_version = result.firmware_version
 
-        if "1000" in fwversion:
+        if fw_version.startswith("ECX-1000"):
             return "Highbank"
-        elif "2000" in fwversion:
+        elif fw_version.startswith("ECX-2000"):
             return "Midway"
         else:
-            # Cannot tell chip from firmware version; default to Highbank
-            return "Highbank"
-
-    def get_components(self):
-        """Get a list of tuples that map InfoBasicResult object attributes to 
-        nicely-formatted strings.
-
-        :rtype: list of tuples
-
-        The first item in a tuple is the name of an attribute of a 
-        pyipmi.info.InfoBasicResult object. The second item is a
-        human-readable, ready-to-print string describing that attribute.
-
-        """
-        components = []
-        components.append(("ecme_version", "ECME version"))
-        components.append(("cdb_version", "CDB version"))
-        components.append(("stage2_version", "Stage2boot version"))
-        components.append(("bootlog_version", "Bootlog version"))
-        if self.get_chip_name() == "Highbank":
-            components.append(
-                ("a9boot_version", "A9boot version")
-            )
-        elif self.get_chip_name() == "Midway":
-            # InfoBasicResult objects still reference the A15 as A9
-            components.append(
-                ("a9boot_version", "A15boot version")
-            )
-        components.append(("uboot_version", "Uboot version"))
-        components.append(("ubootenv_version", "Ubootenv version"))
-        components.append(("dtb_version", "DTB version"))
-
-        return components
+            return "Unknown"
 
 
 # End of file: ./node.py
