@@ -29,9 +29,6 @@
 # DAMAGE.
 
 
-import os
-import sys
-import atexit
 import shutil
 import socket
 import logging
@@ -43,7 +40,7 @@ from cxmanage_api import temp_dir
 from tftpy.TftpShared import TftpException
 
 
-class InternalTftp(object):
+class InternalTftp(Thread):
     """Internally serves files using the `Trivial File Transfer Protocol <http://en.wikipedia.org/wiki/Trivial_File_Transfer_Protocol>`_.
 
     >>> # Typical instantiation ...
@@ -62,54 +59,27 @@ class InternalTftp(object):
     """
 
     def __init__(self, ip_address=None, port=0, verbose=False):
-        """Default constructor for the InternalTftp class."""
+        super(InternalTftp, self).__init__()
+        self.daemon = True
+
         self.tftp_dir = temp_dir()
         self.verbose = verbose
-        pipe = os.pipe()
-        pid = os.fork()
-        if (not pid):
-            # Force tftpy to use sys.stdout and sys.stderr
-            try:
-                os.dup2(sys.stdout.fileno(), 1)
-                os.dup2(sys.stderr.fileno(), 2)
 
-            except AttributeError, err_msg:
-                if (self.verbose):
-                    print ('Passing on exception: %s' % err_msg)
-                pass
-
-            # Create a PortThread class only if needed ...
-            class PortThread(Thread):
-                """Thread that sends the port number through the pipe."""
-                def run(self):
-                    """Run function override."""
-                    # Need to wait for the server to open its socket
-                    while not server.sock:
-                        pass
-                    with os.fdopen(pipe[1], "w") as a_file:
-                        a_file.write("%i\n" % server.sock.getsockname()[1])
-            #
-            # Create an Internal TFTP server thread
-            #
-            server = TftpServer(tftproot=self.tftp_dir)
-            thread = PortThread()
-            thread.start()
-            try:
-                if not self.verbose:
-                    setLogLevel(logging.CRITICAL)
-                # Start accepting connections ...
-                server.listen(listenport=port)
-            except KeyboardInterrupt:
-                # User @ keyboard cancelled server ...
-                if (self.verbose):
-                    traceback.format_exc()
-            sys.exit(0)
-
-        self.server = pid
+        self.server = TftpServer(tftproot=self.tftp_dir)
         self.ip_address = ip_address
-        with os.fdopen(pipe[0]) as a_fd:
-            self.port = int(a_fd.readline())
-        atexit.register(self.kill)
+        self.port = port
+        self.start()
+
+        # Get the port we actually hosted on (this covers the port=0 case)
+        while not self.server.sock:
+            pass
+        self.port = self.server.sock.getsockname()[1]
+
+    def run(self):
+        """ Run the server. Listens indefinitely. """
+        if not self.verbose:
+            setLogLevel(logging.CRITICAL)
+        self.server.listen(listenport=self.port)
 
     def get_address(self, relative_host=None):
         """Returns the ipv4 address of this server.
@@ -135,16 +105,6 @@ class InternalTftp(object):
             ipv4 = sock.getsockname()[0]
             sock.close()
             return ipv4
-
-    def kill(self):
-        """Kills the InternalTftpServer.
-
-        >>> i_tftp.kill()
-
-        """
-        if (self.server):
-            os.kill(self.server, 15)
-            self.server = None
 
     def get_file(self, src, dest):
         """Download a file from the tftp server to local_path.
