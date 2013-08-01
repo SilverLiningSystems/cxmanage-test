@@ -44,6 +44,7 @@ from pyipmi import make_bmc
 NUM_NODES = 128
 ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES + 1)]
 
+
 class FabricTest(unittest.TestCase):
     """ Test the various Fabric commands """
     def setUp(self):
@@ -301,7 +302,7 @@ class FabricTest(unittest.TestCase):
         maps = self.fabric.get_routing_table()
         for nn, node in self.fabric.nodes.items():
             self.assertIn('get_routing_table', node.executed)
-            
+
     def test_get_depth_chart(self):
         """Test the depth_chart method"""
         maps = self.fabric.get_depth_chart()
@@ -428,6 +429,9 @@ class FabricTest(unittest.TestCase):
 
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """
+
+    wafer_id_unique = 0
+
     def __init__(self, ip_address, username="admin", password="admin",
             tftp=None, *args, **kwargs):
         self.executed = []
@@ -435,6 +439,8 @@ class DummyNode(object):
         self.tftp = tftp
         self.bmc = make_bmc(DummyBMC, hostname=ip_address, username=username,
                             password=password, verbose=False)
+        self.wafer_id = 'FAKEWAFERID%s' % DummyNode.wafer_id_unique
+        DummyNode.wafer_id_unique += 1
 
     def get_power(self):
         self.executed.append("get_power")
@@ -597,6 +603,9 @@ class DummyNode(object):
 
     def set_uplink(self, uplink, iface):
         self.executed.append(('set_uplink', uplink, iface))
+
+    def get_wafer_id(self):
+        return self.wafer_id
 
 
 class DummyFailNode(DummyNode):
