@@ -365,6 +365,23 @@ class NodeTest(unittest.TestCase):
             for x in node.bmc.executed:
                 self.assertEqual(x, "fabric_config_get_uplink_info")
 
+    def test_get_uplink_info(self):
+        """ Test node.get_uplink_info method """
+        for node in self.nodes:
+            result = node.get_uplink_info()
+
+            for x in node.bmc.executed:
+                self.assertEqual(x, "get_uplink_info")
+
+    def test_get_uplink_speed(self):
+        """ Test node.get_uplink_info method """
+        for node in self.nodes:
+            result = node.get_uplink_speed()
+
+            for x in node.bmc.executed:
+                self.assertEqual(x, "get_uplink_speed")
+
+
     def test_get_linkmap(self):
         """ Test node.get_linkmap method """
         for node in self.nodes:
@@ -866,6 +883,16 @@ class DummyBMC(LanBMC):
 
     def fabric_rm_macaddr(self, nodeid=0, iface=0, macaddr=None):
         self.executed.append('fabric_rm_macaddr')
+
+    def fabric_get_uplink_info(self):
+        """Corresponds to Node.get_uplink_info()"""
+        self.executed.append('get_uplink_info')
+        return 'Node 0: eth0 0, eth1 0, mgmt 0'
+
+    def fabric_get_uplink_speed(self):
+        """Corresponds to Node.get_uplink_speed()"""
+        self.executed.append('get_uplink_speed')
+        return 1
 
 
 class Partition:

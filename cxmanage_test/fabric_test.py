@@ -76,11 +76,16 @@ class FabricTest(unittest.TestCase):
             self.assertEqual(node.executed, [])
 
     def test_get_uplink_info(self):
-        """ Test get_mac_addresses command """
+        """ Test get_uplink_info command """
         self.fabric.get_uplink_info()
-        self.assertEqual(self.nodes[0].executed, ["get_fabric_uplink_info"])
-        for node in self.nodes[1:]:
-            self.assertEqual(node.executed, [])
+        for node in self.nodes:
+            self.assertEqual(node.executed, ["get_uplink_info"])
+
+    def test_get_uplink_speed(self):
+        """ Test get_uplink_speed command """
+        self.fabric.get_uplink_speed()
+        for node in self.nodes:
+            self.assertEqual(node.executed, ["get_uplink_speed"])
 
     def test_get_uplink(self):
         """ Test get_uplink command """
@@ -547,6 +552,14 @@ class DummyNode(object):
         for n in range(1, NUM_NODES):
             results[n] = {'eth0': 0, 'eth1': 0, 'mgmt': 0}
         return results
+
+    def get_uplink_info(self):
+        self.executed.append('get_uplink_info')
+        return 'Node 0: eth0 0, eth1 0, mgmt 0'
+
+    def get_uplink_speed(self):
+        self.executed.append('get_uplink_speed')
+        return 1
 
     def get_link_stats(self, link=0):
         self.executed.append(('get_link_stats', link))
