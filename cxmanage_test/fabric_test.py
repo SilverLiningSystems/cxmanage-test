@@ -430,8 +430,6 @@ class FabricTest(unittest.TestCase):
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """
 
-    wafer_id_unique = 0
-
     def __init__(self, ip_address, username="admin", password="admin",
             tftp=None, *args, **kwargs):
         self.executed = []
@@ -439,8 +437,6 @@ class DummyNode(object):
         self.tftp = tftp
         self.bmc = make_bmc(DummyBMC, hostname=ip_address, username=username,
                             password=password, verbose=False)
-        self.wafer_id = 'FAKEWAFERID%s' % DummyNode.wafer_id_unique
-        DummyNode.wafer_id_unique += 1
 
     def get_power(self):
         self.executed.append("get_power")
@@ -603,9 +599,6 @@ class DummyNode(object):
 
     def set_uplink(self, uplink, iface):
         self.executed.append(('set_uplink', uplink, iface))
-
-    def get_wafer_id(self):
-        return self.wafer_id
 
 
 class DummyFailNode(DummyNode):

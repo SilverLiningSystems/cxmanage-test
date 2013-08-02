@@ -421,6 +421,9 @@ class NodeTest(unittest.TestCase):
 
 
 class DummyBMC(LanBMC):
+
+    GUID_UNIQUE = 0
+
     """ Dummy BMC for the node tests """
     def __init__(self, **kwargs):
         super(DummyBMC, self).__init__(**kwargs)
@@ -435,6 +438,18 @@ class DummyBMC(LanBMC):
                 Partition(6, 11, 1388544, 12288)  # ubootenv
         ]
         self.ipaddr_base = '192.168.100.1'
+        self.unique_guid = 'FAKEGUID%s' % DummyBMC.GUID_UNIQUE
+        DummyBMC.GUID_UNIQUE += 1
+
+    def guid(self):
+        """Returns the GUID"""
+        self.executed.append("guid")
+
+        class Result:
+            def __init__(self, dummybmc):
+                self.system_guid = dummybmc.unique_guid
+                self.time_stamp = None
+        return Result(self)
 
     def set_chassis_power(self, mode):
         """ Set chassis power """
@@ -594,7 +609,7 @@ class DummyBMC(LanBMC):
         link_map.append('Link 1: Node 2')
         link_map.append('Link 3: Node 1')
         link_map.append('Link 4: Node 3')
- 
+
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         with open('%s/%s' % (work_dir, filename), 'w') as lm_file:
             for lmap in link_map:
@@ -624,7 +639,7 @@ class DummyBMC(LanBMC):
         routing_table.append('Node 13: rt - 0.2.0.0.1')
         routing_table.append('Node 14: rt - 0.2.0.0.1')
         routing_table.append('Node 15: rt - 0.2.0.0.1')
- 
+
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         with open('%s/%s' % (work_dir, filename), 'w') as rt_file:
             for rtable in routing_table:
@@ -663,7 +678,7 @@ class DummyBMC(LanBMC):
         depth_chart.append('Node 14: Shortest Distance 3 hops via neighbor 10: other hops/neighbors -')
         depth_chart.append('Node 15: Shortest Distance 4 hops via neighbor 14: other hops/neighbors - 5/12')
 
- 
+
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         with open('%s/%s' % (work_dir, filename), 'w') as dc_file:
             for dchart in depth_chart:
