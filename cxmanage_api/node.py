@@ -931,6 +931,7 @@ class Node(object):
         """
         result = self.bmc.get_info_basic()
         fwinfo = self.get_firmware_info()
+        fw_version = result.firmware_version
 
         # components maps variables to firmware partition types
         components = [
@@ -938,12 +939,19 @@ class Node(object):
             ("stage2_version", "S2_ELF"),
             ("bootlog_version", "BOOT_LOG")
         ]
-        # Use A9 or A15 if on Highbank or Midway, respectively
-        if self.get_chip_name() == "Highbank":
+        # Use firmware version to determine the chip type and name
+        # In the future, we may want to determine the chip name some other way
+        if fw_version.startswith("ECX-1000"):
             components.append(("a9boot_version", "A9_EXEC"))
-        elif self.get_chip_name() == "Midway":
+            setattr(result, "chip_name", "Highbank")
+        elif fw_version.startswith("ECX-2000"):
             # The BMC (and fwinfo) still reference the A15 as an A9
             components.append(("a15boot_version", "A9_EXEC"))
+            setattr(result, "chip_name", "Midway")
+        else:
+            # Default to A9 and unknown name
+            components.append(("a9boot_version", "A9_EXEC"))
+            setattr(result, "chip_name", "Unknown")
         components.append(("uboot_version", "A9_UBOOT"))
         components.append(("ubootenv_version", "UBOOTENV"))
         components.append(("dtb_version", "DTB"))
@@ -1680,28 +1688,6 @@ class Node(object):
             raise PriorityIncrementError(
                             "Unable to increment SIMG priority, too high")
         return priority
-
-    def get_chip_name(self):
-        """Returns the name of the "server-side" chip used by this node.
-
-        >>> node.get_chip_name
-        'Highbank'
-
-        :rtype: string
-
-        Currently we check the firmware version to determine whether the chip
-        used by this node is Highbank or Midway.
-
-        """
-        result = self.bmc.get_info_basic()
-        fw_version = result.firmware_version
-
-        if fw_version.startswith("ECX-1000"):
-            return "Highbank"
-        elif fw_version.startswith("ECX-2000"):
-            return "Midway"
-        else:
-            return "Unknown"
 
 
 # End of file: ./node.py

@@ -510,6 +510,7 @@ class DummyNode(object):
                 self.ecme_timestamp = "0"
                 self.a9boot_version = "v0.0.0"
                 self.uboot_version = "v0.0.0"
+                self.chip_name = "Unknown"
         return Result()
 
     def ipmitool_command(self, ipmitool_args):

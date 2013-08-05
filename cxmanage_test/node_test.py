@@ -326,8 +326,7 @@ class NodeTest(unittest.TestCase):
             result = node.get_versions()
 
             self.assertEqual(node.bmc.executed, ["get_info_basic",
-                    "get_firmware_info", "get_info_basic", 
-                    "get_info_basic", "info_card"])
+                    "get_firmware_info", "info_card"])
             for attr in ["iana", "firmware_version", "ecme_version",
                     "ecme_timestamp"]:
                 self.assertTrue(hasattr(result, attr))
