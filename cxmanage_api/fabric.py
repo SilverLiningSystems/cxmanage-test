@@ -1068,11 +1068,12 @@ class Fabric(object):
         """
         return self._run_on_all_nodes(async, "get_depth_chart")
 
-    def _run_on_all_nodes(self, async, name, *args):
+    def _run_on_all_nodes(self, async, name, *args, **kwargs):
         """Start a command on all nodes."""
         tasks = {}
         for node_id, node in self.nodes.iteritems():
-            tasks[node_id] = self.task_queue.put(getattr(node, name), *args)
+            tasks[node_id] = self.task_queue.put(getattr(node, name), *args,
+                                                 **kwargs)
 
         if async:
             return tasks
