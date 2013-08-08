@@ -109,31 +109,6 @@ class NoSensorError(Exception):
         return self.msg
 
 
-class NoFirmwareInfoError(Exception):
-    """Raised when the firmware info cannot be obtained from a node.
-
-    >>> from cxmanage_api.cx_exceptions import NoFirmwareInfoError
-    >>> raise NoFirmwareInfoError('My custom exception text!')
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-    cxmanage_api.cx_exceptions.NoFirmwareInfoError: My custom exception text!
-
-    :param msg: Exceptions message and details to return to the user.
-    :type msg: string
-    :raised: When the firmware info cannot be obtained from a node.
-
-    """
-
-    def __init__(self, msg):
-        """Default constructor for the NoFirmwareInfoError class."""
-        super(NoFirmwareInfoError, self).__init__()
-        self.msg = msg
-
-    def __str__(self):
-        """String representation of this Exception class."""
-        return self.msg
-
-
 class SocmanVersionError(Exception):
     """Raised when there is an error with the users socman version.
 
@@ -284,26 +259,25 @@ class InvalidImageError(Exception):
         return self.msg
 
 
-class UnknownBootCmdError(Exception):
-    """Raised when the boot command is not: run bootcmd_pxe, run bootcmd_sata,
-       run bootcmd_mmc, setenv bootdevice, or reset.
+class UbootenvError(Exception):
+    """Raised when the UbootEnv class fails to interpret the ubootenv
+    environment variables.
 
-    >>> from cxmanage_api.cx_exceptions import UnknownBootCmdError
-    >>> raise UnknownBootCmdError('My custom exception text!')
+    >>> from cxmanage_api.cx_exceptions import UbootenvError
+    >>> raise UbootenvError('My custom exception text!')
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
-    cxmanage_api.cx_exceptions.UnknownBootCmdError: My custom exception text!
+    cxmanage_api.cx_exceptions.UbootenvError: My custom exception text!
 
     :param msg: Exceptions message and details to return to the user.
     :type msg: string
-    :raised: When the boot command is not: run bootcmd_pxe, run bootcmd_sata,
-             run bootcmd_mmc, setenv bootdevice, or reset.
+    :raised: When ubootenv settings are unrecognizable.
 
     """
 
     def __init__(self, msg):
-        """Default constructor for the UnknownBootCmdError class."""
-        super(UnknownBootCmdError, self).__init__()
+        """Default constructor for the UbootenvError class."""
+        super(UbootenvError, self).__init__()
         self.msg = msg
 
     def __str__(self):

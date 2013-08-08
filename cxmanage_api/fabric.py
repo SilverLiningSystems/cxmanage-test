@@ -56,6 +56,53 @@ class Fabric(object):
     :type node: `Node <node.html>`_
     """
 
+    class CompositeBMC(object):
+        """ Composite BMC object. Provides a mechanism to run BMC
+        commands in parallel across all nodes.
+        """
+
+        def __init__(self, fabric):
+            self.fabric = fabric
+
+        def __getattr__(self, name):
+            """ If the underlying BMCs have a method by this name, then return
+            a callable function that does it in parallel across all nodes.
+            """
+            nodes = self.fabric.nodes
+            task_queue = self.fabric.task_queue
+
+            for node in nodes.values():
+                if ((not hasattr(node.bmc, name)) or
+                    (not hasattr(getattr(node.bmc, name), "__call__"))):
+                    raise AttributeError(
+                        "'CompositeBMC' object has no attribute '%s'"
+                        % name
+                    )
+
+            def function(*args, **kwargs):
+                """ Run the named BMC command in parallel across all nodes. """
+                tasks = {}
+                for node_id, node in nodes.iteritems():
+                    tasks[node_id] = task_queue.put(
+                        getattr(node.bmc, name),
+                        *args,
+                        **kwargs
+                    )
+
+                results = {}
+                errors = {}
+                for node_id, task in tasks.items():
+                    task.join()
+                    if task.status == "Completed":
+                        results[node_id] = task.result
+                    else:
+                        errors[node_id] = task.error
+                if errors:
+                    raise CommandFailedError(results, errors)
+                return results
+
+            return function
+
     def __init__(self, ip_address, username="admin", password="admin",
                   tftp=None, ecme_tftp_port=5001, task_queue=None,
                   verbose=False, node=None):
@@ -68,6 +115,7 @@ class Fabric(object):
         self.task_queue = task_queue
         self.verbose = verbose
         self.node = node
+        self.cbmc = Fabric.CompositeBMC(self)
 
         self._nodes = {}
 
@@ -76,9 +124,6 @@ class Fabric(object):
 
         if (not self.task_queue):
             self.task_queue = DEFAULT_TASK_QUEUE
-
-        if (not self._tftp):
-            self._tftp = InternalTftp()
 
     def __eq__(self, other):
         """__eq__() override."""
@@ -104,6 +149,9 @@ class Fabric(object):
         :rtype: `Tftp <tftp.html>`_
 
         """
+        if (not self._tftp):
+            self._tftp = InternalTftp()
+
         return self._tftp
 
     @tftp.setter
@@ -137,7 +185,8 @@ class Fabric(object):
 
         """
         if not self._nodes:
-            self._discover_nodes(self.ip_address)
+            self.refresh()
+
         return self._nodes
 
     @property
@@ -154,6 +203,23 @@ class Fabric(object):
         """
         return self.nodes[0]
 
+    def refresh(self):
+        """Gets the nodes of this fabric by pulling IP info from a BMC."""
+        self._nodes = {}
+        node = self.node(ip_address=self.ip_address, username=self.username,
+                         password=self.password, tftp=self.tftp,
+                         ecme_tftp_port=self.ecme_tftp_port,
+                         verbose=self.verbose)
+        ipinfo = node.get_fabric_ipinfo()
+        for node_id, node_address in ipinfo.iteritems():
+            self._nodes[node_id] = self.node(ip_address=node_address,
+                                            username=self.username,
+                                            password=self.password,
+                                            tftp=self.tftp,
+                                            ecme_tftp_port=self.ecme_tftp_port,
+                                            verbose=self.verbose)
+            self._nodes[node_id].node_id = node_id
+
     def get_mac_addresses(self):
         """Gets MAC addresses from all nodes.
 
@@ -164,10 +230,6 @@ class Fabric(object):
          2: ['fc:2f:40:ab:f7:14', 'fc:2f:40:ab:f7:15', 'fc:2f:40:ab:f7:16'],
          3: ['fc:2f:40:88:b3:6c', 'fc:2f:40:88:b3:6d', 'fc:2f:40:88:b3:6e']
         }
-
-        :param async: Flag that determines if the command result (dictionary)
-                      is returned or a Task object (can get status, etc.).
-        :type async: boolean
 
         :return: The MAC addresses for each node.
         :rtype: dictionary
@@ -476,6 +538,41 @@ class Fabric(object):
         """
         return self._run_on_all_nodes(async, "get_boot_order")
 
+    def set_pxe_interface(self, interface, async=False):
+        """Sets the pxe interface on all nodes.
+
+        >>> fabric.set_pxe_interface(interface='eth0')
+
+        :param interface: Inteface for pxe requests
+        :type interface: string
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Command object (can get status, etc.).
+        :type async: boolean
+
+        """
+        self._run_on_all_nodes(async, "set_pxe_interface", interface)
+
+    def get_pxe_interface(self, async=False):
+        """Gets the pxe interface from all nodes.
+
+        >>> fabric.get_pxe_interface()
+        {
+         0: 'eth0',
+         1: 'eth0',
+         2: 'eth0',
+         3: 'eth0'
+        }
+
+        :param async: Flag that determines if the command result (dictionary)
+                      is returned or a Command object (can get status, etc.).
+        :type async: boolean
+
+        :returns: The boot order of each node on this fabric.
+        :rtype: dictionary or `Task <tasks.html>`__
+
+        """
+        return self._run_on_all_nodes(async, "get_pxe_interface")
+
     def get_versions(self, async=False):
         """Gets the version info from all nodes.
 
@@ -725,6 +822,50 @@ class Fabric(object):
         self.primary_node.bmc.fabric_rm_macaddr(nodeid=nodeid, iface=iface,
                 macaddr=macaddr)
 
+    def set_macaddr_base(self, macaddr):
+        """ Set a base MAC address for a custom range.
+
+        >>> fabric.set_macaddr_base("66:55:44:33:22:11")
+
+        :param macaddr: mac address base to use
+        :type macaddr: string
+
+        """
+        self.primary_node.bmc.fabric_config_set_macaddr_base(macaddr=macaddr)
+
+    def get_macaddr_base(self):
+        """ Get the base MAC address for custom ranges.
+
+        >>> fabric.get_macaddr_base()
+        '08:00:00:00:08:5c'
+
+        :return: mac address base
+        :rtype: string
+        """
+        return self.primary_node.bmc.fabric_config_get_macaddr_base()
+
+    def set_macaddr_mask(self, mask):
+        """ Set MAC address mask for a custom range.
+
+        >>> fabric.set_macaddr_mask("ff:ff:ff:ff:ff:00")
+
+        :param macaddr: mac address mask to use
+        :type macaddr: string
+
+        """
+        self.primary_node.bmc.fabric_config_set_macaddr_mask(mask=mask)
+
+    def get_macaddr_mask(self):
+        """ Get the MAC address mask for custom ranges.
+
+        >>> fabric.get_macaddr_mask()
+        '08:00:00:00:08:5c'
+
+        :return: mac address mask
+        :rtype: string
+        """
+        return self.primary_node.bmc.fabric_config_get_macaddr_mask()
+
     def get_linkspeed_policy(self):
         """Get the global linkspeed policy for the fabric. In the partition
         world this means the linkspeed for Configuration 0, Partition 0,
@@ -797,7 +938,7 @@ class Fabric(object):
     def set_uplink(self, uplink=0, iface=0):
         """Set the uplink for an interface to xmit a packet out of the cluster.
 
-        >>> fabric.set_uplink(0,0)
+        >>> fabric.set_uplink(uplink=0,iface=0)
 
         :param uplink: The uplink to set.
         :type uplink: integer
@@ -810,6 +951,33 @@ class Fabric(object):
 
     def get_link_stats(self, link=0, async=False):
         """Get the link_stats for each node in the fabric.
+
+        >>> fabric.get_link_stats()
+        {0: {'FS_LC0_BYTE_CNT_0': '0x0',
+          'FS_LC0_BYTE_CNT_1': '0x0',
+          'FS_LC0_CFG_0': '0x1000d07f',
+          'FS_LC0_CFG_1': '0x105f',
+          'FS_LC0_CM_RXDATA_0': '0x0',
+          'FS_LC0_CM_RXDATA_1': '0x0',
+          'FS_LC0_CM_TXDATA_0': '0x82000002',
+          'FS_LC0_CM_TXDATA_1': '0x0',
+          'FS_LC0_PKT_CNT_0': '0x0',
+          'FS_LC0_PKT_CNT_1': '0x0',
+          'FS_LC0_RDRPSCNT': '0x3e89f',
+          'FS_LC0_RERRSCNT': '0x0',
+          'FS_LC0_RMCSCNT': '0x174b9bf',
+          'FS_LC0_RPKTSCNT': '0x0',
+          'FS_LC0_RUCSCNT': '0x43e9b',
+          'FS_LC0_SC_STAT': '0x0',
+          'FS_LC0_STATE': '0x1033',
+          'FS_LC0_TDRPSCNT': '0x0',
+          'FS_LC0_TPKTSCNT': '0x1'},
+         }}
+        >>> #
+        >>> # Output trimmed for brevity ...
+        >>> # The data shown for node 0 is the same type of data presented for each
+        >>> # node in  the fabric.
+        >>> #
 
         :param link: The link to get stats for (0-4).
         :type link: integer
@@ -827,6 +995,9 @@ class Fabric(object):
     def get_linkmap(self, async=False):
         """Get the linkmap for each node in the fabric.
 
+        >>> fabric.get_linkmap()
+        {0: {1: 2, 3: 1, 4: 3}, 1: {3: 0}, 2: {3: 0, 4: 3}, 3: {3: 0, 4: 2}}
+
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
         :type async: boolean
@@ -840,6 +1011,12 @@ class Fabric(object):
     def get_routing_table(self, async=False):
         """Get the routing_table for the fabric.
 
+        >>> fabric.get_routing_table()
+        {0: {1: [0, 0, 0, 3, 0], 2: [0, 3, 0, 0, 2], 3: [0, 2, 0, 0, 3]},
+         1: {0: [0, 0, 0, 3, 0], 2: [0, 0, 0, 2, 0], 3: [0, 0, 0, 2, 0]},
+         2: {0: [0, 0, 0, 3, 2], 1: [0, 0, 0, 2, 0], 3: [0, 0, 0, 2, 3]},
+         3: {0: [0, 0, 0, 3, 2], 1: [0, 0, 0, 2, 0], 2: [0, 0, 0, 2, 3]}}
+
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
         :type async: boolean
@@ -852,6 +1029,20 @@ class Fabric(object):
 
     def get_depth_chart(self, async=False):
         """Get the depth_chart for the fabric.
+
+        >>> fabric.get_depth_chart()
+        {0: {1: {'shortest': (0, 0)},
+          2: {'others': [(3, 1)], 'shortest': (0, 0)},
+          3: {'others': [(2, 1)], 'shortest': (0, 0)}},
+         1: {0: {'shortest': (1, 0)},
+          2: {'others': [(3, 2)], 'shortest': (0, 1)},
+          3: {'others': [(2, 2)], 'shortest': (0, 1)}},
+         2: {0: {'others': [(3, 1)], 'shortest': (2, 0)},
+          1: {'shortest': (0, 1)},
+          3: {'others': [(0, 1)], 'shortest': (2, 0)}},
+         3: {0: {'others': [(2, 1)], 'shortest': (3, 0)},
+          1: {'shortest': (0, 1)},
+          2: {'others': [(0, 1)], 'shortest': (3, 0)}}}
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
@@ -883,22 +1074,6 @@ class Fabric(object):
             if errors:
                 raise CommandFailedError(results, errors)
             return results
-
-    def _discover_nodes(self, ip_address, username="admin", password="admin"):
-        """Gets the nodes of this fabric by pulling IP info from a BMC."""
-        node = self.node(ip_address=ip_address, username=username,
-                         password=password, tftp=self.tftp,
-                         ecme_tftp_port=self.ecme_tftp_port,
-                         verbose=self.verbose)
-        ipinfo = node.get_fabric_ipinfo()
-        for node_id, node_address in ipinfo.iteritems():
-            self._nodes[node_id] = self.node(ip_address=node_address,
-                                            username=username,
-                                            password=password,
-                                            tftp=self.tftp,
-                                            ecme_tftp_port=self.ecme_tftp_port,
-                                            verbose=self.verbose)
-            self._nodes[node_id].node_id = node_id
 
 
 # End of file: ./fabric.py

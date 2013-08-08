@@ -33,7 +33,7 @@ import struct
 
 from cxmanage_api.simg import has_simg, get_simg_contents
 from cxmanage_api.crc32 import get_crc32
-from cxmanage_api.cx_exceptions import UnknownBootCmdError
+from cxmanage_api.cx_exceptions import UbootenvError
 
 
 ENVIRONMENT_SIZE = 8192
@@ -87,7 +87,7 @@ class UbootEnv:
 
         :raises ValueError: If an invalid boot device is specified.
         :raises ValueError: If 'retry' and 'reset' args are used together.
-        :raises Exception: If the u-boot environment is unrecognized
+        :raises UbootenvError: If the u-boot environment is unrecognized
 
         """
         validate_boot_args(boot_args)
@@ -103,7 +103,7 @@ class UbootEnv:
         elif all(x in self.variables for x in UBOOTENV_V2_VARIABLES):
             version = 2
         else:
-            raise Exception("Unrecognized u-boot environment")
+            raise UbootenvError("Unrecognized u-boot environment")
 
         for arg in boot_args:
             if arg == "retry":
@@ -159,7 +159,7 @@ class UbootEnv:
         :returns: Boot order for this U-Boot Environment.
         :rtype: string
 
-        :raises UnknownBootCmdError: If a boot command is unrecognized.
+        :raises UbootenvError: If a boot command is unrecognized.
 
         """
         boot_args = []
@@ -171,7 +171,7 @@ class UbootEnv:
                 elif target == "scsi":
                     boot_args.append("disk")
                 else:
-                    raise UnknownBootCmdError("Unrecognized boot target: %s"
+                    raise UbootenvError("Unrecognized boot target: %s"
                             % target)
         else:
             if "bootcmd_default" in self.variables:
@@ -198,7 +198,7 @@ class UbootEnv:
                     boot_args.append("reset")
                     break
                 else:
-                    raise UnknownBootCmdError("Unrecognized boot command: %s"
+                    raise UbootenvError("Unrecognized boot command: %s"
                             % command)
 
                 if retry:
@@ -210,6 +210,64 @@ class UbootEnv:
 
         validate_boot_args(boot_args) # sanity check
         return boot_args
+
+
+    def set_pxe_interface(self, interface):
+        """Sets the interfacespecified in the uboot environment.
+
+        >>> uboot.set_pxe_interface('eth0')
+
+        .. note::
+            * Valid Args: eth0 or eth1
+
+        :param interface: The interface to set.
+        :type boot_args: string
+
+        :raises ValueError: If an invalid interface is specified.
+
+        """
+        validate_pxe_interface(interface)
+        if interface == self.get_pxe_interface():
+            return
+
+        commands = []
+        retry = False
+        reset = False
+
+        if interface == "eth0":
+            self.variables["ethprime"] = "xgmac0"
+        elif (interface == "eth1"):
+            self.variables["ethprime"] = "xgmac1"
+        else:
+            raise ValueError("Invalid pxe interface: %s" % interface)
+
+    def get_pxe_interface(self):
+        """Returns a string representation of the pxe interface.
+
+        >>> uboot.get_pxe_interface()
+        'eth0'
+
+        :returns: Boot order for this U-Boot Environment.
+        :rtype: string
+        :raises ValueError: If the u-boot environment value is not recognized.
+
+        """
+
+        # This is based on reading the ethprime environment variable, and
+        # translating from xgmacX to ethX. By default ethprime is not set
+        # and eth0 is the assumed default (NOTE: this is brittle)
+
+        if "ethprime" in self.variables:
+            xgmac = self.variables["ethprime"]
+            if xgmac == "xgmac0":
+                return "eth0"
+            elif (xgmac == "xgmac1"):
+                return "eth1"
+            else:
+                raise ValueError("Unrecognized value for ethprime")
+        else:
+            return "eth0"
+
 
     def get_contents(self):
         """Returns a raw string representation of the uboot environment.
@@ -253,3 +311,9 @@ def validate_boot_args(boot_args):
                     raise ValueError("Invalid boot arg: %s" % arg)
         else:
             raise ValueError("Invalid boot arg: %s" % arg)
+
+
+def validate_pxe_interface(interface):
+    """ Validate pxe interface. Raises a ValueError if the args are invalid."""
+    if not interface in ["eth0", "eth1"]:
+        raise ValueError("Invalid pxe interface: %s" % interface)

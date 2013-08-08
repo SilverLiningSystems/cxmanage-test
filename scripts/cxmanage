@@ -42,14 +42,16 @@ from cxmanage.commands.mc import mcreset_command
 from cxmanage.commands.fw import fwupdate_command, fwinfo_command
 from cxmanage.commands.sensor import sensor_command
 from cxmanage.commands.fabric import ipinfo_command, macaddrs_command
-from cxmanage.commands.config import config_reset_command, config_boot_command
+from cxmanage.commands.config import config_reset_command, config_boot_command, \
+        config_pxe_command
 from cxmanage.commands.info import info_command
 from cxmanage.commands.ipmitool import ipmitool_command
 from cxmanage.commands.ipdiscover import ipdiscover_command
+from cxmanage.commands.tspackage import tspackage_command
 
 
-PYIPMI_VERSION = '0.7.1'
-IPMITOOL_VERSION = '1.8.11.0-cx5'
+PYIPMI_VERSION = '0.8.0'
+IPMITOOL_VERSION = '1.8.11.0-cx7'
 
 
 PARSER_EPILOG = """examples:
@@ -195,6 +197,7 @@ def build_parser():
                 'NEWEST',
                 'INACTIVE'
             ]))
+
     simg_args = fwupdate.add_mutually_exclusive_group()
     simg_args.add_argument('--force-simg',
             help='Force addition of SIMG header',
@@ -248,6 +251,11 @@ def build_parser():
             type=lambda x: [] if x == 'none' else x.split(','))
     boot.set_defaults(func=config_boot_command)
 
+    pxe = config_subs.add_parser('pxe',
+            help='set pxe interface')
+    pxe.add_argument('interface', help='pxe interface to use')
+    pxe.set_defaults(func=config_pxe_command)
+
     #info command
     info = subparsers.add_parser('info', help='get host info')
     info.add_argument('info_type', nargs='?',
@@ -283,6 +291,10 @@ def build_parser():
 
     parser.add_argument('hostname',
             help='nodes to operate on (see examples below)')
+
+    # tspackage command
+    tspackage = subparsers.add_parser('tspackage', help='Get all data from each node')
+    tspackage.set_defaults(func=tspackage_command)
 
     return parser
 

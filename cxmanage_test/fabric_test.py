@@ -140,6 +140,18 @@ class FabricTest(unittest.TestCase):
         for node in self.nodes:
             self.assertEqual(node.executed, ["get_boot_order"])
 
+    def test_set_pxe_interface(self):
+        """ Test set_pxe_interface command """
+        self.fabric.set_pxe_interface("eth0")
+        for node in self.nodes:
+            self.assertEqual(node.executed, [("set_pxe_interface", "eth0")])
+
+    def test_get_pxe_interface(self):
+        """ Test get_pxe_interface command """
+        self.fabric.get_pxe_interface()
+        for node in self.nodes:
+            self.assertEqual(node.executed, ["get_pxe_interface"])
+
     def test_get_versions(self):
         """ Test get_versions command """
         self.fabric.get_versions()
@@ -347,6 +359,73 @@ class FabricTest(unittest.TestCase):
         bmc = self.fabric.primary_node.bmc
         self.assertIn ('fabric_rm_macaddr', bmc.executed)
 
+    def test_set_macaddr_base(self):
+        """Test the set_macaddr_base method"""
+        self.fabric.set_macaddr_base("00:11:22:33:44:55")
+        for node in self.fabric.nodes.values():
+            if node == self.fabric.primary_node:
+                self.assertEqual(
+                    node.bmc.executed,
+                    [("fabric_config_set_macaddr_base", "00:11:22:33:44:55")]
+                )
+            else:
+                self.assertEqual(node.bmc.executed, [])
+
+    def test_get_macaddr_base(self):
+        """Test the get_macaddr_base method"""
+        self.assertEqual(self.fabric.get_macaddr_base(), "00:00:00:00:00:00")
+        for node in self.fabric.nodes.values():
+            if node == self.fabric.primary_node:
+                self.assertEqual(
+                    node.bmc.executed,
+                    ["fabric_config_get_macaddr_base"]
+                )
+            else:
+                self.assertEqual(node.bmc.executed, [])
+
+    def test_set_macaddr_mask(self):
+        """Test the set_macaddr_mask method"""
+        self.fabric.set_macaddr_mask("00:11:22:33:44:55")
+        for node in self.fabric.nodes.values():
+            if node == self.fabric.primary_node:
+                self.assertEqual(
+                    node.bmc.executed,
+                    [("fabric_config_set_macaddr_mask", "00:11:22:33:44:55")]
+                )
+            else:
+                self.assertEqual(node.bmc.executed, [])
+
+    def test_get_macaddr_mask(self):
+        """Test the get_macaddr_mask method"""
+        self.assertEqual(self.fabric.get_macaddr_mask(), "00:00:00:00:00:00")
+        for node in self.fabric.nodes.values():
+            if node == self.fabric.primary_node:
+                self.assertEqual(
+                    node.bmc.executed,
+                    ["fabric_config_get_macaddr_mask"]
+                )
+            else:
+                self.assertEqual(node.bmc.executed, [])
+
+    def test_composite_bmc(self):
+        """ Test the CompositeBMC member """
+        with self.assertRaises(AttributeError):
+            self.fabric.cbmc.fake_method
+
+        self.fabric.cbmc.set_chassis_power("off")
+        results = self.fabric.cbmc.get_chassis_status()
+
+        self.assertEqual(len(results), len(self.fabric.nodes))
+        for node_id in self.fabric.nodes:
+            self.assertFalse(results[node_id].power_on)
+
+        for node in self.fabric.nodes.values():
+            self.assertEqual(node.bmc.executed, [
+                ("set_chassis_power", "off"),
+                "get_chassis_status"
+            ])
+
+
 class DummyNode(object):
     """ Dummy node for the nodemanager tests """
     def __init__(self, ip_address, username="admin", password="admin",
@@ -404,6 +483,13 @@ class DummyNode(object):
     def get_boot_order(self):
         self.executed.append("get_boot_order")
         return ["disk", "pxe"]
+
+    def set_pxe_interface(self, interface):
+        self.executed.append(("set_pxe_interface", interface))
+
+    def get_pxe_interface(self):
+        self.executed.append("get_pxe_interface")
+        return "eth0"
 
     def get_versions(self):
         self.executed.append("get_versions")

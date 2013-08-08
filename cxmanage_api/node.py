@@ -31,23 +31,26 @@
 
 import os
 import re
-import subprocess
 import time
+import shutil
+import tempfile
+import subprocess
 
 from pkg_resources import parse_version
 from pyipmi import make_bmc, IpmiError
 from pyipmi.bmc import LanBMC as BMC
 from tftpy.TftpShared import TftpException
 
+from cxmanage_api import loggers
 from cxmanage_api import temp_file
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
-        NoFirmwareInfoError, SocmanVersionError, FirmwareConfigError, \
-        PriorityIncrementError, NoPartitionError, TransferFailure, \
-        ImageSizeError, PartitionInUseError
+        SocmanVersionError, FirmwareConfigError, PriorityIncrementError, \
+        NoPartitionError, TransferFailure, ImageSizeError, \
+        PartitionInUseError, UbootenvError
 
 
 class Node(object):
@@ -217,10 +220,7 @@ class Node(object):
         :rtype: boolean
 
         """
-        try:
-            return self.bmc.get_chassis_status().power_on
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.get_chassis_status().power_on
 
     def set_power(self, mode):
         """Send an IPMI power command to this target.
@@ -238,10 +238,7 @@ class Node(object):
         :type mode: string
 
         """
-        try:
-            self.bmc.set_chassis_power(mode=mode)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        self.bmc.set_chassis_power(mode=mode)
 
     def get_power_policy(self):
         """Return power status reported by IPMI.
@@ -255,10 +252,7 @@ class Node(object):
         :raises IpmiError: If errors in the command occur with BMC communication.
 
         """
-        try:
-            return self.bmc.get_chassis_status().power_restore_policy
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.get_chassis_status().power_restore_policy
 
     def set_power_policy(self, state):
         """Set default power state for Linux side.
@@ -273,10 +267,7 @@ class Node(object):
         :type state: string
 
         """
-        try:
-            self.bmc.set_chassis_policy(state)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        self.bmc.set_chassis_policy(state)
 
     def mc_reset(self, wait=False):
         """Sends a Master Control reset command to the node.
@@ -290,12 +281,7 @@ class Node(object):
         :raises IPMIError: If there is an IPMI error communicating with the BMC.
 
         """
-        try:
-            result = self.bmc.mc_reset("cold")
-            if (hasattr(result, "error")):
-                raise Exception(result.error)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        self.bmc.mc_reset("cold")
 
         if wait:
             deadline = time.time() + 300.0
@@ -313,6 +299,26 @@ class Node(object):
                     pass
             else:
                 raise Exception("Reset timed out")
+
+    def get_sel(self):
+        """Get the system event log for this node.
+
+        >>> node.get_sel()
+        ['1 | 06/21/2013 | 16:13:31 | System Event #0xf4 |',
+         '0 | 06/27/2013 | 20:25:18 | System Boot Initiated #0xf1 | Initiated by power up | Asserted',
+         '1 | 06/27/2013 | 20:25:35 | Watchdog 2 #0xfd | Hard reset | Asserted',
+         '2 | 06/27/2013 | 20:25:18 | System Boot Initiated #0xf1 | Initiated by power up | Asserted',
+         '3 | 06/27/2013 | 21:01:13 | System Event #0xf4 |',
+         ...
+        ]
+        >>> #
+        >>> # Output trimmed for brevity
+        >>> #
+
+        :returns: The node's system event log
+        :rtype: string
+        """
+        return self.bmc.sel_list()
 
     def get_sensors(self, search=""):
         """Get a list of sensor objects that match search criteria.
@@ -357,11 +363,8 @@ class Node(object):
         :rtype: dictionary of pyipmi objects
 
         """
-        try:
-            sensors = [x for x in self.bmc.sdr_list()
-                        if search.lower() in x.sensor_name.lower()]
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        sensors = [x for x in self.bmc.sdr_list()
+                   if search.lower() in x.sensor_name.lower()]
 
         if (len(sensors) == 0):
             if (search == ""):
@@ -515,34 +518,18 @@ class Node(object):
         :return: Returns a list of FWInfo objects for each
         :rtype: list
 
-        :raises NoFirmwareInfoError: If no fw info exists for any partition.
         :raises IpmiError: If errors in the command occur with BMC communication.
 
         """
-        try:
-            fwinfo = [x for x in self.bmc.get_firmware_info()
-                      if hasattr(x, "partition")]
-            if (len(fwinfo) == 0):
-                raise NoFirmwareInfoError("Failed to retrieve firmware info")
+        fwinfo = [x for x in self.bmc.get_firmware_info()
+                  if hasattr(x, "partition")]
 
-            # Clean up the fwinfo results
-            for entry in fwinfo:
-                if (entry.version == ""):
-                    entry.version = "Unknown"
+        # Clean up the fwinfo results
+        for entry in fwinfo:
+            if (entry.version == ""):
+                entry.version = "Unknown"
 
-            # Flag CDB as "in use" based on socman info
-            for a in range(1, len(fwinfo)):
-                previous = fwinfo[a - 1]
-                current = fwinfo[a]
-                if (current.type.split()[1][1:-1] == "CDB" and
-                        current.in_use == "Unknown"):
-                    if (previous.type.split()[1][1:-1] != "SOC_ELF"):
-                        current.in_use = "1"
-                    else:
-                        current.in_use = previous.in_use
-            return fwinfo
-        except IpmiError as error_details:
-            raise IpmiError(self._parse_ipmierror(error_details))
+        return fwinfo
 
     def get_firmware_info_dict(self):
         """Gets firmware info for each partition on the Node.
@@ -581,7 +568,6 @@ class Node(object):
         :return: Returns a list of FWInfo objects for each
         :rtype: list
 
-        :raises NoFirmwareInfoError: If no fw info exists for any partition.
         :raises IpmiError: If errors in the command occur with BMC communication.
 
         """
@@ -627,31 +613,119 @@ class Node(object):
                                         changed.
 
         """
+
+        new_directory = "~/.cxmanage/logs/%s" % self.ip_address
+        new_directory = os.path.expanduser(new_directory)
+        if not os.path.exists(new_directory):
+            os.makedirs(new_directory)
+
+        timestamp = time.strftime("%Y%m%d%H%M%S")
+        new_filename = "%s-fwupdate.log" % timestamp
+        new_filepath = os.path.join(new_directory, new_filename)
+
+        logger = loggers.FileLogger(new_filepath)
+
+        logger.info(
+            "Firmware Update Log for Node %d" % self.node_id
+        )
+        logger.info("ECME IP address: " + self.ip_address)
+
+        version_info = self.get_versions()
+        logger.info(
+            "\nOld firmware version: " + \
+            version_info.firmware_version)
+
+        if package.version:
+            logger.info("New firmware version: " + package.version)
+        else:
+            logger.warn("New firmware version name unavailable.")
+
+        logger.info(
+            "\n[ Pre-Update Firmware Info for Node %d ]" %
+            self.node_id
+        )
+
         fwinfo = self.get_firmware_info()
+        num_ubootenv_partitions = len([x for x in fwinfo
+                                       if "UBOOTENV" in x.type])
+
+        for partition in fwinfo:
+            logger.info("\nPartition : %s" % partition.partition)
+            info_string = "Type      : %s" % partition.type + \
+            "\nOffset    : %s" % partition.offset + \
+            "\nSize      : %s" % partition.size + \
+            "\nPriority  : %s" % partition.priority + \
+            "\nDaddr     : %s" % partition.daddr + \
+            "\nFlags     : %s" % partition.flags + \
+            "\nVersion   : %s" % partition.version + \
+            "\nIn Use    : %s" % partition.in_use
+            logger.info(info_string)
 
         # Get the new priority
         if (priority == None):
             priority = self._get_next_priority(fwinfo, package)
 
+        logger.info(
+            "\nPriority: " + str(priority)
+        )
+
+        images_to_upload = len(package.images)
+        logger.info(
+            "package.images: Images to upload: %d" % images_to_upload
+        )
+
         updated_partitions = []
 
+        image_uploading = 1
         for image in package.images:
-            if (image.type == "UBOOTENV"):
+            logger.info(
+                "\nUploading image %d of %d" %
+                (image_uploading, images_to_upload)
+            )
+
+            if image.type == "UBOOTENV" and num_ubootenv_partitions >= 2:
+                logger.info(
+                   "Trying ubootenv for image %d..." % image_uploading
+                )
+
                 # Get partitions
                 running_part = self._get_partition(fwinfo, image.type, "FIRST")
                 factory_part = self._get_partition(fwinfo, image.type,
                         "SECOND")
 
+                # Extra \n's here for ease of reading output
+                logger.info(
+                    "\nFirst ('FIRST') partition:\n" + \
+                    str(running_part) + \
+                    "\n\nSecond ('FACTORY') partition:\n" + \
+                    str(factory_part)
+                )
+
                 # Update factory ubootenv
                 self._upload_image(image, factory_part, priority)
+
+                # Extra \n for output formatting
+                logger.info(
+                    "\nDone uploading factory image"
+                )
 
                 # Update running ubootenv
                 old_ubootenv_image = self._download_image(running_part)
                 old_ubootenv = self.ubootenv(open(
                                         old_ubootenv_image.filename, "rb").read())
+
+                logger.info(
+                   "Done getting old ubootenv image"
+                )
+
                 try:
                     ubootenv = self.ubootenv(open(image.filename, "rb").read())
                     ubootenv.set_boot_order(old_ubootenv.get_boot_order())
+                    ubootenv.set_pxe_interface(old_ubootenv.get_pxe_interface())
+
+                    logger.info(
+                        "Set boot order to %s" % old_ubootenv.get_boot_order()
+                    )
 
                     filename = temp_file()
                     with open(filename, "wb") as f:
@@ -661,11 +735,20 @@ class Node(object):
                                            image.version)
                     self._upload_image(ubootenv_image, running_part,
                             priority)
-                except (ValueError, Exception):
+
+                    logger.info(
+                        "Done uploading ubootenv image to first " + \
+                        "partition ('running partition')"
+                    )
+                except (ValueError, UbootenvError):
                     self._upload_image(image, running_part, priority)
 
                 updated_partitions += [running_part, factory_part]
             else:
+                logger.info(
+                   "Using Non-ubootenv for image %d..." %
+                   image_uploading
+                )
                 # Get the partitions
                 if (partition_arg == "BOTH"):
                     partitions = [self._get_partition(fwinfo, image.type,
@@ -681,8 +764,16 @@ class Node(object):
 
                 updated_partitions += partitions
 
+            logger.info(
+                "Done uploading image %d of %d" %
+                (image_uploading, images_to_upload)
+            )
+            image_uploading = image_uploading + 1
+
         if package.version:
             self.bmc.set_firmware_version(package.version)
+
+            logger.info("")  # For readability
 
         # Post verify
         fwinfo = self.get_firmware_info()
@@ -691,22 +782,39 @@ class Node(object):
             new_partition = fwinfo[partition_id]
 
             if new_partition.type != old_partition.type:
+                logger.error(
+                    "Update failed (partition %i, type changed)"
+                    % partition_id
+                )
                 raise Exception("Update failed (partition %i, type changed)"
                         % partition_id)
 
             if int(new_partition.priority, 16) != priority:
+                logger.error(
+                    "Update failed (partition %i, wrong priority)"
+                    % partition_id
+                )
                 raise Exception("Update failed (partition %i, wrong priority)"
                         % partition_id)
 
             if int(new_partition.flags, 16) & 2 != 0:
+                logger.error(
+                    "Update failed (partition %i, not activated)"
+                    % partition_id
+                )
                 raise Exception("Update failed (partition %i, not activated)"
                         % partition_id)
 
-            result = self.bmc.check_firmware(partition_id)
-            if not hasattr(result, "crc32") or result.error != None:
-                raise Exception("Update failed (partition %i, post-crc32 fail)"
-                        % partition_id)
+            self.bmc.check_firmware(partition_id)
+            logger.info(
+                "Check complete for partition %d" % partition_id
+            )
 
+        logger.info(
+            "\nDone updating firmware."
+        )
+
+        print("\nLog saved to " + new_filepath)
 
     def config_reset(self):
         """Resets configuration to factory defaults.
@@ -714,25 +822,23 @@ class Node(object):
         >>> node.config_reset()
 
         :raises IpmiError: If errors in the command occur with BMC communication.
-        :raises Exception: If there are errors within the command response.
 
         """
-        try:
-            # Reset CDB
-            result = self.bmc.reset_firmware()
-            if (hasattr(result, "error")):
-                raise Exception(result.error)
+        # Reset CDB
+        result = self.bmc.reset_firmware()
 
-            # Reset ubootenv
-            fwinfo = self.get_firmware_info()
+        # Reset ubootenv
+        fwinfo = self.get_firmware_info()
+        try:
             running_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
             factory_part = self._get_partition(fwinfo, "UBOOTENV", "SECOND")
             image = self._download_image(factory_part)
             self._upload_image(image, running_part)
-            # Clear SEL
-            self.bmc.sel_clear()
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        except NoPartitionError:
+            pass  # Only one partition? Don't mess with it!
+
+        # Clear SEL
+        self.bmc.sel_clear()
 
     def set_boot_order(self, boot_args):
         """Sets boot-able device order for this node.
@@ -770,6 +876,41 @@ class Node(object):
         """
         return self.get_ubootenv().get_boot_order()
 
+    def set_pxe_interface(self, interface):
+        """Sets pxe interface for this node.
+
+        >>> node.set_boot_order('eth0')
+
+        :param interface: Interface pass on to the uboot environment.
+        :type boot_args: string
+
+        """
+        fwinfo = self.get_firmware_info()
+        first_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
+        active_part = self._get_partition(fwinfo, "UBOOTENV", "ACTIVE")
+
+        # Download active ubootenv, modify, then upload to first partition
+        image = self._download_image(active_part)
+        ubootenv = self.ubootenv(open(image.filename).read())
+        ubootenv.set_pxe_interface(interface)
+        priority = max(int(x.priority, 16) for x in [first_part, active_part])
+
+        filename = temp_file()
+        with open(filename, "w") as f:
+            f.write(ubootenv.get_contents())
+
+        ubootenv_image = self.image(filename, image.type, False, image.daddr,
+                                    image.skip_crc32, image.version)
+        self._upload_image(ubootenv_image, first_part, priority)
+
+    def get_pxe_interface(self):
+        """Returns the current pxe interface for this node.
+
+        >>> node.get_pxe_interface()
+        'eth0'
+        """
+        return self.get_ubootenv().get_pxe_interface()
+
     def get_versions(self):
         """Get version info from this node.
 
@@ -788,10 +929,7 @@ class Node(object):
         :raises Exception: If there are errors within the command response.
 
         """
-        try:
-            result = self.bmc.get_info_basic()
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        result = self.bmc.get_info_basic()
 
         fwinfo = self.get_firmware_info()
         components = [("cdb_version", "CDB"),
@@ -909,12 +1047,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_config_get_ip_info',
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_config_get_ip_info'
+        )
 
         # Parse addresses from ipinfo file
         results = {}
@@ -938,6 +1073,20 @@ class Node(object):
     def get_fabric_macaddrs(self):
         """Gets what macaddr information THIS node knows about the Fabric.
 
+        >>> node.get_fabric_macaddrs()
+        {0: {0: ['fc:2f:40:ab:cd:cc'],
+          1: ['fc:2f:40:ab:cd:cd'],
+          2: ['fc:2f:40:ab:cd:ce']},
+         1: {0: ['fc:2f:40:3e:66:e0'],
+          1: ['fc:2f:40:3e:66:e1'],
+          2: ['fc:2f:40:3e:66:e2']},
+         2: {0: ['fc:2f:40:fd:37:34'],
+          1: ['fc:2f:40:fd:37:35'],
+          2: ['fc:2f:40:fd:37:36']},
+         3: {0: ['fc:2f:40:0e:4a:74'],
+          1: ['fc:2f:40:0e:4a:75'],
+          2: ['fc:2f:40:0e:4a:76']}}
+
         :return: Returns a map of node_ids->ports->mac_addresses.
         :rtype: dictionary
 
@@ -945,13 +1094,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_config_get_mac_addresses'
-            )
-
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_config_get_mac_addresses'
+        )
 
         # Parse addresses from ipinfo file
         results = {}
@@ -1015,6 +1160,27 @@ class Node(object):
     def get_link_stats(self, link=0):
         """Gets the linkstats for the link specified.
 
+        >>> node.get_link_stats()
+        {'FS_LC0_BYTE_CNT_0': '0x0',
+         'FS_LC0_BYTE_CNT_1': '0x0',
+         'FS_LC0_CFG_0': '0x1000d07f',
+         'FS_LC0_CFG_1': '0x105f',
+         'FS_LC0_CM_RXDATA_0': '0x0',
+         'FS_LC0_CM_RXDATA_1': '0x0',
+         'FS_LC0_CM_TXDATA_0': '0x82000002',
+         'FS_LC0_CM_TXDATA_1': '0x0',
+         'FS_LC0_PKT_CNT_0': '0x0',
+         'FS_LC0_PKT_CNT_1': '0x0',
+         'FS_LC0_RDRPSCNT': '0x3e791',
+         'FS_LC0_RERRSCNT': '0x0',
+         'FS_LC0_RMCSCNT': '0x173b923',
+         'FS_LC0_RPKTSCNT': '0x0',
+         'FS_LC0_RUCSCNT': '0x43cab',
+         'FS_LC0_SC_STAT': '0x0',
+         'FS_LC0_STATE': '0x1033',
+         'FS_LC0_TDRPSCNT': '0x0',
+         'FS_LC0_TPKTSCNT': '0x1'}
+
         :param link: The link to get stats for (0-4).
         :type link: integer
 
@@ -1052,6 +1218,9 @@ class Node(object):
     def get_linkmap(self):
         """Gets the src and destination of each link on a node.
 
+        >>> node.get_linkmap()
+        {1: 2, 3: 1, 4: 3}
+
         :return: Returns a map of link_id->node_id.
         :rtype: dictionary
 
@@ -1059,12 +1228,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_info_get_link_map',
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_info_get_link_map',
+        )
 
         results = {}
         for line in open(filename):
@@ -1083,6 +1249,9 @@ class Node(object):
     def get_routing_table(self):
         """Gets the routing table as instantiated in the fabric switch.
 
+        >>> node.get_routing_table()
+        {1: [0, 0, 0, 3, 0], 2: [0, 3, 0, 0, 2], 3: [0, 2, 0, 0, 3]}
+
         :return: Returns a map of node_id->rt_entries.
         :rtype: dictionary
 
@@ -1090,12 +1259,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_info_get_routing_table',
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_info_get_routing_table',
+        )
 
         results = {}
         for line in open(filename):
@@ -1117,6 +1283,11 @@ class Node(object):
         """Gets a table indicating the distance from a given node to all other
         nodes on each fabric link.
 
+        >>> node.get_depth_chart()
+        {1: {'shortest': (0, 0)},
+         2: {'others': [(3, 1)], 'shortest': (0, 0)},
+         3: {'others': [(2, 1)], 'shortest': (0, 0)}}
+
         :return: Returns a map of target->(neighbor, hops),
                                   [other (neighbors,hops)]
         :rtype: dictionary
@@ -1125,12 +1296,9 @@ class Node(object):
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        try:
-            filename = self._run_fabric_command(
-                function_name='fabric_info_get_depth_chart',
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        filename = self._run_fabric_command(
+            function_name='fabric_info_get_depth_chart',
+        )
 
         results = {}
         for line in open(filename):
@@ -1197,7 +1365,7 @@ class Node(object):
         or if sent to a primary node, the linkspeed setting for the
         Profile 0 of the currently active Configuration.
 
-        >>> fabric.get_linkspeed()
+        >>> node.get_linkspeed()
         2.5
 
         :param link: The fabric link number to read the linkspeed for.
@@ -1205,20 +1373,17 @@ class Node(object):
         :param actual: WhetherThe fabric link number to read the linkspeed for.
         :type actual: boolean
 
-        :return: Linkspeed for the fabric..
+        :return: Linkspeed for the fabric.
         :rtype: float
 
         """
-        try:
-            return self.bmc.fabric_get_linkspeed(link=link, actual=actual)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.fabric_get_linkspeed(link=link, actual=actual)
 
     def get_uplink(self, iface=0):
         """Get the uplink a MAC will use when transmitting a packet out of the
         cluster.
 
-        >>> fabric.get_uplink(iface=1)
+        >>> node.get_uplink(iface=1)
         0
 
         :param iface: The interface for the uplink.
@@ -1230,10 +1395,7 @@ class Node(object):
         :raises IpmiError: When any errors are encountered.
 
         """
-        try:
-            return self.bmc.fabric_config_get_uplink(iface=iface)
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.fabric_config_get_uplink(iface=iface)
 
     def set_uplink(self, uplink=0, iface=0):
         """Set the uplink a MAC will use when transmitting a packet out of the
@@ -1242,7 +1404,7 @@ class Node(object):
         >>> #
         >>> # Set eth0 to uplink 1 ...
         >>> #
-        >>> fabric.set_uplink(uplink=1,iface=0)
+        >>> node.set_uplink(uplink=1,iface=0)
 
         :param uplink: The uplink to set.
         :type uplink: integer
@@ -1252,13 +1414,11 @@ class Node(object):
         :raises IpmiError: When any errors are encountered.
 
         """
-        try:
-            return self.bmc.fabric_config_set_uplink(
-                uplink=uplink,
-                iface=iface
-            )
-        except IpmiError as e:
-            raise IpmiError(self._parse_ipmierror(e))
+        return self.bmc.fabric_config_set_uplink(
+            uplink=uplink,
+            iface=iface
+        )
+
 
     def _run_fabric_command(self, function_name, **kwargs):
         """Handles the basics of sending a node a command for fabric data."""
@@ -1269,15 +1429,11 @@ class Node(object):
             self.ecme_tftp.get_file(basename, filename)
 
         except (IpmiError, TftpException) as e:
-            try:
-                getattr(self.bmc, function_name)(
-                    filename=basename,
-                    tftp_addr=self.tftp_address,
-                    **kwargs
-                )
-
-            except IpmiError as e:
-                raise IpmiError(self._parse_ipmierror(e))
+            getattr(self.bmc, function_name)(
+                filename=basename,
+                tftp_addr=self.tftp_address,
+                **kwargs
+            )
 
             deadline = time.time() + 10
             while (time.time() < deadline):
@@ -1363,14 +1519,10 @@ class Node(object):
             self.tftp.put_file(filename, basename)
             result = self.bmc.update_firmware(basename, partition_id,
                     image.type, self.tftp_address)
-            if (not hasattr(result, "tftp_handle_id")):
-                raise AttributeError("Failed to start firmware upload")
             self._wait_for_transfer(result.tftp_handle_id)
 
         # Verify crc and activate
-        result = self.bmc.check_firmware(partition_id)
-        if ((not hasattr(result, "crc32")) or (result.error != None)):
-            raise AttributeError("Node reported crc32 check failure")
+        self.bmc.check_firmware(partition_id)
         self.bmc.activate_firmware(partition_id)
 
     def _download_image(self, partition):
@@ -1391,8 +1543,6 @@ class Node(object):
             # Fall back and use TFTP server
             result = self.bmc.retrieve_firmware(basename, partition_id,
                     image_type, self.tftp_address)
-            if (not hasattr(result, "tftp_handle_id")):
-                raise AttributeError("Failed to start firmware download")
             self._wait_for_transfer(result.tftp_handle_id)
             self.tftp.get_file(basename, filename)
 
@@ -1404,17 +1554,12 @@ class Node(object):
         """Wait for a firmware transfer to finish."""
         deadline = time.time() + 180
         result = self.bmc.get_firmware_status(handle)
-        if (not hasattr(result, "status")):
-            raise AttributeError('Failed to retrieve firmware transfer status')
 
         while (result.status == "In progress"):
             if (time.time() >= deadline):
                 raise TimeoutError("Transfer timed out after 3 minutes")
             time.sleep(1)
             result = self.bmc.get_firmware_status(handle)
-            if (not hasattr(result, "status")):
-                raise AttributeError(
-                        "Failed to retrieve firmware transfer status")
 
         if (result.status != "Complete"):
             raise TransferFailure("Node reported TFTP transfer failure")
@@ -1423,6 +1568,8 @@ class Node(object):
         """Check if this host is ready for an update."""
         info = self.get_versions()
         fwinfo = self.get_firmware_info()
+        num_ubootenv_partitions = len([x for x in fwinfo
+                                       if "UBOOTENV" in x.type])
 
         # Check firmware version
         if package.version and info.firmware_version:
@@ -1467,7 +1614,8 @@ class Node(object):
 
         # Check partitions
         for image in package.images:
-            if ((image.type == "UBOOTENV") or (partition_arg == "BOTH")):
+            if (image.type == "UBOOTENV" and num_ubootenv_partitions >= 2
+                    or partition_arg == "BOTH"):
                 partitions = [self._get_partition(fwinfo, image.type, x)
                         for x in ["FIRST", "SECOND"]]
             else:
@@ -1485,7 +1633,9 @@ class Node(object):
                     raise PartitionInUseError(
                             "Can't upload to a CDB/BOOT_LOG partition that's in use")
 
-        return True
+        # Try a TFTP download. Would try an upload too, but nowhere to put it.
+        partition = self._get_partition(fwinfo, "SOC_ELF", "FIRST")
+        self._download_image(partition)
 
     def _get_next_priority(self, fwinfo, package):
         """ Get the next priority """
@@ -1500,16 +1650,5 @@ class Node(object):
             raise PriorityIncrementError(
                             "Unable to increment SIMG priority, too high")
         return priority
-
-    def _parse_ipmierror(self, error_details):
-        """Parse a meaningful message from an IpmiError """
-        try:
-            error = str(error_details).lstrip().splitlines()[0].rstrip()
-            if (error.startswith('Error: ')):
-                error = error[7:]
-            return error
-        except IndexError:
-            return 'Unknown IPMItool error.'
-
 
 # End of file: ./node.py

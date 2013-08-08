@@ -28,6 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+
 from pkg_resources import parse_version
 
 from cxmanage import get_tftp, get_nodes, get_node_strings, run_command, \
@@ -55,7 +56,7 @@ def fwupdate_command(args):
             print "Updating firmware..."
 
         results, errors = run_command(args, nodes, "update_firmware", package,
-                args.partition, args.priority)
+            args.partition, args.priority)
         if errors:
             print "ERROR: Firmware update failed."
             return True

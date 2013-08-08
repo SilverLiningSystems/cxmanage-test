@@ -61,6 +61,12 @@ class NodeTest(unittest.TestCase):
                 ipretriever=DummyIPRetriever, verbose=True)
                 for ip in ADDRESSES]
 
+        # Give each node a node_id
+        count = 0
+        for node in self.nodes:
+            node.node_id = count
+            count = count + 1
+
         # Set up an internal server
         self.work_dir = tempfile.mkdtemp(prefix="cxmanage_node_test-")
 
@@ -269,6 +275,50 @@ class NodeTest(unittest.TestCase):
                 self.assertEqual(partition.activates, 0)
 
             self.assertEqual(result, ["disk", "pxe"])
+
+    def test_set_pxe_interface(self):
+        """ Test node.set_pxe_interface method """
+        for node in self.nodes:
+            node.set_pxe_interface("eth0")
+
+            partitions = node.bmc.partitions
+            ubootenv_partition = partitions[5]
+            unchanged_partitions = [x for x in partitions
+                    if x != ubootenv_partition]
+
+            self.assertEqual(ubootenv_partition.updates, 1)
+            self.assertEqual(ubootenv_partition.retrieves, 1)
+            self.assertEqual(ubootenv_partition.checks, 1)
+            self.assertEqual(ubootenv_partition.activates, 1)
+
+            for partition in unchanged_partitions:
+                self.assertEqual(partition.updates, 0)
+                self.assertEqual(partition.retrieves, 0)
+                self.assertEqual(partition.checks, 0)
+                self.assertEqual(partition.activates, 0)
+
+    def test_get_pxe_interface(self):
+        """ Test node.get_pxe_interface method """
+        for node in self.nodes:
+            result = node.get_pxe_interface()
+
+            partitions = node.bmc.partitions
+            ubootenv_partition = partitions[5]
+            unchanged_partitions = [x for x in partitions
+                    if x != ubootenv_partition]
+
+            self.assertEqual(ubootenv_partition.updates, 0)
+            self.assertEqual(ubootenv_partition.retrieves, 1)
+            self.assertEqual(ubootenv_partition.checks, 0)
+            self.assertEqual(ubootenv_partition.activates, 0)
+
+            for partition in unchanged_partitions:
+                self.assertEqual(partition.updates, 0)
+                self.assertEqual(partition.retrieves, 0)
+                self.assertEqual(partition.checks, 0)
+                self.assertEqual(partition.activates, 0)
+
+            self.assertEqual(result, "eth0")
 
     def test_get_versions(self):
         """ Test node.get_versions method """
@@ -796,6 +846,20 @@ class DummyBMC(LanBMC):
     def fabric_config_set_link_users_factor(self, lu_factor):
         self.fabric_lu_factor = lu_factor
         self.executed.append('fabric_config_set_link_users_factor')
+
+    def fabric_config_set_macaddr_base(self, macaddr):
+        self.executed.append(('fabric_config_set_macaddr_base', macaddr))
+
+    def fabric_config_get_macaddr_base(self):
+        self.executed.append('fabric_config_get_macaddr_base')
+        return "00:00:00:00:00:00"
+
+    def fabric_config_set_macaddr_mask(self, mask):
+        self.executed.append(('fabric_config_set_macaddr_mask', mask))
+
+    def fabric_config_get_macaddr_mask(self):
+        self.executed.append('fabric_config_get_macaddr_mask')
+        return "00:00:00:00:00:00"
 
     def fabric_add_macaddr(self, nodeid=0, iface=0, macaddr=None):
         self.executed.append('fabric_add_macaddr')

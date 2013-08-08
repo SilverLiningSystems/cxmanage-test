@@ -152,7 +152,7 @@ class Image:
         :rtype: boolean
 
         """
-        if (self.type == "SOC_ELF"):
+        if (self.type == "SOC_ELF" and not self.simg):
             try:
                 file_process = subprocess.Popen(["file", self.filename],
                                                 stdout=subprocess.PIPE)
