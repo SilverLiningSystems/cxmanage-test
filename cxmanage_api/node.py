@@ -32,7 +32,6 @@
 import os
 import re
 import time
-import shutil
 import tempfile
 import subprocess
 
@@ -1458,6 +1457,58 @@ class Node(object):
         """
         return self.bmc.fabric_get_uplink_info().strip()
 
+    def get_node_fru_version(self):
+        """Get the node FRU version.
+        >>> node.get_node_fru_version
+        'bf7b471716113d5b9c47c6a5dd25f7a83f5c235c'
+
+        :return: The node FRU version of this node
+        :rtype: string
+
+        This is essentially the equivalent of ipmitool FRU read 81 filename
+        and reading only the version from that file.
+        The in-file offset for the node FRU version is 516, and the
+        length of the version string is 40 bytes.
+        
+        """
+        version = self._read_fru(81, offset=516, bytes_to_read=40)
+        # If there is an error reading the FRU, every byte could be x00
+        if version == "\x00"*len(version):
+            raise Exception("No node FRU detected")
+
+        # If the version string is less than 40 bytes long, remove the x00's
+        version = version.replace("\x00", "")
+ 
+        return version
+
+    def get_slot_fru_version(self):
+        """Get the slot FRU version.
+        >>> node.get_slot_fru_version
+        'Unknown'
+
+        :return: The slot FRU version of this node
+        :rtype: string
+
+        This is essentially the equivalent of ipmitool FRU read 82 filename
+        and reading only the version from that file.
+        The in-file offset for the node FRU version is 516, and the
+        length of the version string is 40 bytes.
+       
+        Note that some system boards do not have slot FRUs, and are 
+        therefore expected to raise an exception.
+ 
+        """
+        version = self._read_fru(82, offset=516, bytes_to_read=40)
+        # If there is an error reading the FRU, every byte could be x00
+        if version == "\x00"*len(version):
+            raise Exception("No slot FRU detected. Perhaps the system " + \
+                "board does not have slot FRUs?")
+
+        # If the version string is less than 40 bytes long, remove the x00's
+        version = version.replace("\x00", "")
+   
+        return version
+
     def _run_fabric_command(self, function_name, **kwargs):
         """Handles the basics of sending a node a command for fabric data."""
         filename = temp_file()
@@ -1688,6 +1739,17 @@ class Node(object):
             raise PriorityIncrementError(
                             "Unable to increment SIMG priority, too high")
         return priority
+
+    def _read_fru(node, fru_number, offset=0, bytes_to_read=-1):
+        """Read from node's fru starting at offset. 
+        This is equivalent to the ipmitool fru read command.
+        
+        """
+        # Use a temporary file to store the FRU image
+        with tempfile.NamedTemporaryFile(delete=True) as hexfile:
+            node.bmc.fru_read(fru_number, hexfile.name)
+            hexfile.seek(offset)
+            return(hexfile.read(bytes_to_read))
 
 
 # End of file: ./node.py
