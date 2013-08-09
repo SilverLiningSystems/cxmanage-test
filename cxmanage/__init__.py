@@ -334,6 +334,8 @@ COMPONENTS = [
     ("a15boot_version", "A15boot version"),
     ("uboot_version", "Uboot version"),
     ("ubootenv_version", "Ubootenv version"),
-    ("dtb_version", "DTB version")
+    ("dtb_version", "DTB version"),
+    ("node_fru_version", "Node FRU version"),
+    ("slot_fru_version", "Slot FRU version")
 ]
 

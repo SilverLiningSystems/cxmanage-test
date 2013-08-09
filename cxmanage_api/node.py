@@ -49,7 +49,7 @@ from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         SocmanVersionError, FirmwareConfigError, PriorityIncrementError, \
         NoPartitionError, TransferFailure, ImageSizeError, \
-        PartitionInUseError, UbootenvError
+        PartitionInUseError, UbootenvError, NoFRUVersionError
 
 
 class Node(object):
@@ -955,6 +955,20 @@ class Node(object):
         components.append(("ubootenv_version", "UBOOTENV"))
         components.append(("dtb_version", "DTB"))
         
+        # Get the node FRU version
+        try:
+            node_fru_version = self.get_node_fru_version()
+            setattr(result, "node_fru_version", node_fru_version)
+        except NoFRUVersionError:
+            setattr(result, "node_fru_version", "No node FRU detected")
+
+        # Get the slot FRU version
+        try:
+            slot_fru_version = self.get_slot_fru_version()
+            setattr(result, "slot_fru_version", slot_fru_version)
+        except NoFRUVersionError:
+            setattr(result, "slot_fru_version", "No slot FRU detected")
+
         for var, ptype in components:
             try:
                 partition = self._get_partition(fwinfo, ptype, "ACTIVE")
@@ -1474,7 +1488,7 @@ class Node(object):
         version = self._read_fru(81, offset=516, bytes_to_read=40)
         # If there is an error reading the FRU, every byte could be x00
         if version == "\x00"*len(version):
-            raise Exception("No node FRU detected")
+            raise NoFRUVersionError("No node FRU detected")
 
         # If the version string is less than 40 bytes long, remove the x00's
         version = version.replace("\x00", "")
@@ -1501,8 +1515,7 @@ class Node(object):
         version = self._read_fru(82, offset=516, bytes_to_read=40)
         # If there is an error reading the FRU, every byte could be x00
         if version == "\x00"*len(version):
-            raise Exception("No slot FRU detected. Perhaps the system " + \
-                "board does not have slot FRUs?")
+            raise NoFRUVersionError("No slot FRU detected.")
 
         # If the version string is less than 40 bytes long, remove the x00's
         version = version.replace("\x00", "")
