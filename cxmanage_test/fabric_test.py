@@ -413,6 +413,18 @@ class FabricTest(unittest.TestCase):
             else:
                 self.assertEqual(node.bmc.executed, [])
 
+    def test_get_node_fru_version(self):
+        """ Test the get_node_fru_version method """
+        self.fabric.get_node_fru_version()
+        for node in self.nodes:
+            self.assertEqual(node.executed, ["get_node_fru_version"])
+
+    def test_get_slot_fru_version(self):
+        """ Test the get_slot_fru_version method """
+        self.fabric.get_slot_fru_version()
+        for slot in self.nodes:
+            self.assertEqual(slot.executed, ["get_slot_fru_version"])
+
     def test_composite_bmc(self):
         """ Test the CompositeBMC member """
         with self.assertRaises(AttributeError):
@@ -613,6 +625,14 @@ class DummyNode(object):
 
     def set_uplink(self, uplink, iface):
         self.executed.append(('set_uplink', uplink, iface))
+
+    def get_node_fru_version(self):
+        self.executed.append("get_node_fru_version")
+        return "0.0"
+
+    def get_slot_fru_version(self):
+        self.executed.append("get_slot_fru_version")
+        return "0.0"
 
 
 class DummyFailNode(DummyNode):

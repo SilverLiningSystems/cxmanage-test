@@ -326,7 +326,8 @@ class NodeTest(unittest.TestCase):
             result = node.get_versions()
 
             self.assertEqual(node.bmc.executed, ["get_info_basic",
-                    "get_firmware_info", "info_card"])
+                    "get_firmware_info", "node_fru_read", "slot_fru_read",
+                    "info_card"])
             for attr in ["iana", "firmware_version", "ecme_version",
                     "ecme_timestamp"]:
                 self.assertTrue(hasattr(result, attr))
@@ -435,6 +436,18 @@ class NodeTest(unittest.TestCase):
         for node in self.nodes:
             node.set_uplink(iface=0, uplink=0)
             self.assertEqual(node.get_uplink(iface=0), 0)
+
+    def test_get_node_fru_version(self):
+        """ Test node.get_node_fru_version method """
+        for node in self.nodes:
+            result = node.get_node_fru_version()
+            self.assertEqual(node.bmc.executed, ['node_fru_read'])
+
+    def test_get_slot_fru_version(self):
+        """ Test node.get_slot_fru_version method """
+        for node in self.nodes:
+            result = node.get_slot_fru_version()
+            self.assertEqual(node.bmc.executed, ['slot_fru_read'])
 
 
 class DummyBMC(LanBMC):
@@ -908,6 +921,18 @@ class DummyBMC(LanBMC):
         """Corresponds to Node.get_uplink_speed()"""
         self.executed.append('get_uplink_speed')
         return 1
+
+    def fru_read(self, fru_number, filename):
+        if fru_number == 81:
+            self.executed.append('node_fru_read')
+        elif fru_number == 82:
+            self.executed.append('slot_fru_read')
+        else:
+            self.executed.append('fru_read')
+
+        with open(filename, "w") as fru_image:
+            # Writes a fake FRU image with version "0.0"
+            fru_image.write("x00" * 516 + "0.0" + "x00"*7673)
 
 
 class Partition:
