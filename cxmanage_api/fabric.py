@@ -877,6 +877,7 @@ class Fabric(object):
 
         :return: mac address mask
         :rtype: string
+
         """
         return self.primary_node.bmc.fabric_config_get_macaddr_mask()
 
