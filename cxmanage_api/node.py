@@ -221,7 +221,7 @@ class Node(object):
         """
         return self.bmc.get_chassis_status().power_on
 
-    def set_power(self, mode):
+    def set_power(self, mode, ignore_existing_state=False):
         """Send an IPMI power command to this target.
 
         >>> # To turn the power 'off'
@@ -235,8 +235,17 @@ class Node(object):
 
         :param mode: Mode to set the power state to. ('on'/'off')
         :type mode: string
-
+        :param ignore_existing_state: Flag that allows the caller to only try
+                                      to turn on or off the node if it is not
+                                      turned on or off, respectively.
+        :type ignore_existing_state: boolean
+        
         """
+        if ignore_existing_state:
+            if self.get_power() and mode == "on":
+                return
+            if not self.get_power() and mode == "off":
+                return
         self.bmc.set_chassis_power(mode=mode)
 
     def get_power_policy(self):

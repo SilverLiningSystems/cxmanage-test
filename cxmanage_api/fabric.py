@@ -288,7 +288,7 @@ class Fabric(object):
         """
         return self._run_on_all_nodes(async, "get_power")
 
-    def set_power(self, mode, async=False):
+    def set_power(self, mode, async=False, ignore_existing_state=False):
         """Send an IPMI power command to all nodes.
 
         >>> # On ...
@@ -304,9 +304,13 @@ class Fabric(object):
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Command object (can get status, etc.).
         :type async: boolean
+        :param ignore_existing_state: Flag that allows the caller to only try
+                                      to turn on or off nodes that are not
+                                      turned on or off, respectively.
+        :type ignore_existing_state: boolean
 
         """
-        self._run_on_all_nodes(async, "set_power", mode)
+        self._run_on_all_nodes(async, "set_power", mode, ignore_existing_state)
 
     def get_power_policy(self, async=False):
         """Gets the power policy from all nodes.
