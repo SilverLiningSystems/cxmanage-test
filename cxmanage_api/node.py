@@ -964,20 +964,6 @@ class Node(object):
         components.append(("ubootenv_version", "UBOOTENV"))
         components.append(("dtb_version", "DTB"))
 
-        # Get the node FRU version
-        try:
-            node_fru_version = self.get_node_fru_version()
-            setattr(result, "node_fru_version", node_fru_version)
-        except NoFRUVersionError:
-            setattr(result, "node_fru_version", "No node FRU detected")
-
-        # Get the slot FRU version
-        try:
-            slot_fru_version = self.get_slot_fru_version()
-            setattr(result, "slot_fru_version", slot_fru_version)
-        except NoFRUVersionError:
-            setattr(result, "slot_fru_version", "No slot FRU detected")
-
         for var, ptype in components:
             try:
                 partition = self._get_partition(fwinfo, ptype, "ACTIVE")
