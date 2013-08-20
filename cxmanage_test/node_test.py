@@ -626,6 +626,13 @@ class DummyBMC(LanBMC):
                 self.type = "TestBoard"
                 self.revision = "0"
         return Result()
+    
+    node_count = 0
+    def fabric_get_node_id(self):
+        self.executed.append('get_node_id')
+        result = DummyBMC.node_count
+        DummyBMC.node_count += 1
+        return result
 
     def fabric_info_get_link_map(self, filename, tftp_addr=None):
         """Upload a link_map file from the node to TFTP"""
