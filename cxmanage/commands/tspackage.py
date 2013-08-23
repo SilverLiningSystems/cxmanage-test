@@ -1,7 +1,40 @@
-#!/usr/bin/env python
+# Copyright 2013 Calxeda, Inc.
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+# * Neither the name of Calxeda Inc. nor the names of its contributors
+# may be used to endorse or promote products derived from this software
+# without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+# TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+# THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+# DAMAGE.
 
-# Copyright 2013 Calxeda, Inc. All Rights Reserved.
 
+"""A cxmanage command to collect information about a node and archive it.
+
+Example:
+cxmanage tspackage 10.10.10.10
+
+"""
 
 import os
 import time
@@ -49,6 +82,14 @@ def tspackage_command(args):
     if not quiet:
         print("Getting version information...")
     write_version_info(args, nodes)
+
+    if not quiet:
+        print("Getting node FRU version...")
+    write_node_fru_version(args, nodes)
+
+    if not quiet:
+        print("Getting slot FRU version...")
+    write_slot_fru_version(args, nodes)
 
     if not quiet:
         print("Getting boot order...")
@@ -127,6 +168,39 @@ def write_version_info(args, nodes):
 
         write_to_file(node, lines)
 
+def write_node_fru_version(args, nodes):
+    """Write the node and slot FRU versions for each node to their
+    respective files.
+
+    """
+    node_fru_results, _ = run_command(args, nodes, "get_node_fru_version")
+
+    for node in nodes:
+        lines = []  # Lines of text to write to file
+        if node in node_fru_results:
+            lines.append("%s: %s" % \
+                ("Node FRU Version".ljust(19), node_fru_results[node]))
+        else:
+            lines.append("\nWARNING: No node FRU found!")
+        write_to_file(node, lines)
+
+def write_slot_fru_version(args, nodes):
+    """Write the node and slot FRU versions for each node to their
+    respective files.
+
+    """
+    slot_fru_results, _ = run_command(args, nodes, "get_slot_fru_version")
+
+    for node in nodes:
+        lines = []  # Lines of text to write to file
+        if node in slot_fru_results:
+            lines.append("%s: %s" % \
+                ("Slot FRU Version".ljust(19), slot_fru_results[node]))
+        else:
+            lines.append("Error reading slot FRU. Perhaps the system board " +
+                         "does not have slot FRUs?")
+
+        write_to_file(node, lines)
 
 def write_mac_addrs(args, nodes):
     """Write the MAC addresses for each node to their respective files."""
