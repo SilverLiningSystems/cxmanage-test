@@ -1,3 +1,6 @@
+"""Unit tests for the Node class."""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -27,7 +30,6 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-"""Unit tests for the Node class."""
 
 
 import random
@@ -626,7 +628,7 @@ class DummyBMC(LanBMC):
                 self.type = "TestBoard"
                 self.revision = "0"
         return Result()
-    
+
     node_count = 0
     def fabric_get_node_id(self):
         self.executed.append('get_node_id')
