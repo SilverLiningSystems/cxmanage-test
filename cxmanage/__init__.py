@@ -75,7 +75,7 @@ def get_tftp(args):
 
     return InternalTftp(verbose=args.verbose)
 
-
+# pylint: disable=R0912
 def get_nodes(args, tftp, verify_prompt=False):
     """Get nodes"""
     hosts = []
@@ -142,6 +142,7 @@ def get_node_strings(args, nodes, justify=False):
     """ Get string representations for the nodes. """
     # Use the private _node_id instead of node_id. Strange choice,
     # but we want to avoid accidentally polling the BMC.
+    # pylint: disable=W0212
     if args.ids and all(x._node_id != None for x in nodes):
         strings = ["Node %i (%s)" % (x._node_id, x.ip_address) for x in nodes]
     else:
@@ -154,7 +155,9 @@ def get_node_strings(args, nodes, justify=False):
     return dict(zip(nodes, strings))
 
 
+# pylint: disable=R0915
 def run_command(args, nodes, name, *method_args):
+    """Runs a command on nodes."""
     if args.threads != None:
         task_queue = TaskQueue(threads=args.threads, delay=args.command_delay)
     else:
@@ -229,6 +232,7 @@ def run_command(args, nodes, name, *method_args):
 
 
 def prompt_yes(prompt):
+    """Prompts the user. """
     sys.stdout.write("%s (y/n) " % prompt)
     sys.stdout.flush()
     while True:
@@ -241,8 +245,11 @@ def prompt_yes(prompt):
             return False
 
 
-def parse_host_entry(entry, hostfiles=set()):
+def parse_host_entry(entry, hostfiles=None):
     """parse a host entry"""
+    if not(hostfiles):
+        hostfiles = set()
+
     try:
         return parse_hostfile_entry(entry, hostfiles)
     except ValueError:
@@ -252,8 +259,11 @@ def parse_host_entry(entry, hostfiles=set()):
             return [entry]
 
 
-def parse_hostfile_entry(entry, hostfiles=set()):
+def parse_hostfile_entry(entry, hostfiles=None):
     """parse a hostfile entry, returning a list of hosts"""
+    if not(hostfiles):
+        hostfiles = set()
+
     if entry.startswith('file='):
         filename = entry[5:]
     elif entry.startswith('hostfile='):
@@ -284,12 +294,13 @@ def parse_ip_range_entry(entry):
         start, end = entry.split('-')
 
         # Convert start address to int
-        start_bytes = map(int, start.split('.'))
+        start_bytes = [int(x) for x in start.split('.')]
+
         start_i = ((start_bytes[0] << 24) | (start_bytes[1] << 16)
                 | (start_bytes[2] << 8) | (start_bytes[3]))
 
         # Convert end address to int
-        end_bytes = map(int, end.split('.'))
+        end_bytes = [int(x) for x in end.split('.')]
         end_i = ((end_bytes[0] << 24) | (end_bytes[1] << 16)
                 | (end_bytes[2] << 8) | (end_bytes[3]))
 
