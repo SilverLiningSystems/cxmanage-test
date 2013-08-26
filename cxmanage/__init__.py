@@ -1,3 +1,6 @@
+"""Calxeda: __init__.py """
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -27,6 +30,7 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+
 
 import sys
 import time
@@ -84,7 +88,7 @@ def get_nodes(args, tftp, verify_prompt=False):
 
     if args.all_nodes:
         if not args.quiet:
-            print "Getting IP addresses..."
+            print("Getting IP addresses...")
 
         results, errors = run_command(args, nodes, "get_fabric_ipinfo")
 
@@ -104,13 +108,13 @@ def get_nodes(args, tftp, verify_prompt=False):
 
         node_strings = get_node_strings(args, all_nodes, justify=False)
         if not args.quiet and all_nodes:
-            print "Discovered the following IP addresses:"
+            print("Discovered the following IP addresses:")
             for node in all_nodes:
                 print node_strings[node]
             print
 
         if errors:
-            print "ERROR: Failed to get IP addresses. Aborting.\n"
+            print("ERROR: Failed to get IP addresses. Aborting.\n")
             sys.exit(1)
 
         if args.nodes:
@@ -119,9 +123,12 @@ def get_nodes(args, tftp, verify_prompt=False):
                         % (len(all_nodes), args.nodes))
                 sys.exit(1)
         elif verify_prompt and not args.force:
-            print "NOTE: Please check node count! Ensure discovery of all nodes in the cluster."
-            print "Power cycle your system if the discovered node count does not equal nodes in"
-            print "your system.\n"
+            print(
+                "NOTE: Please check node count! Ensure discovery of all " +
+                "nodes in the cluster. Power cycle your system if the " +
+                "discovered node count does not equal nodes in" +
+                "your system.\n"
+            )
             if not prompt_yes("Discovered %i nodes. Continue?"
                     % len(all_nodes)):
                 sys.exit(1)
@@ -182,11 +189,13 @@ def run_command(args, nodes, name, *method_args):
             elif task.status == "Failed":
                 errors[node] = task.error
             else:
-                errors[node] = KeyboardInterrupt("Aborted by keyboard interrupt")
+                errors[node] = KeyboardInterrupt(
+                    "Aborted by keyboard interrupt"
+                )
 
     if not args.quiet:
         _print_command_status(tasks, counter)
-        print "\n"
+        print("\n")
 
     # Handle errors
     should_retry = False
@@ -206,9 +215,9 @@ def run_command(args, nodes, name, *method_args):
         elif args.retry >= 1:
             should_retry = True
             if args.retry == 1:
-                print "Retrying command 1 more time..."
+                print("Retrying command 1 more time...")
             elif args.retry > 1:
-                print "Retrying command %i more times..." % args.retry
+                print("Retrying command %i more times..." % args.retry)
             args.retry -= 1
 
     if should_retry:
@@ -300,17 +309,20 @@ def _print_errors(args, nodes, errors):
     """ Print errors if they occured """
     if errors:
         node_strings = get_node_strings(args, nodes, justify=True)
-        print "Command failed on these hosts"
+        print("Command failed on these hosts")
         for node in nodes:
             if node in errors:
-                print "%s: %s" % (node_strings[node], errors[node])
+                print("%s: %s" % (node_strings[node], errors[node]))
         print
 
         # Print a special message for TFTP errors
         if all(isinstance(x, TftpException) for x in errors.itervalues()):
-            print "There may be networking issues (when behind NAT) between the host (where"
-            print "cxmanage is running) and the Calxeda node when establishing a TFTP session."
-            print "Please refer to the documentation for more information.\n"
+            print(
+                "There may be networking issues (when behind NAT) between " +
+                "the host (where cxmanage is running) and the Calxeda node " +
+                "when establishing a TFTP session. Please refer to the " +
+                "documentation for more information.\n"
+            )
 
 
 def _print_command_status(tasks, counter):
