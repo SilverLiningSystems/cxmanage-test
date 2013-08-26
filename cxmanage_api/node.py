@@ -30,7 +30,7 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-
+# pylint: disable=C0302
 
 import os
 import re
@@ -55,6 +55,7 @@ from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         PartitionInUseError, UbootenvError, NoFRUVersionError
 
 
+# pylint: disable=R0902
 class Node(object):
     """A node is a single instance of an ECME.
 
@@ -609,8 +610,9 @@ communication.
         try:
             self._check_firmware(package, partition_arg, priority)
             return True
-        except (SocmanVersionError, FirmwareConfigError, PriorityIncrementError,
-                NoPartitionError, ImageSizeError, PartitionInUseError):
+        except (SocmanVersionError, FirmwareConfigError,
+            PriorityIncrementError, NoPartitionError, ImageSizeError,
+            PartitionInUseError):
             return False
 
     def update_firmware(self, package, partition_arg="INACTIVE",
