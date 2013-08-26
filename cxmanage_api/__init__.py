@@ -1,3 +1,6 @@
+"""Calxeda: __init__.py """
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
