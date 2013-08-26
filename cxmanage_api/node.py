@@ -1778,7 +1778,7 @@ obtained.
                             "Unable to increment SIMG priority, too high")
         return priority
 
-    def _read_fru(node, fru_number, offset=0, bytes_to_read= -1):
+    def _read_fru(self, node, fru_number, offset=0, bytes_to_read= -1):
         """Read from node's fru starting at offset.
         This is equivalent to the ipmitool fru read command.
 
