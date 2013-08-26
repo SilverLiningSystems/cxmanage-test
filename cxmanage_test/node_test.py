@@ -52,9 +52,11 @@ from cxmanage_api.cx_exceptions import IPDiscoveryError
 
 
 NUM_NODES = 4
-ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES + 1)]
+ADDRESSES = ["192.168.100.%i" % n for n in range(1, NUM_NODES + 1)]
 TFTP = InternalTftp()
 
+
+# pylint: disable=R0904, W0201
 class NodeTest(unittest.TestCase):
     """ Tests involving cxmanage Nodes """
 
@@ -63,6 +65,12 @@ class NodeTest(unittest.TestCase):
                 image=TestImage, ubootenv=DummyUbootEnv,
                 ipretriever=DummyIPRetriever, verbose=True)
                 for ip in ADDRESSES]
+
+        self.server_ip = None
+        self.fabric_ipsrc = None
+        self.fabric_ls_policy = None
+        self.fabric_linkspeed = None
+        self.fabric_lu_factor = None
 
         # Give each node a node_id
         count = 0
@@ -343,8 +351,8 @@ class NodeTest(unittest.TestCase):
         for node in self.nodes:
             result = node.get_fabric_ipinfo()
 
-            for x in node.bmc.executed:
-                self.assertEqual(x, "fabric_config_get_ip_info")
+            for found in node.bmc.executed:
+                self.assertEqual(found, "fabric_config_get_ip_info")
 
             self.assertEqual(result, dict([(i, ADDRESSES[i])
                     for i in range(NUM_NODES)]))
@@ -354,8 +362,8 @@ class NodeTest(unittest.TestCase):
         for node in self.nodes:
             result = node.get_fabric_macaddrs()
 
-            for x in node.bmc.executed:
-                self.assertEqual(x, "fabric_config_get_mac_addresses")
+            for found in node.bmc.executed:
+                self.assertEqual(found, "fabric_config_get_mac_addresses")
 
             self.assertEqual(len(result), NUM_NODES)
             for node_id in xrange(NUM_NODES):
@@ -367,56 +375,56 @@ class NodeTest(unittest.TestCase):
     def test_get_fabric_uplink_info(self):
         """ Test node.get_fabric_uplink_info method """
         for node in self.nodes:
-            result = node.get_fabric_uplink_info()
+            node.get_fabric_uplink_info()
 
-            for x in node.bmc.executed:
-                self.assertEqual(x, "fabric_config_get_uplink_info")
+            for found in node.bmc.executed:
+                self.assertEqual(found, "fabric_config_get_uplink_info")
 
     def test_get_uplink_info(self):
         """ Test node.get_uplink_info method """
         for node in self.nodes:
-            result = node.get_uplink_info()
+            node.get_uplink_info()
 
-            for x in node.bmc.executed:
-                self.assertEqual(x, "get_uplink_info")
+            for found in node.bmc.executed:
+                self.assertEqual(found, "get_uplink_info")
 
     def test_get_uplink_speed(self):
         """ Test node.get_uplink_info method """
         for node in self.nodes:
-            result = node.get_uplink_speed()
+            node.get_uplink_speed()
 
-            for x in node.bmc.executed:
-                self.assertEqual(x, "get_uplink_speed")
+            for found in node.bmc.executed:
+                self.assertEqual(found, "get_uplink_speed")
 
 
     def test_get_linkmap(self):
         """ Test node.get_linkmap method """
         for node in self.nodes:
-            result = node.get_linkmap()
+            node.get_linkmap()
 
-            for x in node.bmc.executed:
-                self.assertEqual(x, "fabric_info_get_link_map")
+            for found in node.bmc.executed:
+                self.assertEqual(found, "fabric_info_get_link_map")
 
     def test_get_routing_table(self):
         """ Test node.get_routing_table method """
         for node in self.nodes:
-            result = node.get_routing_table()
+            node.get_routing_table()
 
-            for x in node.bmc.executed:
-                self.assertEqual(x, "fabric_info_get_routing_table")
+            for found in node.bmc.executed:
+                self.assertEqual(found, "fabric_info_get_routing_table")
 
     def test_get_depth_chart(self):
         """ Test node.get_depth_chart method """
         for node in self.nodes:
-            result = node.get_depth_chart()
+            node.get_depth_chart()
 
-            for x in node.bmc.executed:
-                self.assertEqual(x, "fabric_info_get_depth_chart")
+            for found in node.bmc.executed:
+                self.assertEqual(found, "fabric_info_get_depth_chart")
 
     def test_get_link_stats(self):
         """ Test node.get_link_stats() """
         for node in self.nodes:
-            result = node.get_link_stats()
+            node.get_link_stats()
             self.assertEqual(node.bmc.executed[0], ('fabric_get_linkstats', 0))
 
     def test_get_server_ip(self):
@@ -446,21 +454,23 @@ class NodeTest(unittest.TestCase):
     def test_get_node_fru_version(self):
         """ Test node.get_node_fru_version method """
         for node in self.nodes:
-            result = node.get_node_fru_version()
+            node.get_node_fru_version()
             self.assertEqual(node.bmc.executed, ['node_fru_read'])
 
     def test_get_slot_fru_version(self):
         """ Test node.get_slot_fru_version method """
         for node in self.nodes:
-            result = node.get_slot_fru_version()
+            node.get_slot_fru_version()
             self.assertEqual(node.bmc.executed, ['slot_fru_read'])
 
-
+# pylint: disable=R0902
 class DummyBMC(LanBMC):
+    """ Dummy BMC for the node tests """
+
 
     GUID_UNIQUE = 0
 
-    """ Dummy BMC for the node tests """
+
     def __init__(self, **kwargs):
         super(DummyBMC, self).__init__(**kwargs)
         self.executed = []
@@ -481,7 +491,9 @@ class DummyBMC(LanBMC):
         """Returns the GUID"""
         self.executed.append("guid")
 
-        class Result:
+        # pylint: disable=R0903
+        class Result(object):
+            """Results class."""
             def __init__(self, dummybmc):
                 self.system_guid = dummybmc.unique_guid
                 self.time_stamp = None
@@ -495,7 +507,9 @@ class DummyBMC(LanBMC):
         """ Get chassis status """
         self.executed.append("get_chassis_status")
 
-        class Result:
+        # pylint: disable=R0903
+        class Result(object):
+            """Results class."""
             def __init__(self):
                 self.power_on = False
                 self.power_restore_policy = "always-off"
@@ -541,8 +555,11 @@ class DummyBMC(LanBMC):
         self.partitions[partition].fwinfo.priority = "%8x" % simg.priority
         self.partitions[partition].fwinfo.daddr = "%8x" % simg.daddr
 
-        class Result:
+        # pylint: disable=R0903
+        class Result(object):
+            """Results class."""
             def __init__(self):
+                """Default constructor for the Result class."""
                 self.tftp_handle_id = 0
         return Result()
 
@@ -560,7 +577,9 @@ class DummyBMC(LanBMC):
         tftp.put_file("%s/%s" % (work_dir, filename), filename)
         shutil.rmtree(work_dir)
 
-        class Result:
+        # pylint: disable=R0903
+        class Result(object):
+            """Results class."""
             def __init__(self):
                 self.tftp_handle_id = 0
         return Result()
@@ -578,16 +597,23 @@ class DummyBMC(LanBMC):
     def get_firmware_status(self, handle):
         self.executed.append("get_firmware_status")
 
-        class Result:
+        # pylint: disable=R0903
+        class Result(object):
+            """Results class."""
             def __init__(self):
                 self.status = "Complete"
+
+        del handle
+
         return Result()
 
     def check_firmware(self, partition):
         self.executed.append(("check_firmware", partition))
         self.partitions[partition].checks += 1
 
-        class Result:
+        # pylint: disable=R0903
+        class Result(object):
+            """Results class."""
             def __init__(self):
                 self.crc32 = 0
                 self.error = None
@@ -617,7 +643,9 @@ class DummyBMC(LanBMC):
         """ Get basic SoC info from this node """
         self.executed.append("get_info_basic")
 
-        class Result:
+        # pylint: disable=R0903
+        class Result(object):
+            """Results class."""
             def __init__(self):
                 self.iana = int("0x0096CD", 16)
                 self.firmware_version = "ECX-0000-v0.0.0"
@@ -628,7 +656,9 @@ class DummyBMC(LanBMC):
     def get_info_card(self):
         self.executed.append("info_card")
 
-        class Result:
+        # pylint: disable=R0903
+        class Result(object):
+            """Results class."""
             def __init__(self):
                 self.type = "TestBoard"
                 self.revision = "0"
@@ -705,21 +735,66 @@ class DummyBMC(LanBMC):
             raise IpmiError('No tftp address!')
 
         depth_chart = []
-        depth_chart.append('Node 1: Shortest Distance 0 hops via neighbor 0: other hops/neighbors -')
-        depth_chart.append('Node 2: Shortest Distance 0 hops via neighbor 0: other hops/neighbors - 1/3')
-        depth_chart.append('Node 3: Shortest Distance 0 hops via neighbor 0: other hops/neighbors - 1/2')
-        depth_chart.append('Node 4: Shortest Distance 2 hops via neighbor 6: other hops/neighbors - 3/7')
-        depth_chart.append('Node 5: Shortest Distance 3 hops via neighbor 4: other hops/neighbors -')
-        depth_chart.append('Node 6: Shortest Distance 1 hops via neighbor 2: other hops/neighbors -')
-        depth_chart.append('Node 7: Shortest Distance 2 hops via neighbor 6: other hops/neighbors - 3/4')
-        depth_chart.append('Node 8: Shortest Distance 3 hops via neighbor 10: other hops/neighbors - 4/11')
-        depth_chart.append('Node 9: Shortest Distance 4 hops via neighbor 8: other hops/neighbors -')
-        depth_chart.append('Node 10: Shortest Distance 2 hops via neighbor 6: other hops/neighbors -')
-        depth_chart.append('Node 11: Shortest Distance 3 hops via neighbor 10: other hops/neighbors - 4/8')
-        depth_chart.append('Node 12: Shortest Distance 4 hops via neighbor 14: other hops/neighbors - 5/15')
-        depth_chart.append('Node 13: Shortest Distance 5 hops via neighbor 12: other hops/neighbors -')
-        depth_chart.append('Node 14: Shortest Distance 3 hops via neighbor 10: other hops/neighbors -')
-        depth_chart.append('Node 15: Shortest Distance 4 hops via neighbor 14: other hops/neighbors - 5/12')
+        depth_chart.append(
+           'Node 1: Shortest Distance 0 hops via neighbor 0: ' +
+           'other hops/neighbors -'
+        )
+        depth_chart.append(
+            'Node 2: Shortest Distance 0 hops via neighbor 0: ' +
+            'other hops/neighbors - 1/3'
+        )
+        depth_chart.append(
+            'Node 3: Shortest Distance 0 hops via neighbor 0: ' +
+            'other hops/neighbors - 1/2'
+        )
+        depth_chart.append(
+            'Node 4: Shortest Distance 2 hops via neighbor 6: ' +
+            'other hops/neighbors - 3/7'
+        )
+        depth_chart.append(
+            'Node 5: Shortest Distance 3 hops via neighbor 4: ' +
+            'other hops/neighbors -'
+        )
+        depth_chart.append(
+            'Node 6: Shortest Distance 1 hops via neighbor 2: ' +
+            'other hops/neighbors -'
+        )
+        depth_chart.append(
+            'Node 7: Shortest Distance 2 hops via neighbor 6: ' +
+            'other hops/neighbors - 3/4'
+        )
+        depth_chart.append(
+            'Node 8: Shortest Distance 3 hops via neighbor 10: ' +
+            'other hops/neighbors - 4/11'
+        )
+        depth_chart.append(
+            'Node 9: Shortest Distance 4 hops via neighbor 8: ' +
+            'other hops/neighbors -'
+        )
+        depth_chart.append(
+            'Node 10: Shortest Distance 2 hops via neighbor 6: ' +
+            'other hops/neighbors -'
+        )
+        depth_chart.append(
+            'Node 11: Shortest Distance 3 hops via neighbor 10: ' +
+            'other hops/neighbors - 4/8'
+        )
+        depth_chart.append(
+            'Node 12: Shortest Distance 4 hops via neighbor 14: ' +
+            'other hops/neighbors - 5/15'
+        )
+        depth_chart.append(
+            'Node 13: Shortest Distance 5 hops via neighbor 12: ' +
+            'other hops/neighbors -'
+        )
+        depth_chart.append(
+            'Node 14: Shortest Distance 3 hops via neighbor 10: ' +
+            'other hops/neighbors -'
+        )
+        depth_chart.append(
+            'Node 15: Shortest Distance 4 hops via neighbor 14: ' +
+            'other hops/neighbors - 5/12'
+        )
 
 
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
@@ -736,6 +811,7 @@ class DummyBMC(LanBMC):
 
         shutil.rmtree(work_dir)
 
+    # pylint: disable=W0222
     def fabric_get_linkstats(self, filename, tftp_addr=None,
         link=None):
         """Upload a link_stats file from the node to TFTP"""
@@ -948,21 +1024,23 @@ class DummyBMC(LanBMC):
             fru_image.write("x00" * 516 + "0.0" + "x00"*7673)
 
 
-class Partition:
-    def __init__(self, partition, type, offset=0,
+# pylint: disable=R0913, R0903
+class Partition(object):
+    """Partition class."""
+    def __init__(self, partition, type_, offset=0,
             size=0, priority=0, daddr=0, in_use=None):
         self.updates = 0
         self.retrieves = 0
         self.checks = 0
         self.activates = 0
-        self.fwinfo = FWInfoEntry(partition, type, offset, size, priority,
+        self.fwinfo = FWInfoEntry(partition, type_, offset, size, priority,
                                   daddr, in_use)
 
 
-class FWInfoEntry:
+class FWInfoEntry(object):
     """ Firmware info for a single partition """
 
-    def __init__(self, partition, type, offset=0, size=0, priority=0, daddr=0,
+    def __init__(self, partition, type_, offset=0, size=0, priority=0, daddr=0,
                   in_use=None):
         self.partition = "%2i" % partition
         self.type = {
@@ -970,7 +1048,7 @@ class FWInfoEntry:
                 3: "03 (SOC_ELF)",
                 10: "0a (CDB)",
                 11: "0b (UBOOTENV)"
-            }[type]
+            }[type_]
         self.offset = "%8x" % offset
         self.size = "%8x" % size
         self.priority = "%8x" % priority
@@ -991,7 +1069,7 @@ class DummyUbootEnv(UbootEnv):
         """ Do nothing """
         pass
 
-
+# pylint: disable=R0903
 class DummyIPRetriever(object):
     """ Dummy IP retriever """
 
