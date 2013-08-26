@@ -1778,14 +1778,14 @@ obtained.
                             "Unable to increment SIMG priority, too high")
         return priority
 
-    def _read_fru(self, node, fru_number, offset=0, bytes_to_read= -1):
+    def _read_fru(self, fru_number, offset=0, bytes_to_read= -1):
         """Read from node's fru starting at offset.
         This is equivalent to the ipmitool fru read command.
 
         """
         # Use a temporary file to store the FRU image
         with tempfile.NamedTemporaryFile(delete=True) as hexfile:
-            node.bmc.fru_read(fru_number, hexfile.name)
+            self.bmc.fru_read(fru_number, hexfile.name)
             hexfile.seek(offset)
             return(hexfile.read(bytes_to_read))
 
