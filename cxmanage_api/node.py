@@ -1,3 +1,6 @@
+"""Calxeda: node.py"""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -239,7 +242,7 @@ class Node(object):
                                       to turn on or off the node if it is not
                                       turned on or off, respectively.
         :type ignore_existing_state: boolean
-        
+
         """
         if ignore_existing_state:
             if self.get_power() and mode == "on":
