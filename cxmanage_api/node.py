@@ -1,5 +1,5 @@
+# pylint: disable=C0302
 """Calxeda: node.py"""
-
 
 # Copyright (c) 2012, Calxeda Inc.
 #
@@ -30,7 +30,6 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
-# pylint: disable=C0302
 
 import os
 import re
@@ -55,7 +54,7 @@ from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         PartitionInUseError, UbootenvError, NoFRUVersionError
 
 
-# pylint: disable=R0902
+# pylint: disable=R0902, R0904
 class Node(object):
     """A node is a single instance of an ECME.
 
@@ -81,7 +80,7 @@ class Node(object):
     :type ubootenv: `UbootEnv <ubootenv.html>`_
 
     """
-
+    # pylint: disable=R0913
     def __init__(self, ip_address, username="admin", password="admin",
                   tftp=None, ecme_tftp_port=5001, verbose=False, bmc=None,
                   image=None, ubootenv=None, ipretriever=None):
@@ -615,6 +614,7 @@ communication.
             PartitionInUseError):
             return False
 
+    # pylint: disable=R0914, R0912, R0915
     def update_firmware(self, package, partition_arg="INACTIVE",
                           priority=None):
         """ Update firmware on this target.
@@ -1361,7 +1361,7 @@ communication.
                         hops.append((int(pair[1]), int(pair[0])))
                     dchrt_entries['others'] = hops
 
-                except Exception:
+                except Exception:  # pylint: disable=W0703
                     pass
 
                 results[target] = dchrt_entries
