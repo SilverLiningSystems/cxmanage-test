@@ -1,3 +1,5 @@
+"""Calxeda: fru_version.py """
+
 
 # Copyright (c) 2013, Calxeda Inc.
 #
@@ -38,32 +40,32 @@ def node_fru_version_command(args):
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
     results, errors = run_command(args, nodes, 'get_node_fru_version')
-    
+
     # Print results if we were successful
     if results:
         node_strings = get_node_strings(args, results, justify=True)
         for node in nodes:
             print("%s: %s" % (node_strings[node], results[node]))
-    
-    print("") # For readability
+
+    print("")  # For readability
 
     if not args.quiet and errors:
         print('Some errors occured during the command.\n')
 
 
-def slot_fru_version_command(args): 
+def slot_fru_version_command(args):
     """Get the slot FRU version for each node. """
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
     results, errors = run_command(args, nodes, 'get_slot_fru_version')
-    
+
     # Print results if we were successful
-    if results: 
+    if results:
         node_strings = get_node_strings(args, results, justify=True)
         for node in nodes:
             print("%s: %s" % (node_strings[node], results[node]))
 
-    print("") # For readability
+    print("")  # For readability
 
     if not args.quiet and errors:
         print('Some errors occured during the command.\n')
