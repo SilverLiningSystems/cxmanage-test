@@ -1,6 +1,7 @@
 # pylint: disable=C0302
 """Calxeda: node.py"""
 
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
