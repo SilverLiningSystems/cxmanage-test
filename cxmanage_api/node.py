@@ -881,8 +881,8 @@ communication.
         priority = max(int(x.priority, 16) for x in [first_part, active_part])
 
         filename = temp_file()
-        with open(filename, "w") as f:
-            f.write(ubootenv.get_contents())
+        with open(filename, "w") as file_:
+            file_.write(ubootenv.get_contents())
 
         ubootenv_image = self.image(filename, image.type, False, image.daddr,
                                     image.skip_crc32, image.version)
