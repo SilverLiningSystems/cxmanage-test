@@ -917,8 +917,8 @@ communication.
         priority = max(int(x.priority, 16) for x in [first_part, active_part])
 
         filename = temp_file()
-        with open(filename, "w") as f:
-            f.write(ubootenv.get_contents())
+        with open(filename, "w") as file_:
+            file_.write(ubootenv.get_contents())
 
         ubootenv_image = self.image(filename, image.type, False, image.daddr,
                                     image.skip_crc32, image.version)
@@ -1186,8 +1186,8 @@ communication.
             node_id = int(line.replace('Node ', '')[0])
             ul_info = line.replace('Node %s:' % node_id, '').strip().split(',')
             node_data = {}
-            for ul in ul_info:
-                data = tuple(ul.split())
+            for ul_ in ul_info:
+                data = tuple(ul_.split())
                 node_data[data[0]] = int(data[1])
             results[node_id] = node_data
 
@@ -1350,13 +1350,16 @@ communication.
                 dchrt_entries = {}
                 dchrt_entries['shortest'] = (neighbor, hops)
                 try:
-                    other_hops_neighbors = elements[12].strip().split("[,\s]+")
+                    other_hops_neighbors = elements[12].strip().split(
+                        r'[,\s]+'
+                    )
                     hops = []
                     for entry in other_hops_neighbors:
                         pair = entry.strip().split('/')
                         hops.append((int(pair[1]), int(pair[0])))
                     dchrt_entries['others'] = hops
-                except:
+
+                except Exception:
                     pass
 
                 results[target] = dchrt_entries
@@ -1546,7 +1549,7 @@ obtained.
             getattr(self.bmc, function_name)(filename=basename, **kwargs)
             self.ecme_tftp.get_file(basename, filename)
 
-        except (IpmiError, TftpException) as e:
+        except (IpmiError, TftpException):
             getattr(self.bmc, function_name)(
                 filename=basename,
                 tftp_addr=self.tftp_address,
@@ -1566,7 +1569,8 @@ obtained.
 
         return filename
 
-    def _get_partition(self, fwinfo, image_type, partition_arg):
+    @staticmethod
+    def _get_partition(fwinfo, image_type, partition_arg):
         """Get a partition for this image type based on the argument."""
         # Filter partitions for this type
         partitions = [x for x in fwinfo if
@@ -1625,7 +1629,7 @@ obtained.
         filename = image.render_to_simg(priority, daddr)
         basename = os.path.basename(filename)
 
-        for x in xrange(2):
+        for _ in xrange(2):
             try:
                 self.bmc.register_firmware_write(
                     basename,
@@ -1654,7 +1658,7 @@ obtained.
         partition_id = int(partition.partition)
         image_type = partition.type.split()[1][1:-1]
 
-        for x in xrange(2):
+        for _ in xrange(2):
             try:
                 self.bmc.register_firmware_read(
                     basename,
