@@ -1,3 +1,7 @@
+# pylint: disable=C0302
+"""Calxeda: fabric.py """
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -34,6 +38,7 @@ from cxmanage_api.node import Node as NODE
 from cxmanage_api.cx_exceptions import CommandFailedError
 
 
+# pylint: disable=R0902,R0903, R0904
 class Fabric(object):
     """ The Fabric class provides management of multiple nodes.
 
@@ -103,6 +108,7 @@ class Fabric(object):
 
             return function
 
+    # pylint: disable=R0913
     def __init__(self, ip_address, username="admin", password="admin",
                   tftp=None, ecme_tftp_port=5001, task_queue=None,
                   verbose=False, node=None):
@@ -603,7 +609,8 @@ class Fabric(object):
         }
 
         .. seealso::
-            `Node.get_versions() <node.html#cxmanage_api.node.Node.get_versions>`_
+            `Node.get_versions() \
+<node.html#cxmanage_api.node.Node.get_versions>`_
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Command object (can get status, etc.).
@@ -642,7 +649,8 @@ class Fabric(object):
         }
 
         .. seealso::
-            `Node.get_versions_dict() <node.html#cxmanage_api.node.Node.get_versions_dict>`_
+            `Node.get_versions_dict() \
+<node.html#cxmanage_api.node.Node.get_versions_dict>`_
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
@@ -701,6 +709,7 @@ class Fabric(object):
         """
         return self._run_on_all_nodes(async, "get_ubootenv")
 
+    # pylint: disable=R0913
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
             password="1Password", aggressive=False, async=False):
         """Get the server IP address from all nodes. The nodes must be powered
@@ -831,7 +840,7 @@ class Fabric(object):
 
         :param nodeid: Node id from which the macaddr is to be remove
         :type nodeid: integer
-        :param iface: interface on the node from which the macaddr is to be removed
+        :param iface: interface on the node which the macaddr is to be removed
         :type iface: integer
         :param macaddr: mac address to be removed
         :type macaddr: string
@@ -994,7 +1003,7 @@ class Fabric(object):
          }}
         >>> #
         >>> # Output trimmed for brevity ...
-        >>> # The data shown for node 0 is the same type of data presented for each
+        >>> # The data shown for node 0 is the same type of data for each
         >>> # node in  the fabric.
         >>> #
 
