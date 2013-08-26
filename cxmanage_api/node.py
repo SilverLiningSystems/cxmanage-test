@@ -1725,13 +1725,9 @@ obtained.
                         % (required_version, ecme_version))
 
         # Check slot0 vs. slot2
-        # TODO: remove this check
         if (package.config and info.firmware_version != "Unknown" and
-                len(info.firmware_version) < 32):
-            if "slot2" in info.firmware_version:
-                firmware_config = "slot2"
-            else:
-                firmware_config = "default"
+            len(info.firmware_version) < 32):
+            firmware_config = "default"
 
             if (package.config != firmware_config):
                 raise FirmwareConfigError(
