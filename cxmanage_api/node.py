@@ -747,8 +747,9 @@ communication.
                     )
 
                     filename = temp_file()
-                    with open(filename, "w") as f:
-                        f.write(ubootenv.get_contents())
+                    with open(filename, "w") as file_:
+                        file_.write(ubootenv.get_contents())
+
                     ubootenv_image = self.image(filename, image.type, False,
                                            image.daddr, image.skip_crc32,
                                            image.version)
@@ -845,7 +846,7 @@ communication.
 
         """
         # Reset CDB
-        result = self.bmc.reset_firmware()
+        self.bmc.reset_firmware()
 
         # Reset ubootenv
         fwinfo = self.get_firmware_info()
