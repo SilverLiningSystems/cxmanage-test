@@ -188,7 +188,8 @@ class Node(object):
         :param macaddr: MAC address to add
         :type macaddr: string
 
-        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises IpmiError: If errors in the command occur with BMC \
+communication.
 
         """
         self.bmc.fabric_add_macaddr(iface=iface, macaddr=macaddr)
@@ -203,7 +204,8 @@ class Node(object):
         :param macaddr: MAC address to remove
         :type macaddr: string
 
-        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises IpmiError: If errors in the command occur with BMC \
+communication.
 
         """
         self.bmc.fabric_rm_macaddr(iface=iface, macaddr=macaddr)
@@ -260,7 +262,8 @@ class Node(object):
         :return: The Nodes current power policy.
         :rtype: string
 
-        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises IpmiError: If errors in the command occur with BMC \
+communication.
 
         """
         return self.bmc.get_chassis_status().power_restore_policy
@@ -316,9 +319,12 @@ class Node(object):
 
         >>> node.get_sel()
         ['1 | 06/21/2013 | 16:13:31 | System Event #0xf4 |',
-         '0 | 06/27/2013 | 20:25:18 | System Boot Initiated #0xf1 | Initiated by power up | Asserted',
-         '1 | 06/27/2013 | 20:25:35 | Watchdog 2 #0xfd | Hard reset | Asserted',
-         '2 | 06/27/2013 | 20:25:18 | System Boot Initiated #0xf1 | Initiated by power up | Asserted',
+         '0 | 06/27/2013 | 20:25:18 | System Boot Initiated #0xf1 | \
+Initiated by power up | Asserted',
+         '1 | 06/27/2013 | 20:25:35 | Watchdog 2 #0xfd | Hard reset | \
+Asserted',
+         '2 | 06/27/2013 | 20:25:18 | System Boot Initiated #0xf1 | \
+Initiated by power up | Asserted',
          '3 | 06/27/2013 | 21:01:13 | System Event #0xf4 |',
          ...
         ]
@@ -529,7 +535,8 @@ class Node(object):
         :return: Returns a list of FWInfo objects for each
         :rtype: list
 
-        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises IpmiError: If errors in the command occur with BMC \
+communication.
 
         """
         fwinfo = [x for x in self.bmc.get_firmware_info()
@@ -579,7 +586,8 @@ class Node(object):
         :return: Returns a list of FWInfo objects for each
         :rtype: list
 
-        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises IpmiError: If errors in the command occur with BMC \
+communication.
 
         """
         return [vars(info) for info in self.get_firmware_info()]
@@ -832,7 +840,8 @@ class Node(object):
 
         >>> node.config_reset()
 
-        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises IpmiError: If errors in the command occur with BMC \
+communication.
 
         """
         # Reset CDB
@@ -936,7 +945,8 @@ class Node(object):
         :returns: The results of IPMI info basic command.
         :rtype: pyipmi.info.InfoBasicResult
 
-        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises IpmiError: If errors in the command occur with BMC \
+communication.
         :raises Exception: If there are errors within the command response.
 
         """
@@ -1012,7 +1022,8 @@ class Node(object):
         :returns: The results of IPMI info basic command.
         :rtype: dictionary
 
-        :raises IpmiError: If errors in the command occur with BMC communication.
+        :raises IpmiError: If errors in the command occur with BMC \
+communication.
         :raises Exception: If there are errors within the command response.
 
         """
@@ -1376,8 +1387,10 @@ class Node(object):
 
         :return: The IP address of the server.
         :rtype: string
-        :raises IpmiError: If errors in the command occur with BMC communication.
-        :raises IPDiscoveryError: If the server is off, or the IP can't be obtained.
+        :raises IpmiError: If errors in the command occur with BMC \
+communication.
+        :raises IPDiscoveryError: If the server is off, or the IP can't be \
+obtained.
 
         """
         verbosity = 2 if self.verbose else 0
@@ -1613,7 +1626,11 @@ class Node(object):
 
         for x in xrange(2):
             try:
-                self.bmc.register_firmware_write(basename, partition_id, image.type)
+                self.bmc.register_firmware_write(
+                    basename,
+                    partition_id,
+                    image.type
+                )
                 self.ecme_tftp.put_file(filename, basename)
                 break
             except (IpmiError, TftpException):
@@ -1638,7 +1655,11 @@ class Node(object):
 
         for x in xrange(2):
             try:
-                self.bmc.register_firmware_read(basename, partition_id, image_type)
+                self.bmc.register_firmware_read(
+                    basename,
+                    partition_id,
+                    image_type
+                )
                 self.ecme_tftp.get_file(basename, filename)
                 break
             except (IpmiError, TftpException):
@@ -1735,7 +1756,9 @@ class Node(object):
                 if (image.type in ["CDB", "BOOT_LOG"] and
                         partition.in_use == "1"):
                     raise PartitionInUseError(
-                            "Can't upload to a CDB/BOOT_LOG partition that's in use")
+                        "Can't upload to a CDB/BOOT_LOG partition " +
+                        "that's in use"
+                    )
 
         # Try a TFTP download. Would try an upload too, but nowhere to put it.
         partition = self._get_partition(fwinfo, "SOC_ELF", "FIRST")
