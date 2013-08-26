@@ -1350,7 +1350,7 @@ communication.
                 dchrt_entries = {}
                 dchrt_entries['shortest'] = (neighbor, hops)
                 try:
-                    other_hops_neighbors = elements[12].strip().split('[,\s]+')
+                    other_hops_neighbors = elements[12].strip().split("[,\s]+")
                     hops = []
                     for entry in other_hops_neighbors:
                         pair = entry.strip().split('/')
@@ -1765,7 +1765,8 @@ obtained.
         partition = self._get_partition(fwinfo, "SOC_ELF", "FIRST")
         self._download_image(partition)
 
-    def _get_next_priority(self, fwinfo, package):
+    @staticmethod
+    def _get_next_priority(fwinfo, package):
         """ Get the next priority """
         priority = None
         image_types = [x.type for x in package.images]
