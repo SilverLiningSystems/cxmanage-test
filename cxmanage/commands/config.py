@@ -1,3 +1,6 @@
+"""Calxeda: config.py  """
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -28,9 +31,10 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+
 from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 
-from cxmanage_api.ubootenv import UbootEnv, validate_boot_args, \
+from cxmanage_api.ubootenv import validate_boot_args, \
         validate_pxe_interface
 
 
@@ -42,7 +46,7 @@ def config_reset_command(args):
     if not args.quiet:
         print "Sending config reset command..."
 
-    results, errors = run_command(args, nodes, "config_reset")
+    _, errors = run_command(args, nodes, "config_reset")
 
     if not args.quiet and not errors:
         print "Command completed successfully.\n"
@@ -63,7 +67,7 @@ def config_boot_command(args):
     if not args.quiet:
         print "Setting boot order..."
 
-    results, errors = run_command(args, nodes, "set_boot_order",
+    _, errors = run_command(args, nodes, "set_boot_order",
             args.boot_order)
 
     if not args.quiet and not errors:
@@ -73,6 +77,7 @@ def config_boot_command(args):
 
 
 def config_boot_status_command(args):
+    """Get boot status command."""
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
@@ -108,7 +113,7 @@ def config_pxe_command(args):
     if not args.quiet:
         print "Setting pxe interface..."
 
-    results, errors = run_command(args, nodes, "set_pxe_interface",
+    _, errors = run_command(args, nodes, "set_pxe_interface",
             args.interface)
 
     if not args.quiet and not errors:
@@ -118,6 +123,7 @@ def config_pxe_command(args):
 
 
 def config_pxe_status_command(args):
+    """Gets pxe status."""
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
