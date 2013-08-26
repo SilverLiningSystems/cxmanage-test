@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+"""Calxeda: ip_retriever.py"""
+
 
 # Copyright (c) 2012, Calxeda Inc.
 #
@@ -30,6 +31,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+
 import sys
 import re
 import json
@@ -45,6 +47,7 @@ from pyipmi.server import Server
 from pyipmi.bmc import LanBMC
 
 
+# pylint: disable=R0902
 class IPRetriever(threading.Thread):
     """The IPRetriever class takes an ECME address and when run will
        connect to the Linux Server from the ECME over SOL and use
@@ -119,11 +122,13 @@ class IPRetriever(threading.Thread):
         self.interface = interface
 
         if not ipv6:
-            self._ip_pattern = re.compile('\d+\.' * 3 + '\d+')
+            self._ip_pattern = re.compile(r'\d+\.' * 3 + r'\d+')
             self._inet_pattern = re.compile('inet addr:(%s)' %
                                             self._ip_pattern.pattern)
         else:
-            self._ip_pattern = re.compile('[0-9a-fA-F:]*:' * 2 + '[0-9a-fA-F:]+')
+            self._ip_pattern = re.compile(
+                '[0-9a-fA-F:]*:' * 2 + '[0-9a-fA-F:]+'
+            )
             self._inet_pattern = re.compile('inet6 addr: ?(%s)' %
                                             self._ip_pattern.pattern)
 
@@ -144,7 +149,7 @@ class IPRetriever(threading.Thread):
             self._log('Using stored IP %s' % self.server_ip)
             return
 
-        for attempt in range(self.retry + 1):
+        for _ in range(self.retry + 1):
             self.server_ip = self.sol_try_command(self.sol_find_ip)
 
             if self.server_ip is not None:
@@ -205,6 +210,7 @@ class IPRetriever(threading.Thread):
             return None
 
 
+    # pylint: disable=R0912, R0915
     def sol_try_command(self, command):
         """Connects to the server over a SOL connection. Attempts
            to run the given command on the server without knowing
