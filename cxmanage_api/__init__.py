@@ -50,8 +50,8 @@ def temp_file():
     :rtype: string
 
     """
-    fd, filename = tempfile.mkstemp(dir=WORK_DIR)
-    os.close(fd)
+    file_, filename = tempfile.mkstemp(dir=WORK_DIR)
+    os.close(file_)
     return filename
 
 def temp_dir():
