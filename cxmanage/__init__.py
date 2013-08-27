@@ -96,8 +96,6 @@ def get_nodes(args, tftp, verify_prompt=False):
         for node in nodes:
             if node in results:
                 for node_id, ip_address in sorted(results[node].iteritems()):
-                    # TODO: make this more efficient. We can use a set of IP
-                    # addresses instead of searching a list every time...
                     new_node = Node(ip_address=ip_address, username=args.user,
                             password=args.password, tftp=tftp,
                             ecme_tftp_port=args.ecme_tftp_port,
