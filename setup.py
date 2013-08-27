@@ -47,6 +47,7 @@ setup(
                         'pexpect',
                         'pyipmi>=0.8.0',
                         'argparse',
+                        'unittest-xml-reporting<1.6.0'
     ],
     extras_require={
         'docs': ['sphinx', 'cloud_sptheme'],
