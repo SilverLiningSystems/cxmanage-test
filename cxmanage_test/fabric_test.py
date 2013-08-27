@@ -460,6 +460,7 @@ class DummyNode(object):
     def __init__(self, ip_address, username="admin", password="admin",
             tftp=None, *args, **kwargs):
         self.executed = []
+        self.power_state = False
         self.ip_address = ip_address
         self.tftp = tftp
         self.bmc = make_bmc(DummyBMC, hostname=ip_address, username=username,
@@ -468,7 +469,7 @@ class DummyNode(object):
     def get_power(self):
         """Simulate get_power(). """
         self.executed.append("get_power")
-        return False
+        return self.power_state
 
     def set_power(self, mode):
         """Simulate set_power(). """
@@ -572,7 +573,8 @@ class DummyNode(object):
         return {}
 
     # pylint: disable=R0913
-    def get_server_ip(self, interface, ipv6, user, password, aggressive):
+    def get_server_ip(self, interface=None, ipv6=False, user="user1",
+            password="1Password", aggressive=False):
         """Simulate get_server_ip(). """
         self.executed.append(("get_server_ip", interface, ipv6, user, password,
                 aggressive))
