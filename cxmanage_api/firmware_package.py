@@ -1,3 +1,6 @@
+"""Calxeda: firmware_package.py"""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -38,7 +41,8 @@ from cxmanage_api import temp_dir
 from cxmanage_api.image import Image
 
 
-class FirmwarePackage:
+# pylint: disable=R0903
+class FirmwarePackage(object):
     """A firmware update package contains multiple images & version information.
 
     .. note::
@@ -54,6 +58,7 @@ class FirmwarePackage:
 
     """
 
+    # pylint: disable=R0912
     def __init__(self, filename=None):
         """Default constructor for the FirmwarePackage class."""
         self.images = []

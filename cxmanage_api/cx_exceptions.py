@@ -1,3 +1,6 @@
+"""Calxeda: cx_exceptions.py"""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -28,10 +31,10 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-"""Defines the custom exceptions used by the cxmanage_api project."""
 
-from pyipmi import IpmiError
-from tftpy.TftpShared import TftpException
+#
+# Defines the custom exceptions used by the cxmanage_api project.
+#
 
 
 class TimeoutError(Exception):
@@ -304,6 +307,7 @@ class CommandFailedError(Exception):
 
     def __init__(self, results, errors):
         """Default constructor for the CommandFailedError class."""
+        super(CommandFailedError, self).__init__()
         self.results = results
         self.errors = errors
 

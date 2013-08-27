@@ -1,3 +1,6 @@
+"""Calxeda: tftp.py"""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -41,7 +44,8 @@ from tftpy.TftpShared import TftpException
 
 
 class InternalTftp(Thread):
-    """Internally serves files using the `Trivial File Transfer Protocol <http://en.wikipedia.org/wiki/Trivial_File_Transfer_Protocol>`_.
+    """Internally serves files using the `Trivial File Transfer Protocol \
+<http://en.wikipedia.org/wiki/Trivial_File_Transfer_Protocol>`_.
 
     >>> # Typical instantiation ...
     >>> from cxmanage_api.tftp import InternalTftp
@@ -113,7 +117,7 @@ class InternalTftp(Thread):
 
         :param src: Source file path on the tftp_server.
         :type src: string
-        :param dest: Destination path (on your machine) to copy the TFTP file to.
+        :param dest: Destination path (local machine) to copy the TFTP file to.
         :type dest: string
 
         """
@@ -182,7 +186,7 @@ class ExternalTftp(object):
         >>> e_tftp.get_address()
         '1.2.3.4'
 
-        :param relative_host: Unused parameter present only for function signature.
+        :param relative_host: Unused parameter, for function signature.
         :type relative_host: None
 
         :returns: The ip address of the external TFTP server.
