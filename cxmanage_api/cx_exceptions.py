@@ -33,6 +33,16 @@
 
 
 #
+# We expose these here so a user does not have to import from pyipmi or tftpy.
+#
+# pylint: disable=W0611
+#
+from pyipmi import IpmiError
+
+from tftpy.TftpShared import TftpException
+
+
+#
 # Defines the custom exceptions used by the cxmanage_api project.
 #
 
