@@ -1,3 +1,6 @@
+"""Calxeda: tspackage.py"""
+
+
 # Copyright 2013 Calxeda, Inc.
 #
 # All rights reserved.
@@ -29,12 +32,13 @@
 # DAMAGE.
 
 
-"""A cxmanage command to collect information about a node and archive it.
+#
+# A cxmanage command to collect information about a node and archive it.
+#
+# Example:
+# cxmanage tspackage 10.10.10.10
+#
 
-Example:
-cxmanage tspackage 10.10.10.10
-
-"""
 
 import os
 import time
@@ -227,7 +231,7 @@ def write_mac_addrs(args, nodes):
 
         write_to_file(node, lines)
 
-
+# pylint: disable=R0914
 def write_sensor_info(args, nodes):
     """Write sensor information for each node to their respective files."""
     args.sensor_name = ""
@@ -332,6 +336,7 @@ def write_sel(args, nodes):
                 for event in results[node]:
                     lines.append(event)
 
+        # pylint: disable=W0703
         except Exception as error:
             lines.append("Could not get SEL! " + str(error))
             if not args.quiet:

@@ -1,3 +1,6 @@
+"""Calxeda: ipdiscover.py"""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.

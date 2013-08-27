@@ -1,3 +1,6 @@
+"""Calxeda: mc.py"""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -28,6 +31,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+
 from cxmanage import get_tftp, get_nodes, run_command
 
 
@@ -39,7 +43,7 @@ def mcreset_command(args):
     if not args.quiet:
         print 'Sending MC reset command...'
 
-    results, errors = run_command(args, nodes, 'mc_reset')
+    _, errors = run_command(args, nodes, 'mc_reset')
 
     if not args.quiet and not errors:
         print 'Command completed successfully.\n'

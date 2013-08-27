@@ -1,3 +1,6 @@
+"""Calxeda: ipmitool.py"""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -27,6 +30,7 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+
 
 from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 

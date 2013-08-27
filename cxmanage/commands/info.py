@@ -1,3 +1,6 @@
+"""Calxeda: info.py"""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -76,6 +79,7 @@ def info_basic_command(args):
 
 
 def info_ubootenv_command(args):
+    """Print uboot info"""
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 

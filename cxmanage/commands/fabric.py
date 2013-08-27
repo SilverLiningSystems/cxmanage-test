@@ -1,3 +1,6 @@
+"""Calxeda: fabric.py"""
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -41,7 +44,7 @@ def ipinfo_command(args):
     if not args.quiet:
         print "Getting IP addresses..."
 
-    results, errors = run_command(args, nodes, "get_fabric_ipinfo")
+    results, _ = run_command(args, nodes, "get_fabric_ipinfo")
 
     for node in nodes:
         if node in results:
