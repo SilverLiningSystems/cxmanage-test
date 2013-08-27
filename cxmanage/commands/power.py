@@ -1,3 +1,6 @@
+"""Calxeda: power.py """
+
+
 # Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
@@ -39,7 +42,7 @@ def power_command(args):
     if not args.quiet:
         print 'Sending power %s command...' % args.power_mode
 
-    results, errors = run_command(args, nodes, 'set_power', args.power_mode)
+    _, errors = run_command(args, nodes, 'set_power', args.power_mode)
 
     if not args.quiet and not errors:
         print 'Command completed successfully.\n'
@@ -48,6 +51,7 @@ def power_command(args):
 
 
 def power_status_command(args):
+    """Executes the power status command with args."""
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
@@ -72,13 +76,14 @@ def power_status_command(args):
 
 
 def power_policy_command(args):
+    """Executes power policy command with args."""
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
     if not args.quiet:
         print 'Setting power policy to %s...' % args.policy
 
-    results, errors = run_command(args, nodes, 'set_power_policy',
+    _, errors = run_command(args, nodes, 'set_power_policy',
             args.policy)
 
     if not args.quiet and not errors:
@@ -88,6 +93,7 @@ def power_policy_command(args):
 
 
 def power_policy_status_command(args):
+    """Executes the power policy status command with args."""
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
