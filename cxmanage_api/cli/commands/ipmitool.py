@@ -1,7 +1,7 @@
-"""Calxeda: fru_version.py """
+"""Calxeda: ipmitool.py"""
 
 
-# Copyright (c) 2013, Calxeda Inc.
+# Copyright (c) 2012, Calxeda Inc.
 #
 # All rights reserved.
 #
@@ -32,40 +32,32 @@
 # DAMAGE.
 
 
-from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
+from cxmanage_api.cli import get_tftp, get_nodes, get_node_strings, run_command
 
+def ipmitool_command(args):
+    """run arbitrary ipmitool command"""
+    if args.lanplus:
+        ipmitool_args = ['-I', 'lanplus'] + args.ipmitool_args
+    else:
+        ipmitool_args = args.ipmitool_args
 
-def node_fru_version_command(args):
-    """Get the node FRU version for each node. """
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
-    results, errors = run_command(args, nodes, 'get_node_fru_version')
 
-    # Print results if we were successful
-    if results:
-        node_strings = get_node_strings(args, results, justify=True)
-        for node in nodes:
-            print("%s: %s" % (node_strings[node], results[node]))
+    if not args.quiet:
+        print "Running IPMItool command..."
+    results, errors = run_command(args, nodes, "ipmitool_command",
+            ipmitool_args)
 
-    print("")  # For readability
-
-    if not args.quiet and errors:
-        print('Some errors occured during the command.\n')
-
-
-def slot_fru_version_command(args):
-    """Get the slot FRU version for each node. """
-    tftp = get_tftp(args)
-    nodes = get_nodes(args, tftp)
-    results, errors = run_command(args, nodes, 'get_slot_fru_version')
-
-    # Print results if we were successful
-    if results:
-        node_strings = get_node_strings(args, results, justify=True)
-        for node in nodes:
-            print("%s: %s" % (node_strings[node], results[node]))
-
-    print("")  # For readability
+    # Print results
+    node_strings = get_node_strings(args, results, justify=False)
+    for node in nodes:
+        if node in results and results[node] != "":
+            print "[ IPMItool output from %s ]" % node_strings[node]
+            print results[node]
+            print
 
     if not args.quiet and errors:
-        print('Some errors occured during the command.\n')
+        print "Some errors occured during the command.\n"
+
+    return len(errors) > 0

@@ -1,4 +1,4 @@
-"""Calxeda: ipdiscover.py"""
+"""Calxeda: mc.py"""
 
 
 # Copyright (c) 2012, Calxeda Inc.
@@ -31,29 +31,21 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
+
+from cxmanage_api.cli import get_tftp, get_nodes, run_command
 
 
-def ipdiscover_command(args):
-    """discover server IP addresses"""
+def mcreset_command(args):
+    """reset the management controllers of a cluster or host"""
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
     if not args.quiet:
-        print 'Getting server-side IP addresses...'
+        print 'Sending MC reset command...'
 
-    results, errors = run_command(args, nodes, 'get_server_ip', args.interface,
-            args.ipv6, args.server_user, args.server_password, args.aggressive)
+    _, errors = run_command(args, nodes, 'mc_reset')
 
-    if results:
-        node_strings = get_node_strings(args, results, justify=True)
-        print 'IP addresses (ECME, Server)'
-        for node in nodes:
-            if node in results:
-                print '%s: %s' % (node_strings[node], results[node])
-        print
-
-    if not args.quiet and errors:
-        print 'Some errors occurred during the command.'
+    if not args.quiet and not errors:
+        print 'Command completed successfully.\n'
 
     return len(errors) > 0

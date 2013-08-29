@@ -1,4 +1,4 @@
-"""Calxeda: ipmitool.py"""
+"""Calxeda: fabric.py"""
 
 
 # Copyright (c) 2012, Calxeda Inc.
@@ -31,34 +31,53 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+from cxmanage_api.cli import get_tftp, get_nodes, run_command
 
-from cxmanage import get_tftp, get_nodes, get_node_strings, run_command
 
-
-def ipmitool_command(args):
-    """run arbitrary ipmitool command"""
-    if args.lanplus:
-        ipmitool_args = ['-I', 'lanplus'] + args.ipmitool_args
-    else:
-        ipmitool_args = args.ipmitool_args
+def ipinfo_command(args):
+    """get ip info from a cluster or host"""
+    args.all_nodes = False
 
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
 
     if not args.quiet:
-        print "Running IPMItool command..."
-    results, errors = run_command(args, nodes, "ipmitool_command",
-            ipmitool_args)
+        print "Getting IP addresses..."
 
-    # Print results
-    node_strings = get_node_strings(args, results, justify=False)
+    results, _ = run_command(args, nodes, "get_fabric_ipinfo")
+
     for node in nodes:
-        if node in results and results[node] != "":
-            print "[ IPMItool output from %s ]" % node_strings[node]
-            print results[node]
+        if node in results:
+            print 'IP info from %s' % node.ip_address
+            for node_id, node_address in results[node].iteritems():
+                print 'Node %i: %s' % (node_id, node_address)
+            print
+
+    return 0
+
+
+def macaddrs_command(args):
+    """get mac addresses from a cluster or host"""
+    args.all_nodes = False
+
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting MAC addresses..."
+    results, errors = run_command(args, nodes, "get_fabric_macaddrs")
+
+    for node in nodes:
+        if node in results:
+            print "MAC addresses from %s" % node.ip_address
+            for node_id in results[node]:
+                for port in results[node][node_id]:
+                    for mac_address in results[node][node_id][port]:
+                        print "Node %i, Port %i: %s" % (node_id, port,
+                                mac_address)
             print
 
     if not args.quiet and errors:
         print "Some errors occured during the command.\n"
 
-    return len(errors) > 0
+    return len(errors) == 0

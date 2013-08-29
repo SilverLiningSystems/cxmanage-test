@@ -1,4 +1,4 @@
-"""Calxeda: setup.py"""
+"""Calxeda: ipdiscover.py"""
 
 
 # Copyright (c) 2012, Calxeda Inc.
@@ -31,33 +31,29 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+from cxmanage_api.cli import get_tftp, get_nodes, get_node_strings, run_command
 
-from setuptools import setup
 
-setup(
-    name='cxmanage',
-    version='0.9.0',
-    packages=[
-        'cxmanage_api',
-        'cxmanage_api.cli',
-        'cxmanage_api.cli.commands',
-        'cxmanage_test'
-    ],
-    scripts=['scripts/cxmanage', 'scripts/sol_tabs'],
-    description='Calxeda Management Utility',
-    # NOTE: As of right now, the pyipmi version requirement needs to be updated
-    # at the top of scripts/cxmanage as well.
-    install_requires=[
-                        'tftpy',
-                        'pexpect',
-                        'pyipmi>=0.8.0',
-                        'argparse',
-                        'unittest-xml-reporting<1.6.0'
-    ],
-    extras_require={
-        'docs': ['sphinx', 'cloud_sptheme'],
-    },
-    classifiers=[
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2.7']
-)
+def ipdiscover_command(args):
+    """discover server IP addresses"""
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print 'Getting server-side IP addresses...'
+
+    results, errors = run_command(args, nodes, 'get_server_ip', args.interface,
+            args.ipv6, args.server_user, args.server_password, args.aggressive)
+
+    if results:
+        node_strings = get_node_strings(args, results, justify=True)
+        print 'IP addresses (ECME, Server)'
+        for node in nodes:
+            if node in results:
+                print '%s: %s' % (node_strings[node], results[node])
+        print
+
+    if not args.quiet and errors:
+        print 'Some errors occurred during the command.'
+
+    return len(errors) > 0

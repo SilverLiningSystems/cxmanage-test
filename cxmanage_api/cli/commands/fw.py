@@ -33,8 +33,8 @@
 
 from pkg_resources import parse_version
 
-from cxmanage import get_tftp, get_nodes, get_node_strings, run_command, \
-        prompt_yes
+from cxmanage_api.cli import get_tftp, get_nodes, get_node_strings, \
+        run_command, prompt_yes
 
 from cxmanage_api.image import Image
 from cxmanage_api.firmware_package import FirmwarePackage

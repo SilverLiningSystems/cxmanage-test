@@ -1,7 +1,7 @@
-"""Calxeda: mc.py"""
+"""Calxeda: fru_version.py """
 
 
-# Copyright (c) 2012, Calxeda Inc.
+# Copyright (c) 2013, Calxeda Inc.
 #
 # All rights reserved.
 #
@@ -32,20 +32,40 @@
 # DAMAGE.
 
 
-from cxmanage import get_tftp, get_nodes, run_command
+from cxmanage_api.cli import get_tftp, get_nodes, get_node_strings, run_command
 
 
-def mcreset_command(args):
-    """reset the management controllers of a cluster or host"""
+def node_fru_version_command(args):
+    """Get the node FRU version for each node. """
     tftp = get_tftp(args)
     nodes = get_nodes(args, tftp)
+    results, errors = run_command(args, nodes, 'get_node_fru_version')
 
-    if not args.quiet:
-        print 'Sending MC reset command...'
+    # Print results if we were successful
+    if results:
+        node_strings = get_node_strings(args, results, justify=True)
+        for node in nodes:
+            print("%s: %s" % (node_strings[node], results[node]))
 
-    _, errors = run_command(args, nodes, 'mc_reset')
+    print("")  # For readability
 
-    if not args.quiet and not errors:
-        print 'Command completed successfully.\n'
+    if not args.quiet and errors:
+        print('Some errors occured during the command.\n')
 
-    return len(errors) > 0
+
+def slot_fru_version_command(args):
+    """Get the slot FRU version for each node. """
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+    results, errors = run_command(args, nodes, 'get_slot_fru_version')
+
+    # Print results if we were successful
+    if results:
+        node_strings = get_node_strings(args, results, justify=True)
+        for node in nodes:
+            print("%s: %s" % (node_strings[node], results[node]))
+
+    print("")  # For readability
+
+    if not args.quiet and errors:
+        print('Some errors occured during the command.\n')
