@@ -88,7 +88,7 @@ class Node(object):
                   image=None, ubootenv=None, ipretriever=None):
         """Default constructor for the Node class."""
         if (not tftp):
-            tftp = InternalTftp()
+            tftp = InternalTftp.default()
 
         # Dependency Integration
         if (not bmc):

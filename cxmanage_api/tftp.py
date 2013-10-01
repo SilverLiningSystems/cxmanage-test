@@ -62,6 +62,14 @@ class InternalTftp(Thread):
     :type verbose: boolean
 
     """
+    _default = None
+
+    @staticmethod
+    def default():
+        """ Return the default InternalTftp server """
+        if InternalTftp._default == None:
+            InternalTftp._default = InternalTftp()
+        return InternalTftp._default
 
     def __init__(self, ip_address=None, port=0, verbose=False):
         super(InternalTftp, self).__init__()
