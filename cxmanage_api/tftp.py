@@ -85,7 +85,7 @@ class InternalTftp(Thread):
 
         # Get the port we actually hosted on
         if port == 0:
-            deadline = datetime.now() + timedelta(seconds=1)
+            deadline = datetime.now() + timedelta(seconds=10)
             while datetime.now() < deadline:
                 try:
                     self.port = self.server.sock.getsockname()[1]
