@@ -48,8 +48,6 @@ from cxmanage_api.cli.commands.info import info_command
 from cxmanage_api.cli.commands.ipmitool import ipmitool_command
 from cxmanage_api.cli.commands.ipdiscover import ipdiscover_command
 from cxmanage_api.cli.commands.tspackage import tspackage_command
-from cxmanage_api.cli.commands.fru_version import node_fru_version_command, \
-    slot_fru_version_command
 from cxmanage_api.cli.commands.eeprom import eepromupdate_command
 
 
@@ -318,16 +316,6 @@ def build_parser():
     tspackage = subparsers.add_parser('tspackage',
             help='Save information about this node/fabric to a .tar')
     tspackage.set_defaults(func=tspackage_command)
-
-    # node_fru_version command
-    node_fru_version = subparsers.add_parser('node_fru_version',
-            help='Get the node FRU version')
-    node_fru_version.set_defaults(func=node_fru_version_command)
-
-    # slot_fru_version command
-    slot_fru_version = subparsers.add_parser('slot_fru_version',
-            help='Get the slot FRU version')
-    slot_fru_version.set_defaults(func=slot_fru_version_command)
 
     return parser
 

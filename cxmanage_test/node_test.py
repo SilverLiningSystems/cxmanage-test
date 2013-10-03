@@ -451,18 +451,6 @@ class NodeTest(unittest.TestCase):
             node.set_uplink(iface=0, uplink=0)
             self.assertEqual(node.get_uplink(iface=0), 0)
 
-    def test_get_node_fru_version(self):
-        """ Test node.get_node_fru_version method """
-        for node in self.nodes:
-            node.get_node_fru_version()
-            self.assertEqual(node.bmc.executed, ['node_fru_read'])
-
-    def test_get_slot_fru_version(self):
-        """ Test node.get_slot_fru_version method """
-        for node in self.nodes:
-            node.get_slot_fru_version()
-            self.assertEqual(node.bmc.executed, ['slot_fru_read'])
-
 # pylint: disable=R0902
 class DummyBMC(LanBMC):
     """ Dummy BMC for the node tests """

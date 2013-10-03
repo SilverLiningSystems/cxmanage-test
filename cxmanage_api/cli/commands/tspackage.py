@@ -88,14 +88,6 @@ def tspackage_command(args):
     write_version_info(args, nodes)
 
     if not quiet:
-        print("Getting node FRU version...")
-    write_node_fru_version(args, nodes)
-
-    if not quiet:
-        print("Getting slot FRU version...")
-    write_slot_fru_version(args, nodes)
-
-    if not quiet:
         print("Getting boot order...")
     write_boot_order(args, nodes)
 
@@ -169,40 +161,6 @@ def write_version_info(args, nodes):
                     lines.append("%s: %s" % (description.ljust(19), version))
         else:
             lines.append("No version information could be found.")
-
-        write_to_file(node, lines)
-
-def write_node_fru_version(args, nodes):
-    """Write the node and slot FRU versions for each node to their
-    respective files.
-
-    """
-    node_fru_results, _ = run_command(args, nodes, "get_node_fru_version")
-
-    for node in nodes:
-        lines = []  # Lines of text to write to file
-        if node in node_fru_results:
-            lines.append("%s: %s" % \
-                ("Node FRU Version".ljust(19), node_fru_results[node]))
-        else:
-            lines.append("\nWARNING: No node FRU found!")
-        write_to_file(node, lines)
-
-def write_slot_fru_version(args, nodes):
-    """Write the node and slot FRU versions for each node to their
-    respective files.
-
-    """
-    slot_fru_results, _ = run_command(args, nodes, "get_slot_fru_version")
-
-    for node in nodes:
-        lines = []  # Lines of text to write to file
-        if node in slot_fru_results:
-            lines.append("%s: %s" % \
-                ("Slot FRU Version".ljust(19), slot_fru_results[node]))
-        else:
-            lines.append("Error reading slot FRU. Perhaps the system board " +
-                         "does not have slot FRUs?")
 
         write_to_file(node, lines)
 

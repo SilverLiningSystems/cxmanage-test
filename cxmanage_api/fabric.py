@@ -1082,44 +1082,6 @@ class Fabric(object):
         """
         return self._run_on_all_nodes(async, "get_depth_chart")
 
-    def get_node_fru_version(self, async=False):
-        """Get each node's node FRU version.
-
-        >>> fabric.get_node_fru_version()
-        {0: 'bf7b471716113d5b9c47c6a5dd25f7a83f5c235c',
-         1: 'bf7b471716113d5b9c47c6a5dd25f7a83f5c235c',
-         2: 'bf7b471716113d5b9c47c6a5dd25f7a83f5c235c',
-         3: 'bf7b471716113d5b9c47c6a5dd25f7a83f5c235c'}
-
-        :param async: Flag that determines if the command result (dictionary)
-                      is returned or a Task object (can get status, etc.).
-        :type async: boolean
-
-        :returns: The node FRU versions for each node in the fabric
-        :rtype: dictionary
-
-        """
-        return self._run_on_all_nodes(async, "get_node_fru_version")
-
-    def get_slot_fru_version(self, async=False):
-        """Get each node's slot FRU version.
-
-        >>> fabric.get_slot_fru_version()
-        {0: 'bf7b471716113d5b9c47c6a5dd25f7a83f5c235c',
-         1: 'bf7b471716113d5b9c47c6a5dd25f7a83f5c235c',
-         2: 'bf7b471716113d5b9c47c6a5dd25f7a83f5c235c',
-         3: 'bf7b471716113d5b9c47c6a5dd25f7a83f5c235c'}
-
-        :param async: Flag that determines if the command result (dictionary)
-                      is returned or a Task object (can get status, etc.).
-        :type async: boolean
-
-        :returns: The slot FRU versions for each node in the fabric
-        :rtype: dictionary
-
-        """
-        return self._run_on_all_nodes(async, "get_slot_fru_version")
-
     def _run_on_all_nodes(self, async, name, *args, **kwargs):
         """Start a command on all nodes."""
         tasks = {}
