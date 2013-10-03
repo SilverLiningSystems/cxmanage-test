@@ -1030,30 +1030,29 @@ communication.
         """
         result = self.bmc.get_info_basic()
         fwinfo = self.get_firmware_info()
-        fw_version = result.firmware_version
 
         # components maps variables to firmware partition types
         components = [
             ("cdb_version", "CDB"),
             ("stage2_version", "S2_ELF"),
-            ("bootlog_version", "BOOT_LOG")
+            ("bootlog_version", "BOOT_LOG"),
+            ("uboot_version", "A9_UBOOT"),
+            ("ubootenv_version", "UBOOTENV"),
+            ("dtb_version", "DTB")
         ]
+
         # Use firmware version to determine the chip type and name
         # In the future, we may want to determine the chip name some other way
-        if fw_version.startswith("ECX-1000"):
+        if result.firmware_version.startswith("ECX-1000"):
+            result.chip_name = "Highbank"
             components.append(("a9boot_version", "A9_EXEC"))
-            setattr(result, "chip_name", "Highbank")
-        elif fw_version.startswith("ECX-2000"):
-            # The BMC (and fwinfo) still reference the A15 as an A9
+        elif result.firmware_version.startswith("ECX-2000"):
+            result.chip_name = "Midway"
             components.append(("a15boot_version", "A9_EXEC"))
-            setattr(result, "chip_name", "Midway")
         else:
-            # Default to A9 and unknown name
+            result.chip_name = "Unknown"
             components.append(("a9boot_version", "A9_EXEC"))
             setattr(result, "chip_name", "Unknown")
-        components.append(("uboot_version", "A9_UBOOT"))
-        components.append(("ubootenv_version", "UBOOTENV"))
-        components.append(("dtb_version", "DTB"))
 
         for var, ptype in components:
             try:
@@ -1061,16 +1060,17 @@ communication.
                 setattr(result, var, partition.version)
             except NoPartitionError:
                 pass
+
         try:
             card = self.bmc.get_info_card()
-            setattr(result, "hardware_version", "%s X%02i" %
-                    (card.type, int(card.revision)))
-        except IpmiError as err:
-            if (self.verbose):
-                print str(err)
+            result.hardware_version = "%s X%02i" % (
+                card.type, int(card.revision)
+            )
+        except IpmiError:
             # Should raise an error, but we want to allow the command
             # to continue gracefully if the ECME is out of date.
-            setattr(result, "hardware_version", "Unknown")
+            result.hardware_version = "Unknown"
+
         return result
 
     def get_versions_dict(self):
