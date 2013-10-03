@@ -145,11 +145,11 @@ def write_version_info(args, nodes):
         if node in info_results:
             info_result = info_results[node]
             lines.append(
-                "Hardware version   : %s" %
+                "Hardware version    : %s" %
                 info_result.hardware_version
             )
             lines.append(
-                "Firmware version   : %s" %
+                "Firmware version    : %s" %
                 info_result.firmware_version
             )
 
@@ -158,7 +158,7 @@ def write_version_info(args, nodes):
             for var, description in components:
                 if hasattr(info_result, var):
                     version = getattr(info_result, var)
-                    lines.append("%s: %s" % (description.ljust(19), version))
+                    lines.append("%s: %s" % (description.ljust(20), version))
         else:
             lines.append("No version information could be found.")
 

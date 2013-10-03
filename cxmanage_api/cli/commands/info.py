@@ -63,13 +63,13 @@ def info_basic_command(args):
             components = COMPONENTS
 
             print "[ Info from %s ]" % node_strings[node]
-            print "Hardware version   : %s" % result.hardware_version
-            print "Firmware version   : %s" % result.firmware_version
+            print "Hardware version    : %s" % result.hardware_version
+            print "Firmware version    : %s" % result.firmware_version
             # var is the variable, string is the printable string of var
             for var, string in components:
                 if hasattr(result, var):
                     version = getattr(result, var)
-                    print "%s: %s" % (string.ljust(19), version)
+                    print "%s: %s" % (string.ljust(20), version)
             print
 
     if not args.quiet and errors:
