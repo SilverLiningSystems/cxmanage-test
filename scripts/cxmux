@@ -32,16 +32,15 @@ def main():
     for i, ip in enumerate(ips):
         if i == 0:
             os.system('tmux new-window -n "%s"' % name)
-            os.system('tmux send-keys -l "%s %s"' % (command, ip))
+            os.system('tmux send-keys "%s %s"' % (command, ip))
             os.system('tmux send-keys Enter')
             continue
         
         os.system('tmux split-window -h')
-        os.system('tmux send-keys -l "%s %s"' % (command, ip))
+        os.system('tmux send-keys "%s %s"' % (command, ip))
         os.system('tmux send-keys Enter')
-        os.system('tmux select-layout -t "%s" even-horizontal >/dev/null' % name)
+        os.system('tmux select-layout -t "%s" tiled >/dev/null' % name)
 
-    os.system('tmux select-layout -t "%s" tiled >/dev/null' % name)
     if options.sync:
         os.system('tmux set-window-option -t "%s" synchronize-panes on >/dev/null' % name)
 
