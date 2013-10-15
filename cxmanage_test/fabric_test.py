@@ -451,8 +451,14 @@ class DummyNode(object):
         self.power_state = False
         self.ip_address = ip_address
         self.tftp = tftp
+        self.sel = []
         self.bmc = make_bmc(DummyBMC, hostname=ip_address, username=username,
                             password=password, verbose=False)
+        
+    def get_sel(self):
+        """Simulate get_sel()"""
+        self.executed.append('get_sel')
+        return self.sel
 
     def get_power(self):
         """Simulate get_power(). """
