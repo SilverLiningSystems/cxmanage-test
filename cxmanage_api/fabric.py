@@ -32,10 +32,13 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+import time
+
 from cxmanage_api.tasks import DEFAULT_TASK_QUEUE
 from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.node import Node as NODE
-from cxmanage_api.cx_exceptions import CommandFailedError
+from cxmanage_api.cx_exceptions import CommandFailedError, TimeoutError, \
+        IpmiError, TftpException
 
 
 # pylint: disable=R0902,R0903, R0904
@@ -209,22 +212,46 @@ class Fabric(object):
         """
         return self.nodes[0]
 
-    def refresh(self):
+    def refresh(self, wait=False, timeout=600):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""
+        def get_nodes():
+            """Returns a dictionary of nodes reported by the primary node IP"""
+            new_nodes = {}
+            node = self.node(
+                ip_address=self.ip_address, username=self.username,
+                password=self.password, tftp=self.tftp,
+                ecme_tftp_port=self.ecme_tftp_port, verbose=self.verbose
+            )
+            ipinfo = node.get_fabric_ipinfo()
+            for node_id, node_address in ipinfo.iteritems():
+                new_nodes[node_id] = self.node(
+                    ip_address=node_address, username=self.username,
+                    password=self.password, tftp=self.tftp,
+                    ecme_tftp_port=self.ecme_tftp_port,
+                    verbose=self.verbose
+                )
+                new_nodes[node_id].node_id = node_id
+            return new_nodes
+
+        initial_node_count = len(self._nodes)
         self._nodes = {}
-        node = self.node(ip_address=self.ip_address, username=self.username,
-                         password=self.password, tftp=self.tftp,
-                         ecme_tftp_port=self.ecme_tftp_port,
-                         verbose=self.verbose)
-        ipinfo = node.get_fabric_ipinfo()
-        for node_id, node_address in ipinfo.iteritems():
-            self._nodes[node_id] = self.node(ip_address=node_address,
-                                            username=self.username,
-                                            password=self.password,
-                                            tftp=self.tftp,
-                                            ecme_tftp_port=self.ecme_tftp_port,
-                                            verbose=self.verbose)
-            self._nodes[node_id].node_id = node_id
+
+        if wait:
+            deadline = time.time() + timeout
+            while time.time() < deadline:
+                try:
+                    self._nodes = get_nodes()
+                    if len(self._nodes) >= initial_node_count:
+                        break
+                except (IpmiError, TftpException):
+                    pass
+            else:
+                raise TimeoutError(
+                    "Fabric refresh timed out. Rediscovered %i of %i nodes"
+                    % (len(self._nodes), initial_node_count)
+                )
+        else:
+            self._nodes = get_nodes()
 
     def get_mac_addresses(self):
         """Gets MAC addresses from all nodes.
