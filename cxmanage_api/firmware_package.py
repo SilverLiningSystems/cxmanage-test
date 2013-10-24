@@ -122,6 +122,9 @@ class FirmwarePackage(object):
                 self.images.append(Image(filename, image_type, simg, daddr,
                         skip_crc32, version))
 
+    def __str__(self):
+        return self.version
+
     def save_package(self, filename):
         """Save all images as a firmware package.
 
