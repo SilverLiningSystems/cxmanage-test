@@ -121,7 +121,7 @@ class Node(object):
         return hash(self.ip_address)
 
     def __str__(self):
-        return 'Node: %s' % self.ip_address
+        return 'Node %i (%s)' % (self.node_id, self.ip_address)
 
     @property
     def tftp_address(self):
