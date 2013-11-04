@@ -36,6 +36,7 @@ import os
 import re
 import time
 import tempfile
+import socket
 import subprocess
 
 from pkg_resources import parse_version
@@ -52,7 +53,7 @@ from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         SocmanVersionError, FirmwareConfigError, PriorityIncrementError, \
         NoPartitionError, TransferFailure, ImageSizeError, \
-        PartitionInUseError, UbootenvError, EEPROMUpdateError
+        PartitionInUseError, UbootenvError, EEPROMUpdateError, ParseError
 
 
 # pylint: disable=R0902, R0904
@@ -1162,26 +1163,30 @@ communication.
 
         :raises IpmiError: If the IPMI command fails.
         :raises TftpException: If the TFTP transfer fails.
+        :raises ParseError: If we fail to parse IP info
 
         """
-        filename = self._run_fabric_command(
-            function_name='fabric_config_get_ip_info'
+        for _ in range(3):
+            try:
+                filename = self._run_fabric_command(
+                    function_name='fabric_config_get_ip_info'
+                )
+
+                results = {}
+                for line in open(filename):
+                    if line.strip():
+                        elements = line.split()
+                        node_id = int(elements[1].rstrip(":"))
+                        ip_address = elements[2]
+                        socket.inet_aton(ip_address)
+                        results[node_id] = ip_address
+                return results
+            except (IndexError, ValueError, socket.error):
+                pass
+
+        raise ParseError(
+            "Failed to parse fabric IP info\n%s" % open(filename).read()
         )
-
-        # Parse addresses from ipinfo file
-        results = {}
-        for line in open(filename):
-            if (line.startswith("Node")):
-                elements = line.split()
-                node_id = int(elements[1].rstrip(":"))
-                node_ip_address = elements[2]
-
-                # Old boards used to return 0.0.0.0 sometimes -- might not be
-                # an issue anymore.
-                if (node_ip_address != "0.0.0.0"):
-                    results[node_id] = node_ip_address
-
-        return results
 
     def get_fabric_macaddrs(self):
         """Gets what macaddr information THIS node knows about the Fabric.

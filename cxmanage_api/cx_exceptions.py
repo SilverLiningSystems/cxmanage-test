@@ -401,4 +401,9 @@ class IPDiscoveryError(Exception):
         """String representation of this Exception class."""
         return self.msg
 
+
+class ParseError(Exception):
+    """Raised when there's an error parsing some output"""
+    pass
+
 # End of file: exceptions.py
