@@ -1181,10 +1181,6 @@ communication.
                 if (node_ip_address != "0.0.0.0"):
                     results[node_id] = node_ip_address
 
-        # Make sure we found something
-        if (not results):
-            raise TftpException("Node failed to reach TFTP server")
-
         return results
 
     def get_fabric_macaddrs(self):
@@ -1230,10 +1226,6 @@ communication.
                     results[node_id][port] = []
                 results[node_id][port].append(mac_address)
 
-        # Make sure we found something
-        if (not results):
-            raise TftpException("Node failed to reach TFTP server")
-
         return results
 
     def get_fabric_uplink_info(self):
@@ -1267,10 +1259,6 @@ communication.
                 data = tuple(ul_.split())
                 node_data[data[0]] = int(data[1])
             results[node_id] = node_data
-
-        # Make sure we found something
-        if (not results):
-            raise TftpException("Node failed to reach TFTP server")
 
         return results
 
@@ -1326,10 +1314,6 @@ communication.
                         ).replace('(link)', '').strip()
                     ] = reg_value[1].strip()
 
-        # Make sure we found something
-        if (not results):
-            raise TftpException("Node failed to reach TFTP server")
-
         return results
 
     def get_linkmap(self):
@@ -1356,10 +1340,6 @@ communication.
                 link_id = int(elements[1].rstrip(':'))
                 node_id = int(elements[3].strip())
                 results[link_id] = node_id
-
-        # Make sure we found something
-        if (not results):
-            raise TftpException("Node failed to reach TFTP server")
 
         return results
 
@@ -1389,10 +1369,6 @@ communication.
                 for entry in elements[4].strip().split('.'):
                     rt_entries.append(int(entry))
                 results[node_id] = rt_entries
-
-        # Make sure we found something
-        if (not results):
-            raise TftpException("Node failed to reach TFTP server")
 
         return results
 
@@ -1440,10 +1416,6 @@ communication.
                     pass
 
                 results[target] = dchrt_entries
-
-        # Make sure we found something
-        if (not results):
-            raise TftpException("Node failed to reach TFTP server")
 
         return results
 
@@ -1587,9 +1559,11 @@ obtained.
                     self.tftp.get_file(src=basename, dest=filename)
                     if (os.path.getsize(filename) > 0):
                         break
-
                 except (TftpException, IOError):
                     pass
+
+            if os.path.getsize(filename) == 0:
+                raise TftpException("Node failed to reach TFTP server")
 
         return filename
 
