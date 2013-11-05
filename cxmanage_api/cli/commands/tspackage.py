@@ -174,16 +174,10 @@ def write_version_info(args, nodes):
 
 
     for node in nodes:
-        lines = []  # The lines of text to write to file
-
-        # Since this is the first line of the file, we don't need a \n
-        write_to_file(
-            node,
+        lines = [
             "[ Version Info for Node %d ]" % node.node_id,
-            add_newlines=False
-        )
-
-        lines.append("ECME IP Address    : %s" % node.ip_address)
+            "ECME IP Address     : %s" % node.ip_address
+        ]
 
         if node in info_results:
             info_result = info_results[node]
@@ -440,9 +434,7 @@ def write_to_file(node, to_write, add_newlines=True):
     """
     with open("node" + str(node.node_id) + ".txt", 'a') as node_file:
         if add_newlines:
-            # join() doesn't add a newline before the first item
-            to_write[0] = "\n" + to_write[0]
-            node_file.write("\n".join(to_write))
+            node_file.write("%s\n" % "\n".join(to_write))
         else:
             node_file.write("".join(to_write))
 
