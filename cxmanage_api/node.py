@@ -1072,6 +1072,11 @@ communication.
             # to continue gracefully if the ECME is out of date.
             result.hardware_version = "Unknown"
 
+        try:
+            result.pmic_version = self.bmc.pmic_get_version()
+        except IpmiError:
+            pass
+
         return result
 
     def get_versions_dict(self):

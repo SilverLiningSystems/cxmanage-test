@@ -1011,6 +1011,9 @@ class DummyBMC(LanBMC):
             # Writes a fake FRU image with version "0.0"
             fru_image.write("x00" * 516 + "0.0" + "x00"*7673)
 
+    def pmic_get_version(self):
+        return "0"
+
 
 # pylint: disable=R0913, R0903
 class Partition(object):

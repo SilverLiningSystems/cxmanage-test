@@ -55,6 +55,7 @@ COMPONENTS = [
     ("node_eeprom_config", "Node EEPROM config"),
     ("slot_eeprom_version", "Slot EEPROM version"),
     ("slot_eeprom_config", "Slot EEPROM config"),
+    ("pmic_version", "PMIC version")
 ]
 
 
