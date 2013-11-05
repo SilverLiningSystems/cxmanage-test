@@ -41,10 +41,13 @@
 
 
 import os
-import time
+import pkg_resources
 import shutil
+import subprocess
+import sys
 import tarfile
 import tempfile
+import time
 
 from cxmanage_api.cli import get_tftp, get_nodes, run_command, COMPONENTS
 
@@ -82,6 +85,8 @@ def tspackage_command(args):
     os.chdir(tspackage_dir)
 
     quiet = args.quiet
+
+    write_client_info()
 
     if not quiet:
         print("Getting version information...")
@@ -128,6 +133,36 @@ def tspackage_command(args):
 
     # The original files are already archived, so we can delete them.
     shutil.rmtree(temp_dir)
+
+
+def write_client_info():
+    """ Write client-side info """
+    with open("client.txt", "w") as fout:
+        def write_command(command):
+            """ Safely write output from a single command to the file """
+            try:
+                fout.write(subprocess.check_output(
+                    command, stderr=subprocess.STDOUT, shell=True
+                ))
+            except subprocess.CalledProcessError:
+                pass
+
+        fout.write("[ Operating System ]\n")
+        fout.write("Operating system: %s\n" % sys.platform)
+        write_command("lsb_release -a")
+        write_command("uname -a")
+
+        fout.write("\n[ Tool versions ]\n")
+        fout.write("Python %s\n" % sys.version.replace("\n", ""))
+        cxmanage_version = pkg_resources.require("cxmanage")[0].version
+        fout.write("cxmanage version %s\n" % cxmanage_version)
+        pyipmi_version = pkg_resources.require("pyipmi")[0].version
+        fout.write("pyipmi version %s\n" % pyipmi_version)
+        ipmitool_path = os.environ.get('IPMITOOL_PATH', 'ipmitool')
+        write_command("%s -V" % ipmitool_path)
+
+        fout.write("\n[ Python packages ]\n")
+        write_command("pip freeze")
 
 
 def write_version_info(args, nodes):
