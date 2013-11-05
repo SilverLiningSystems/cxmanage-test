@@ -36,7 +36,7 @@ from setuptools import setup
 
 setup(
     name='cxmanage',
-    version='0.9.0',
+    version='0.10.0',
     packages=[
         'cxmanage_api',
         'cxmanage_api.cli',
@@ -50,7 +50,7 @@ setup(
     install_requires=[
                         'tftpy',
                         'pexpect',
-                        'pyipmi>=0.8.0',
+                        'pyipmi>=0.9.0',
                         'argparse',
                         'unittest-xml-reporting<1.6.0'
     ],

@@ -51,8 +51,8 @@ from cxmanage_api.cli.commands.tspackage import tspackage_command
 from cxmanage_api.cli.commands.eeprom import eepromupdate_command
 
 
-PYIPMI_VERSION = '0.8.0'
-IPMITOOL_VERSION = '1.8.11.0-cx7'
+PYIPMI_VERSION = '0.9.0'
+IPMITOOL_VERSION = '1.8.11.0-cx8'
 
 
 PARSER_EPILOG = """examples:
