@@ -337,7 +337,7 @@ Initiated by power up | Asserted',
         :returns: The node's system event log
         :rtype: string
         """
-        return self.bmc.sel_list()
+        return self.bmc.sel_elist()
 
     def get_sensors(self, search=""):
         """Get a list of sensor objects that match search criteria.
