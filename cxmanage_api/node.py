@@ -1560,6 +1560,26 @@ obtained.
         """
         return self.bmc.fabric_get_uplink_info().strip()
 
+    def read_fru(self, fru_number, offset=0, bytes_to_read=-1):
+        """Read from node's fru starting at offset.
+        This is equivalent to the ipmitool fru read command.
+
+        :param fru_number: FRU image to read
+        :type fru_number: integer
+        :param offset: File offset
+        :type offset: integer
+        :param bytes_to_read: Number of bytes to read
+        :type bytes_to_read: integer
+
+        :return: The data read from FRU
+        :rtype: string
+
+        """
+        with tempfile.NamedTemporaryFile(delete=True) as hexfile:
+            self.bmc.fru_read(fru_number, hexfile.name)
+            hexfile.seek(offset)
+            return(hexfile.read(bytes_to_read))
+
     def _run_fabric_command(self, function_name, **kwargs):
         """Handles the basics of sending a node a command for fabric data."""
         filename = temp_file()
@@ -1800,17 +1820,6 @@ obtained.
             raise PriorityIncrementError(
                             "Unable to increment SIMG priority, too high")
         return priority
-
-    def _read_fru(self, fru_number, offset=0, bytes_to_read=-1):
-        """Read from node's fru starting at offset.
-        This is equivalent to the ipmitool fru read command.
-
-        """
-        # Use a temporary file to store the FRU image
-        with tempfile.NamedTemporaryFile(delete=True) as hexfile:
-            self.bmc.fru_read(fru_number, hexfile.name)
-            hexfile.seek(offset)
-            return(hexfile.read(bytes_to_read))
 
 
 # End of file: ./node.py
