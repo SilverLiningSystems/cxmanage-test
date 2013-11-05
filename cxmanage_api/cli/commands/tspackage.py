@@ -115,6 +115,14 @@ def tspackage_command(args):
         print("Getting routing tables...")
     write_routing_table(args, nodes)
 
+    if not quiet:
+        print("Getting serial log...")
+    write_serial_log(args, nodes)
+
+    if not quiet:
+        print("Getting crash log...")
+    write_crash_log(args, nodes)
+
     # Archive the files
     archive(os.getcwd(), original_dir)
 
@@ -355,6 +363,30 @@ def write_routing_table(args, nodes):
         else:
             lines.append("Could not get routing table!")
 
+        write_to_file(node, lines)
+
+
+def write_serial_log(args, nodes):
+    """Write the serial log for each node"""
+    results, errors = run_command(args, nodes, "read_fru", 98)
+    for node in nodes:
+        lines = ["\n[ Serial log for Node %d ]" % node.node_id]
+        if node in results:
+            lines.append(results[node].strip())
+        else:
+            lines.append(str(errors[node]))
+        write_to_file(node, lines)
+
+
+def write_crash_log(args, nodes):
+    """Write the crash log for each node"""
+    results, errors = run_command(args, nodes, "read_fru", 99)
+    for node in nodes:
+        lines = ["\n[ Crash log for Node %d ]" % node.node_id]
+        if node in results:
+            lines.append(results[node].strip())
+        else:
+            lines.append(str(errors[node]))
         write_to_file(node, lines)
 
 
