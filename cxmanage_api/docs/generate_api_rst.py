@@ -2,7 +2,7 @@
 
 :author: Eric Vasquez
 :contact: eric.vasquez@calxeda.com
-:copyright: (c) 2012, Calxeda Inc.
+:copyright: (c) 2012-2013, Calxeda Inc.
 
 """
 

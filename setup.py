@@ -1,7 +1,7 @@
 """Calxeda: setup.py"""
 
 
-# Copyright (c) 2012, Calxeda Inc.
+# Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
 #
