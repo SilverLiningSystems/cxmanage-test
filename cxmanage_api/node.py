@@ -1123,7 +1123,7 @@ communication.
 
         :param ipmitool_args: Arguments to pass to the ipmitool.
         :type ipmitool_args: list
-        
+
         :raises IpmiError: If the IPMI command fails.
 
         """
@@ -1143,7 +1143,7 @@ communication.
                 stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if(process.returncode != 0):
-            raise IpmiError('IPMI command returned with non-zero exit code')
+            raise IpmiError(stderr.strip())
         return (stdout + stderr).strip()
 
     def get_ubootenv(self):
@@ -1187,7 +1187,7 @@ communication.
                         elements = line.split()
                         node_id = int(elements[1].rstrip(":"))
                         ip_address = elements[2]
-                        socket.inet_aton(ip_address) # IP validity check
+                        socket.inet_aton(ip_address)  # IP validity check
                         results[node_id] = ip_address
                 return results
             except (IndexError, ValueError, socket.error):
