@@ -1123,6 +1123,8 @@ communication.
 
         :param ipmitool_args: Arguments to pass to the ipmitool.
         :type ipmitool_args: list
+        
+        :raises IpmiError: If the IPMI command fails.
 
         """
         if ("IPMITOOL_PATH" in os.environ):
@@ -1140,6 +1142,8 @@ communication.
         process = subprocess.Popen(command, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
+        if(process.returncode != 0):
+            raise IpmiError('IPMI command returned with non-zero exit code')
         return (stdout + stderr).strip()
 
     def get_ubootenv(self):
