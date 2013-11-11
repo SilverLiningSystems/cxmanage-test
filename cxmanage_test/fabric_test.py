@@ -454,7 +454,12 @@ class DummyNode(object):
         self.sel = []
         self.bmc = make_bmc(DummyBMC, hostname=ip_address, username=username,
                             password=password, verbose=False)
-        
+
+    @property
+    def chassis_id(self):
+        """Returns 0 for chasis ID."""
+        return 0
+
     def get_sel(self):
         """Simulate get_sel()"""
         self.executed.append('get_sel')
