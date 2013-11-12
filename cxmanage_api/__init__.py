@@ -38,6 +38,9 @@ import shutil
 import tempfile
 
 
+__version__ = "0.10.1"
+
+
 WORK_DIR = tempfile.mkdtemp(prefix="cxmanage_api-")
 atexit.register(lambda: shutil.rmtree(WORK_DIR))
 
