@@ -37,6 +37,7 @@ import tarfile
 import ConfigParser
 import pkg_resources
 
+import cxmanage_api
 from cxmanage_api import temp_dir
 from cxmanage_api.image import Image
 
@@ -81,15 +82,16 @@ class FirmwarePackage(object):
                         % os.path.basename(filename))
 
             if "package" in config.sections():
-                cxmanage_ver = config.get("package",
-                        "required_cxmanage_version")
-                try:
-                    pkg_resources.require("cxmanage>=%s" % cxmanage_ver)
-                except pkg_resources.VersionConflict:
+                required_cxmanage_version = config.get(
+                    "package", "required_cxmanage_version"
+                )
+                if (pkg_resources.parse_version(cxmanage_api.__version__) <
+                        pkg_resources.parse_version(required_cxmanage_version)):
                     # @todo: CxmanageVersionError?
                     raise ValueError(
-                            "%s requires cxmanage version %s or later."
-                            % (filename, cxmanage_ver))
+                        "%s requires cxmanage version %s or later."
+                        % (filename, required_cxmanage_version)
+                    )
 
                 if config.has_option("package", "required_socman_version"):
                     self.required_socman_version = config.get("package",
