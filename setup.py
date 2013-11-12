@@ -58,7 +58,7 @@ setup(
     install_requires=[
                         'tftpy',
                         'pexpect',
-                        'pyipmi>=0.9.0',
+                        'pyipmi>=0.9.1',
                         'argparse',
                         'unittest-xml-reporting<1.6.0'
     ],
