@@ -41,7 +41,6 @@
 
 
 import os
-import pkg_resources
 import shutil
 import subprocess
 import sys
@@ -49,6 +48,8 @@ import tarfile
 import tempfile
 import time
 
+import pyipmi
+import cxmanage_api
 from cxmanage_api.cli import get_tftp, get_nodes, run_command, COMPONENTS
 
 
@@ -154,10 +155,8 @@ def write_client_info():
 
         fout.write("\n[ Tool versions ]\n")
         fout.write("Python %s\n" % sys.version.replace("\n", ""))
-        cxmanage_version = pkg_resources.require("cxmanage")[0].version
-        fout.write("cxmanage version %s\n" % cxmanage_version)
-        pyipmi_version = pkg_resources.require("pyipmi")[0].version
-        fout.write("pyipmi version %s\n" % pyipmi_version)
+        fout.write("cxmanage version %s\n" % cxmanage_api.__version__)
+        fout.write("pyipmi version %s\n" % pyipmi.__version__)
         ipmitool_path = os.environ.get('IPMITOOL_PATH', 'ipmitool')
         write_command("%s -V" % ipmitool_path)
 
