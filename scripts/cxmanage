@@ -36,6 +36,8 @@ import pkg_resources
 import subprocess
 import sys
 
+import pyipmi
+import cxmanage_api
 from cxmanage_api.cli.commands.power import power_command, \
         power_status_command, power_policy_command, power_policy_status_command
 from cxmanage_api.cli.commands.mc import mcreset_command
@@ -335,28 +337,14 @@ def validate_args(args):
             sys.exit('Invalid argument --version when supplied with --skip-simg')
 
 
-def print_version():
-    """ Print the current version of cxmanage """
-    version = pkg_resources.require('cxmanage')[0].version
-    print "cxmanage version %s" % version
-
-
 def check_versions():
     """Check versions of dependencies"""
     # Check pyipmi version
-    try:
-        pkg_resources.require('pyipmi>=%s' % PYIPMI_VERSION)
-    except pkg_resources.DistributionNotFound:
-        print 'ERROR: cxmanage requires pyipmi version %s'\
-                % PYIPMI_VERSION
-        print 'No existing version was found.'
-        sys.exit(1)
-    except pkg_resources.VersionConflict:
-        version = pkg_resources.require('pyipmi')[0].version
+    if (pkg_resources.parse_version(pyipmi.__version__) < 
+            pkg_resources.parse_version(PYIPMI_VERSION)):
         print 'ERROR: cxmanage requires pyipmi version %s' % PYIPMI_VERSION
-        print 'Current pyipmi version is %s' % version
+        print 'Current pyipmi version is %s' % pyipmi.__version__
         sys.exit(1)
-
 
     # Check ipmitool version
     if 'IPMITOOL_PATH' in os.environ:
@@ -384,7 +372,7 @@ def main():
     """Get args and go"""
     for arg in sys.argv[1:]:
         if arg in ['-V', '--version']:
-            print_version()
+            print "cxmanage version %s" % cxmanage_api.__version__
             sys.exit(0)
         elif arg[0] != '-':
             break
