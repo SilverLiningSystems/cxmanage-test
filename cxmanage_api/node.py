@@ -923,16 +923,25 @@ updating the EEPROM
 communication.
 
         """
-        # Reset CDB
-        self.bmc.reset_firmware()
-
-        # Reset ubootenv
-        fwinfo = self.get_firmware_info()
         try:
+
+            # Reset CDB
+            self.bmc.reset_firmware()
+
+        except IpmiError as err:
+            if ('Error resetting firmware to factory default' != str(err)):
+                raise
+
+        try:
+
+            # Reset ubootenv
+            fwinfo = self.get_firmware_info()
+
             running_part = self._get_partition(fwinfo, "UBOOTENV", "FIRST")
             factory_part = self._get_partition(fwinfo, "UBOOTENV", "SECOND")
             image = self._download_image(factory_part)
             self._upload_image(image, running_part)
+
         except NoPartitionError:
             pass  # Only one partition? Don't mess with it!
 
