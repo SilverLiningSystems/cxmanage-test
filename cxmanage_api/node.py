@@ -1570,13 +1570,19 @@ obtained.
         """Get the uplink information for this node.
 
         >>> node.get_uplink_info()
-        'Node 0: eth0 0, eth1 0, mgmt 0'
+        {'eth0': 0, 'eth1': 0, 'mgmt': 0}
 
         :return: The uplink information for this node
-        :rtype: string
+        :rtype: dict
 
         """
-        return self.bmc.fabric_get_uplink_info().strip()
+        results = {}
+        uplink_info = self.bmc.fabric_get_uplink_info().strip().split(': ')[1]
+        for iface_map in uplink_info.split(', '):
+            iface_map_split = iface_map.split(' ')
+            results[iface_map_split[0]] = int(iface_map_split[1])
+
+        return results
 
     def read_fru(self, fru_number, offset=0, bytes_to_read=-1):
         """Read from node's fru starting at offset.

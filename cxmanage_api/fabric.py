@@ -274,10 +274,10 @@ class Fabric(object):
         """Gets the fabric uplink info.
 
         >>> fabric.get_uplink_info()
-        {0: 'Node 0: eth0 0, eth1 0, mgmt 0',
-         1: 'Node 1: eth0 0, eth1 0, mgmt 0',
-         2: 'Node 2: eth0 0, eth1 0, mgmt 0',
-         3: 'Node 3: eth0 0, eth1 0, mgmt 0'}
+        {0: {'eth0': 0, 'eth1': 0, 'mgmt': 0}
+         1: {'eth0': 0, 'eth1': 0, 'mgmt': 0}
+         2: {'eth0': 0, 'eth1': 0, 'mgmt': 0}
+         3: {'eth0': 0, 'eth1': 0, 'mgmt': 0}}
 
         :param async: Flag that determines if the command result (dictionary)
                       is returned or a Task object (can get status, etc.).
