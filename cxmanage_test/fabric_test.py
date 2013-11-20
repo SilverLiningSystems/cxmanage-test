@@ -456,6 +456,11 @@ class DummyNode(object):
                             password=password, verbose=False)
 
     @property
+    def guid(self):
+        """Returns the node GUID"""
+        return self.bmc.guid().system_guid
+
+    @property
     def chassis_id(self):
         """Returns 0 for chasis ID."""
         return 0

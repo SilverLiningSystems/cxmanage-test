@@ -114,6 +114,7 @@ class Node(object):
         self.ipretriever = ipretriever
 
         self._node_id = None
+        self._guid = None
 
     def __eq__(self, other):
         return isinstance(other, Node) and self.ip_address == other.ip_address
@@ -152,6 +153,21 @@ class Node(object):
         if self._node_id == None:
             self._node_id = self.bmc.fabric_get_node_id()
         return self._node_id
+
+    @property
+    def guid(self):
+        """Returns the node GUID
+
+        >>> node.guid
+        '99cfa980-2076-11e3-d5c7-76db821cea20'
+
+        :returns: The node GUID
+        :rtype: string
+
+        """
+        if(self._guid is None):
+            self._guid = self.bmc.guid().system_guid
+        return self._guid
 
     @node_id.setter
     def node_id(self, value):
