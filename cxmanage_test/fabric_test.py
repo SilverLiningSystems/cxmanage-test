@@ -442,7 +442,7 @@ class FabricTest(unittest.TestCase):
             ])
 
 
-class DummyNode(Node):
+class DummyNode(object):
     """ Dummy node for the nodemanager tests """
 
     # pylint: disable=W0613
