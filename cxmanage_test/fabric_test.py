@@ -34,6 +34,7 @@ import random
 import time
 import unittest
 
+from cxmanage_api.node import Node
 from cxmanage_api.fabric import Fabric
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.firmware_package import FirmwarePackage
@@ -441,7 +442,7 @@ class FabricTest(unittest.TestCase):
             ])
 
 
-class DummyNode(object):
+class DummyNode(Node):
     """ Dummy node for the nodemanager tests """
 
     # pylint: disable=W0613
@@ -706,4 +707,3 @@ class DummyImage(object):
         self.filename = filename
         self.type = image_type
         self.args = args
-

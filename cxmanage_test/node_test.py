@@ -473,6 +473,8 @@ class DummyBMC(LanBMC):
         ]
         self.ipaddr_base = '192.168.100.1'
         self.unique_guid = 'FAKEGUID%s' % DummyBMC.GUID_UNIQUE
+        self.sel = self.generate_sel(with_errors=False)
+
         DummyBMC.GUID_UNIQUE += 1
 
     def guid(self):
@@ -518,6 +520,27 @@ class DummyBMC(LanBMC):
     def sel_clear(self):
         """ Clear SEL """
         self.executed.append("sel_clear")
+
+    def sel_elist(self):
+        """ List SEL. with_errors=True simulates a SEL that contains errors """
+        self.executed.append("sel_elist")
+        return self.sel
+
+    def generate_sel(self, with_errors=False):
+        """ Generates a SEL table for a Node """
+        if (with_errors):
+            return [
+            '1 | 11/20/2013 | 20:26:18 | Memory | Correctable ECC | Asserted',
+            '2 | 11/20/2013 | 20:26:43 | Processor | IERR | Asserted',
+            '83 | 11/14/2013 | 18:01:35 | OS Stop/Shutdown OS Stop Reason | ' +
+            'Error during system startup | Asserted'
+        ]
+        else:
+            return [
+                '88 | 11/14/2013 | 18:02:29 | System Boot Initiated OS Boot ' +
+                'Reason | Initiated by power up | Asserted',
+                '91 | 11/14/2013 | 19:24:25 | System Event BMC Status |',
+            ]
 
     def get_firmware_info(self):
         """ Get partition and simg info """
