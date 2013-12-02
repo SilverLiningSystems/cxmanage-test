@@ -34,7 +34,6 @@ import random
 import time
 import unittest
 
-from cxmanage_api.node import Node
 from cxmanage_api.fabric import Fabric
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.firmware_package import FirmwarePackage
@@ -455,6 +454,10 @@ class DummyNode(object):
         self.sel = []
         self.bmc = make_bmc(DummyBMC, hostname=ip_address, username=username,
                             password=password, verbose=False)
+        #
+        # For now, we hard code this to 0 ...
+        #
+        self._chassis_id = 0
 
     @property
     def guid(self):
@@ -463,8 +466,8 @@ class DummyNode(object):
 
     @property
     def chassis_id(self):
-        """Returns 0 for chasis ID."""
-        return 0
+        """Returns the chasis ID."""
+        return self._chassis_id
 
     def get_sel(self):
         """Simulate get_sel()"""

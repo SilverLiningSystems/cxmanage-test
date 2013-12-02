@@ -526,7 +526,8 @@ class DummyBMC(LanBMC):
         self.executed.append("sel_elist")
         return self.sel
 
-    def generate_sel(self, with_errors=False):
+    @staticmethod
+    def generate_sel(with_errors=False):
         """ Generates a SEL table for a Node """
         if (with_errors):
             return [
