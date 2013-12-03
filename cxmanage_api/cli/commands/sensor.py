@@ -66,7 +66,10 @@ def sensor_command(args):
         print sensor_name
 
         for node, reading, suffix in readings:
-            print "%s: %.2f %s" % (node_strings[node], reading, suffix)
+            try:
+                print "%s: %.2f %s" % (node_strings[node], reading, suffix)
+            except TypeError:
+                print "%s: %s" % (node_strings[node], reading)
 
         try:
             if all(suffix == x[2] for x in readings):
@@ -76,7 +79,7 @@ def sensor_command(args):
                 print "%s: %.2f %s" % ("Minimum".ljust(jsize), minimum, suffix)
                 print "%s: %.2f %s" % ("Maximum".ljust(jsize), maximum, suffix)
                 print "%s: %.2f %s" % ("Average".ljust(jsize), average, suffix)
-        except ValueError:
+        except TypeError:
             pass
 
         print

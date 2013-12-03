@@ -233,34 +233,15 @@ def write_sensor_info(args, nodes):
     results, _ = run_command(args, nodes, "get_sensors",
                              args.sensor_name)
 
-    sensors = {}
     for node in nodes:
-        lines = []  # Lines of text to write to file
-        # \n is used here to give a blank line before this section
-        lines.append("\n[ Sensors for Node %d ]" % node.node_id)
+        lines = ["\n[ Sensors for Node %d ]" % node.node_id]
 
-        if node in results:
-            for sensor_name, sensor in results[node].iteritems():
-                if not sensor_name in sensors:
-                    sensors[sensor_name] = []
+        justify_length = max(len(x) for x in results[node]) + 1
 
-                reading = sensor.sensor_reading.replace("(+/- 0) ", "")
-                try:
-                    value = float(reading.split()[0])
-                    suffix = reading.lstrip("%f " % value)
-                    sensors[sensor_name].append((node, value, suffix))
-                except ValueError:
-                    sensors[sensor_name].append((node, reading, ""))
-        else:
-            print("Could not get sensor info!")
-            lines.append("Could not get sensor info!")
-
-        for sensor_name, readings in sensors.iteritems():
-            for reading_node, reading, suffix in readings:
-                if reading_node.ip_address == node.ip_address:
-                    left_side = "{:<18}".format(sensor_name)
-                    right_side = ": %.2f %s" % (reading, suffix)
-                    lines.append(left_side + right_side)
+        for sensor_name, sensor in results[node].items():
+            lines.append("%s: %s" % (
+                sensor_name.ljust(justify_length), sensor.sensor_reading
+            ))
 
         write_to_file(node, lines)
 
