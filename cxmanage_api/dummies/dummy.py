@@ -1,6 +1,3 @@
-"""Calxeda: setup.py"""
-
-
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -31,43 +28,36 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+from mock import Mock
 
-from setuptools import setup
 
-def get_version():
-    """ Parse __init__.py to find the package version """
-    for line in open("cxmanage_api/__init__.py"):
-        key, delim, value = line.partition("=")
-        if key.strip() == "__version__" and delim == "=":
-            return value.strip().strip("'\"")
-    raise Exception("Failed to parse cxmanage package version from __init__.py")
+def Dummy(spec):
+    """ Returns a dummy that behaves like the specified class.
 
-setup(
-    name='cxmanage',
-    version=get_version(),
-    packages=[
-        'cxmanage_api',
-        'cxmanage_api.cli',
-        'cxmanage_api.cli.commands',
-        'cxmanage_api.tests',
-        'cxmanage_api.dummies'
-    ],
-    scripts=['scripts/cxmanage', 'scripts/sol_tabs', 'scripts/cxmux'],
-    description='Calxeda Management Utility',
-    # NOTE: As of right now, the pyipmi version requirement needs to be updated
-    # at the top of scripts/cxmanage as well.
-    install_requires=[
-                        'tftpy',
-                        'pexpect',
-                        'pyipmi>=0.9.1',
-                        'argparse',
-                        'unittest-xml-reporting',
-                        'mock'
-    ],
-    extras_require={
-        'docs': ['sphinx', 'cloud_sptheme'],
-    },
-    classifiers=[
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2.7']
-)
+    The returned value is a Class, not an Instance, so it can be subclassed.
+
+    By default, any attribute accessed in an instance will be equal to None.
+    Return values, or other side effects, can be defined by overriding the
+    functions/properties in a subclass.
+
+    """
+    class SpeccedDummy(object):
+        """ Specced dummy class. Instantiating this actually gives us a Mock
+        object, defined by spec, that wraps ourselves.
+
+        """
+        def __new__(cls, *args, **kwargs):
+            self = super(SpeccedDummy, cls).__new__(cls, *args, **kwargs)
+            self.__init__(*args, **kwargs)
+            return Mock(spec=spec, wraps=self, name=cls.__name__)
+
+        def __getattr__(self, name):
+            """ Return None for any undefined attributes.
+
+            This is necessary to allow for attributes that are found in the
+            spec, but not defined in any subclass of SpeccedDummy.
+
+            """
+            return None
+
+    return SpeccedDummy

@@ -1,6 +1,3 @@
-"""Calxeda: setup.py"""
-
-
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -31,43 +28,4 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-
-from setuptools import setup
-
-def get_version():
-    """ Parse __init__.py to find the package version """
-    for line in open("cxmanage_api/__init__.py"):
-        key, delim, value = line.partition("=")
-        if key.strip() == "__version__" and delim == "=":
-            return value.strip().strip("'\"")
-    raise Exception("Failed to parse cxmanage package version from __init__.py")
-
-setup(
-    name='cxmanage',
-    version=get_version(),
-    packages=[
-        'cxmanage_api',
-        'cxmanage_api.cli',
-        'cxmanage_api.cli.commands',
-        'cxmanage_api.tests',
-        'cxmanage_api.dummies'
-    ],
-    scripts=['scripts/cxmanage', 'scripts/sol_tabs', 'scripts/cxmux'],
-    description='Calxeda Management Utility',
-    # NOTE: As of right now, the pyipmi version requirement needs to be updated
-    # at the top of scripts/cxmanage as well.
-    install_requires=[
-                        'tftpy',
-                        'pexpect',
-                        'pyipmi>=0.9.1',
-                        'argparse',
-                        'unittest-xml-reporting',
-                        'mock'
-    ],
-    extras_require={
-        'docs': ['sphinx', 'cloud_sptheme'],
-    },
-    classifiers=[
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2.7']
-)
+from cxmanage_api.dummies.dummy import Dummy
