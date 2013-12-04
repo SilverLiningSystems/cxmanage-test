@@ -41,7 +41,7 @@ import os
 import socket
 import unittest
 
-from cxmanage_test import random_file
+from cxmanage_api.tests import random_file
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 
 

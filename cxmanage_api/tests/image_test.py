@@ -39,8 +39,7 @@ import unittest
 
 from cxmanage_api.simg import get_simg_header
 from cxmanage_api.tftp import InternalTftp
-
-from cxmanage_test import random_file, TestImage
+from cxmanage_api.tests import random_file, TestImage
 
 
 # pylint: disable=R0904

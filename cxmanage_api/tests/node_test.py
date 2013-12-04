@@ -41,7 +41,7 @@ import unittest
 from pyipmi import IpmiError
 from pyipmi.bmc import LanBMC
 
-from cxmanage_test import TestImage, TestSensor, random_file
+from cxmanage_api.tests import TestImage, TestSensor, random_file
 from cxmanage_api import temp_file
 from cxmanage_api.simg import create_simg, get_simg_header
 from cxmanage_api.node import Node
