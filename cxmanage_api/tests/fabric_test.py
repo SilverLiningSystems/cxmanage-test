@@ -40,7 +40,7 @@ from cxmanage_api.firmware_package import FirmwarePackage
 from cxmanage_api.ubootenv import UbootEnv
 from cxmanage_api.cx_exceptions import CommandFailedError
 from cxmanage_api.tests import TestSensor
-from cxmanage_api.tests.node_test import DummyBMC
+from cxmanage_api.dummies import DummyBMC
 from pyipmi import make_bmc
 
 NUM_NODES = 128

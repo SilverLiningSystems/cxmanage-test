@@ -28,7 +28,25 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage_api.dummies.dummy import Dummy
-from cxmanage_api.dummies.dummy_bmc import DummyBMC
-from cxmanage_api.dummies.dummy_ubootenv import DummyUbootEnv
-from cxmanage_api.dummies.dummy_ip_retriever import DummyIPRetriever
+from cxmanage_api.cx_exceptions import IPDiscoveryError
+
+
+# pylint: disable=R0903
+class DummyIPRetriever(object):
+    """ Dummy IP retriever """
+
+    def __init__(self, ecme_ip, aggressive=False, verbosity=0, **kwargs):
+        self.executed = False
+        self.ecme_ip = ecme_ip
+        self.aggressive = aggressive
+        self.verbosity = verbosity
+        for name, value in kwargs.iteritems():
+            setattr(self, name, value)
+
+    def run(self):
+        """ Set the server_ip variable. Raises an error if called more than
+        once. """
+        if self.executed:
+            raise IPDiscoveryError("DummyIPRetriever.run() was called twice!")
+        self.executed = True
+        self.server_ip = "192.168.200.1"
