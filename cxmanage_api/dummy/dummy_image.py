@@ -28,9 +28,11 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage_api.dummy.dummy import Dummy
-from cxmanage_api.dummy.dummy_bmc import DummyBMC
-from cxmanage_api.dummy.dummy_node import DummyNode, DummyFailNode
-from cxmanage_api.dummy.dummy_image import DummyImage
-from cxmanage_api.dummy.dummy_ubootenv import DummyUbootEnv
-from cxmanage_api.dummy.dummy_ip_retriever import DummyIPRetriever
+# pylint: disable=R0903
+class DummyImage(object):
+    """Dummy Image class."""
+
+    def __init__(self, filename, image_type, *args):
+        self.filename = filename
+        self.type = image_type
+        self.args = args

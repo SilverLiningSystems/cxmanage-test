@@ -31,21 +31,14 @@
 # DAMAGE.
 
 import random
-import time
 import unittest
 from mock import call
 
 from cxmanage_api.fabric import Fabric
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.firmware_package import FirmwarePackage
-from cxmanage_api.ubootenv import UbootEnv
 from cxmanage_api.cx_exceptions import CommandFailedError
-from cxmanage_api.tests import TestSensor
-from cxmanage_api.dummy import DummyBMC
-from pyipmi import make_bmc
-
-NUM_NODES = 4
-ADDRESSES = ["192.168.100.%i" % x for x in range(1, NUM_NODES + 1)]
+from cxmanage_api.dummy import DummyNode, DummyFailNode
 
 
 # pylint: disable=R0904
@@ -53,11 +46,11 @@ class FabricTest(unittest.TestCase):
     """ Test the various Fabric commands """
     def setUp(self):
         # Set up the controller and add targets
-        self.fabric = Fabric("192.168.100.1", node=DummyNode)
-        self.nodes = [DummyNode(i) for i in ADDRESSES]
+        self.fabric = Fabric(DummyNode.ip_addresses[0], node=DummyNode)
+        self.nodes = [DummyNode(i) for i in DummyNode.ip_addresses]
         # pylint: disable=W0212
         self.fabric._nodes = dict((i, self.nodes[i])
-                for i in xrange(NUM_NODES))
+                for i in xrange(len(self.nodes)))
 
     def test_tftp(self):
         """ Test the tftp property """
@@ -194,10 +187,10 @@ class FabricTest(unittest.TestCase):
 
     def test_failed_command(self):
         """ Test a failed command """
-        fail_nodes = [DummyFailNode(i) for i in ADDRESSES]
+        fail_nodes = [DummyFailNode(i) for i in DummyNode.ip_addresses]
         # pylint: disable=W0212
         self.fabric._nodes = dict(
-            (i, fail_nodes[i]) for i in xrange(NUM_NODES)
+            (i, fail_nodes[i]) for i in xrange(len(self.nodes))
         )
         try:
             self.fabric.get_power()
@@ -444,272 +437,3 @@ class FabricTest(unittest.TestCase):
             ])
 
 
-class DummyNode(object):
-    """ Dummy node for the nodemanager tests """
-
-    # pylint: disable=W0613
-    def __init__(self, ip_address, username="admin", password="admin",
-            tftp=None, *args, **kwargs):
-        self.executed = []
-        self.power_state = False
-        self.ip_address = ip_address
-        self.tftp = tftp
-        self.sel = []
-        self.bmc = make_bmc(DummyBMC, hostname=ip_address, username=username,
-                            password=password, verbose=False)
-        #
-        # For now, we hard code this to 0 ...
-        #
-        self._chassis_id = 0
-
-    @property
-    def guid(self):
-        """Returns the node GUID"""
-        return self.bmc.guid().system_guid
-
-    @property
-    def chassis_id(self):
-        """Returns the chasis ID."""
-        return self._chassis_id
-
-    def get_sel(self):
-        """Simulate get_sel()"""
-        self.executed.append('get_sel')
-        return self.sel
-
-    def get_power(self):
-        """Simulate get_power(). """
-        self.executed.append("get_power")
-        return self.power_state
-
-    def set_power(self, mode):
-        """Simulate set_power(). """
-        self.executed.append(("set_power", mode))
-
-    def get_power_policy(self):
-        """Simulate get_power_policy(). """
-        self.executed.append("get_power_policy")
-        return "always-off"
-
-    def set_power_policy(self, mode):
-        """Simulate set_power_policy(). """
-        self.executed.append(("set_power_policy", mode))
-
-    def mc_reset(self):
-        """Simulate mc_reset(). """
-        self.executed.append("mc_reset")
-
-    def get_firmware_info(self):
-        """Simulate get_firmware_info(). """
-        self.executed.append("get_firmware_info")
-
-    def is_updatable(self, package, partition_arg="INACTIVE", priority=None):
-        """Simulate is_updateable(). """
-        self.executed.append(("is_updatable", package))
-
-    def update_firmware(self, package, partition_arg="INACTIVE",
-            priority=None):
-        """Simulate update_firmware(). """
-        self.executed.append(("update_firmware", package))
-        time.sleep(random.randint(0, 2))
-
-    def get_sensors(self, name=""):
-        """Simulate get_sensors(). """
-        self.executed.append("get_sensors")
-        power_value = "%f (+/- 0) Watts" % random.uniform(0, 10)
-        temp_value = "%f (+/- 0) degrees C" % random.uniform(30, 50)
-        sensors = [
-                TestSensor("Node Power", power_value),
-                TestSensor("Board Temp", temp_value)
-        ]
-        return [s for s in sensors if name.lower() in s.sensor_name.lower()]
-
-    def config_reset(self):
-        """Simulate config_reset(). """
-        self.executed.append("config_reset")
-
-    def set_boot_order(self, boot_args):
-        """Simulate set_boot_order()."""
-        self.executed.append(("set_boot_order", boot_args))
-
-    def get_boot_order(self):
-        """Simulate get_boot_order(). """
-        self.executed.append("get_boot_order")
-        return ["disk", "pxe"]
-
-    def set_pxe_interface(self, interface):
-        """Simulate set_pxe_interface(). """
-        self.executed.append(("set_pxe_interface", interface))
-
-    def get_pxe_interface(self):
-        """Simulate get_pxe_interface(). """
-        self.executed.append("get_pxe_interface")
-        return "eth0"
-
-    def get_versions(self):
-        """Simulate get_versions(). """
-        self.executed.append("get_versions")
-
-        # pylint: disable=R0902, R0903
-        class Result(object):
-            """Result Class. """
-            def __init__(self):
-                self.header = "Calxeda SoC (0x0096CD)"
-                self.hardware_version = "TestBoard X00"
-                self.firmware_version = "v0.0.0"
-                self.ecme_version = "v0.0.0"
-                self.ecme_timestamp = "0"
-                self.a9boot_version = "v0.0.0"
-                self.uboot_version = "v0.0.0"
-                self.chip_name = "Unknown"
-        return Result()
-
-    def ipmitool_command(self, ipmitool_args):
-        """Simulate ipmitool_command(). """
-        self.executed.append(("ipmitool_command", ipmitool_args))
-        return "Dummy output"
-
-    def get_ubootenv(self):
-        """Simulate get_ubootenv(). """
-        self.executed.append("get_ubootenv")
-
-        ubootenv = UbootEnv()
-        ubootenv.variables["bootcmd0"] = "run bootcmd_default"
-        ubootenv.variables["bootcmd_default"] = "run bootcmd_sata"
-        return ubootenv
-
-    @staticmethod
-    def get_fabric_ipinfo():
-        """Simulates get_fabric_ipinfo(). """
-        return {}
-
-    # pylint: disable=R0913
-    def get_server_ip(self, interface=None, ipv6=False, user="user1",
-            password="1Password", aggressive=False):
-        """Simulate get_server_ip(). """
-        self.executed.append(("get_server_ip", interface, ipv6, user, password,
-                aggressive))
-        return "192.168.200.1"
-
-    def get_fabric_macaddrs(self):
-        """Simulate get_fabric_macaddrs(). """
-        self.executed.append("get_fabric_macaddrs")
-        result = {}
-        for node in range(NUM_NODES):
-            result[node] = {}
-            for port in range(3):
-                address = "00:00:00:00:%02x:%02x" % (node, port)
-                result[node][port] = address
-        return result
-
-    def get_fabric_uplink_info(self):
-        """Simulate get_fabric_uplink_info(). """
-        self.executed.append('get_fabric_uplink_info')
-        results = {}
-        for nid in range(1, NUM_NODES):
-            results[nid] = {'eth0': 0, 'eth1': 0, 'mgmt': 0}
-        return results
-
-    def get_uplink_info(self):
-        """Simulate get_uplink_info(). """
-        self.executed.append('get_uplink_info')
-        return 'Node 0: eth0 0, eth1 0, mgmt 0'
-
-    def get_uplink_speed(self):
-        """Simulate get_uplink_speed(). """
-        self.executed.append('get_uplink_speed')
-        return 1
-
-    def get_link_stats(self, link=0):
-        """Simulate get_link_stats(). """
-        self.executed.append(('get_link_stats', link))
-        return {
-                 'FS_LC%s_BYTE_CNT_0' % link: '0x0',
-                 'FS_LC%s_BYTE_CNT_1' % link: '0x0',
-                 'FS_LC%s_CFG_0' % link: '0x1030107f',
-                 'FS_LC%s_CFG_1' % link: '0x104f',
-                 'FS_LC%s_CM_RXDATA_0' % link: '0x0',
-                 'FS_LC%s_CM_RXDATA_1' % link: '0x0',
-                 'FS_LC%s_CM_TXDATA_0' % link: '0x0',
-                 'FS_LC%s_CM_TXDATA_1' % link: '0x0',
-                 'FS_LC%s_PKT_CNT_0' % link: '0x0',
-                 'FS_LC%s_PKT_CNT_1' % link: '0x0',
-                 'FS_LC%s_RDRPSCNT' % link: '0x0',
-                 'FS_LC%s_RERRSCNT' % link: '0x0',
-                 'FS_LC%sRMCSCNT' % link: '0x0',
-                 'FS_LC%s_RPKTSCNT' % link: '0x0',
-                 'FS_LC%s_RUCSCNT' % link: '0x0',
-                 'FS_LC%s_SC_STAT' % link: '0x0',
-                 'FS_LC%s_STATE' % link: '0x1033',
-                 'FS_LC%s_TDRPSCNT' % link: '0x0',
-                 'FS_LC%s_TPKTSCNT' % link: '0x1'
-        }
-
-    def get_linkmap(self):
-        """Simulate get_linkmap(). """
-        self.executed.append('get_linkmap')
-        results = {}
-        for nid in range(0, NUM_NODES):
-            results[nid] = {nid: {1: 2, 3: 1, 4: 3}}
-        return results
-
-    def get_routing_table(self):
-        """Simulate get_routing_table(). """
-        self.executed.append('get_routing_table')
-        results = {}
-        for nid in range(0, NUM_NODES):
-            results[nid] = {nid: {1: [0, 0, 0, 3, 0],
-                              2: [0, 3, 0, 0, 2],
-                              3: [0, 2, 0, 0, 3]}}
-        return results
-
-    def get_depth_chart(self):
-        """Simulate get_depth_chart(). """
-        self.executed.append('get_depth_chart')
-        results = {}
-        for nid in range(0, NUM_NODES):
-            results[nid] = {nid: {1: {'shortest': (0, 0)},
-                              2: {'hops': [(3, 1)], 'shortest': (0, 0)},
-                              3: {'hops': [(2, 1)], 'shortest': (0, 0)}}}
-        return results
-
-    def get_uplink(self, iface):
-        """Simulate get_uplink(). """
-        self.executed.append(('get_uplink', iface))
-        return 0
-
-    def set_uplink(self, uplink, iface):
-        """Simulate set_uplink(). """
-        self.executed.append(('set_uplink', uplink, iface))
-
-    def get_node_fru_version(self):
-        """Simulate get_node_fru_version(). """
-        self.executed.append("get_node_fru_version")
-        return "0.0"
-
-    def get_slot_fru_version(self):
-        """Simulate get_slot_fru_version(). """
-        self.executed.append("get_slot_fru_version")
-        return "0.0"
-
-
-class DummyFailNode(DummyNode):
-    """ Dummy node that should fail on some commands """
-
-    class DummyFailError(Exception):
-        """Dummy Fail Error class."""
-        pass
-
-    def get_power(self):
-        """Simulate get_power(). """
-        self.executed.append("get_power")
-        raise DummyFailNode.DummyFailError
-
-# pylint: disable=R0903
-class DummyImage(object):
-    """Dummy Image class."""
-
-    def __init__(self, filename, image_type, *args):
-        self.filename = filename
-        self.type = image_type
-        self.args = args
