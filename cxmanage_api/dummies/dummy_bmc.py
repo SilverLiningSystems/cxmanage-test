@@ -31,6 +31,7 @@
 import random
 import shutil
 import tempfile
+from mock import Mock
 
 from pyipmi import IpmiError
 from pyipmi.bmc import LanBMC
@@ -39,10 +40,11 @@ from cxmanage_api.tests import TestSensor
 from cxmanage_api import temp_file
 from cxmanage_api.simg import create_simg, get_simg_header
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
+from cxmanage_api.dummies import Dummy
 
 
 # pylint: disable=R0902
-class DummyBMC(LanBMC):
+class DummyBMC(Dummy(LanBMC)):
     """ Dummy BMC for the node tests """
     ip_addresses = [
         "192.168.100.%i" % n for n in range(1, 5)
@@ -55,7 +57,7 @@ class DummyBMC(LanBMC):
 
     def __init__(self, **kwargs):
         super(DummyBMC, self).__init__(**kwargs)
-        self.executed = []
+        self.handle = Mock(name="handle")
         self.partitions = [
                 Partition(0, 3, 0, 393216, in_use=True),  # socman
                 Partition(1, 10, 393216, 196608, in_use=True),  # factory cdb
@@ -73,8 +75,6 @@ class DummyBMC(LanBMC):
 
     def guid(self):
         """Returns the GUID"""
-        self.executed.append("guid")
-
         # pylint: disable=R0903
         class Result(object):
             """Results class."""
@@ -83,14 +83,8 @@ class DummyBMC(LanBMC):
                 self.time_stamp = None
         return Result(self)
 
-    def set_chassis_power(self, mode):
-        """ Set chassis power """
-        self.executed.append(("set_chassis_power", mode))
-
     def get_chassis_status(self):
         """ Get chassis status """
-        self.executed.append("get_chassis_status")
-
         # pylint: disable=R0903
         class Result(object):
             """Results class."""
@@ -99,25 +93,8 @@ class DummyBMC(LanBMC):
                 self.power_restore_policy = "always-off"
         return Result()
 
-    def set_chassis_policy(self, mode):
-        """ Set chassis restore policy """
-        self.executed.append(("set_chassis_policy", mode))
-
-    def mc_reset(self, mode):
-        """ Reset the MC """
-        self.executed.append(("mc_reset", mode))
-
-    def reset_firmware(self):
-        """ Reset the running CDB """
-        self.executed.append("reset_firmware")
-
-    def sel_clear(self):
-        """ Clear SEL """
-        self.executed.append("sel_clear")
-
     def sel_elist(self):
         """ List SEL. with_errors=True simulates a SEL that contains errors """
-        self.executed.append("sel_elist")
         return self.sel
 
     @staticmethod
@@ -139,16 +116,12 @@ class DummyBMC(LanBMC):
 
     def get_firmware_info(self):
         """ Get partition and simg info """
-        self.executed.append("get_firmware_info")
-
         return [x.fwinfo for x in self.partitions]
 
     def update_firmware(self, filename, partition, image_type, tftp_addr):
         """ Download a file from a TFTP server to a given partition.
 
         Make sure the image type matches. """
-        self.executed.append(("update_firmware", filename,
-                partition, image_type, tftp_addr))
         self.partitions[partition].updates += 1
 
         localfile = temp_file()
@@ -170,8 +143,6 @@ class DummyBMC(LanBMC):
         return Result()
 
     def retrieve_firmware(self, filename, partition, image_type, tftp_addr):
-        self.executed.append(("retrieve_firmware", filename,
-                partition, image_type, tftp_addr))
         self.partitions[partition].retrieves += 1
 
         # Upload blank image to tftp
@@ -191,18 +162,12 @@ class DummyBMC(LanBMC):
         return Result()
 
     def register_firmware_read(self, filename, partition, image_type):
-        self.executed.append(("register_firmware_read", filename, partition,
-                image_type))
         raise IpmiError()
 
     def register_firmware_write(self, filename, partition, image_type):
-        self.executed.append(("register_firmware_write", filename, partition,
-                image_type))
         raise IpmiError()
 
     def get_firmware_status(self, handle):
-        self.executed.append("get_firmware_status")
-
         # pylint: disable=R0903
         class Result(object):
             """Results class."""
@@ -214,7 +179,6 @@ class DummyBMC(LanBMC):
         return Result()
 
     def check_firmware(self, partition):
-        self.executed.append(("check_firmware", partition))
         self.partitions[partition].checks += 1
 
         # pylint: disable=R0903
@@ -226,16 +190,10 @@ class DummyBMC(LanBMC):
         return Result()
 
     def activate_firmware(self, partition):
-        self.executed.append(("activate_firmware", partition))
         self.partitions[partition].activates += 1
-
-    def set_firmware_version(self, version):
-        self.executed.append(("set_firmware_version", version))
 
     def sdr_list(self):
         """ Get sensor info from the node. """
-        self.executed.append("sdr_list")
-
         power_value = "%f (+/- 0) Watts" % random.uniform(0, 10)
         temp_value = "%f (+/- 0) degrees C" % random.uniform(30, 50)
         sensors = [
@@ -247,8 +205,6 @@ class DummyBMC(LanBMC):
 
     def get_info_basic(self):
         """ Get basic SoC info from this node """
-        self.executed.append("get_info_basic")
-
         # pylint: disable=R0903
         class Result(object):
             """Results class."""
@@ -260,8 +216,6 @@ class DummyBMC(LanBMC):
         return Result()
 
     def get_info_card(self):
-        self.executed.append("info_card")
-
         # pylint: disable=R0903
         class Result(object):
             """Results class."""
@@ -272,15 +226,12 @@ class DummyBMC(LanBMC):
 
     node_count = 0
     def fabric_get_node_id(self):
-        self.executed.append('get_node_id')
         result = DummyBMC.node_count
         DummyBMC.node_count += 1
         return result
 
     def fabric_info_get_link_map(self, filename, tftp_addr=None):
         """Upload a link_map file from the node to TFTP"""
-        self.executed.append('fabric_info_get_link_map')
-
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
 
@@ -305,8 +256,6 @@ class DummyBMC(LanBMC):
 
     def fabric_info_get_routing_table(self, filename, tftp_addr=None):
         """Upload a routing_table file from the node to TFTP"""
-        self.executed.append('fabric_info_get_routing_table')
-
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
 
@@ -335,8 +284,6 @@ class DummyBMC(LanBMC):
 
     def fabric_info_get_depth_chart(self, filename, tftp_addr=None):
         """Upload a depth_chart file from the node to TFTP"""
-        self.executed.append('fabric_info_get_depth_chart')
-
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
 
@@ -421,8 +368,6 @@ class DummyBMC(LanBMC):
     def fabric_get_linkstats(self, filename, tftp_addr=None,
         link=None):
         """Upload a link_stats file from the node to TFTP"""
-        self.executed.append(('fabric_get_linkstats', link))
-
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
 
@@ -466,8 +411,6 @@ class DummyBMC(LanBMC):
 
     def fabric_config_get_ip_info(self, filename, tftp_addr=None):
         """ Upload an ipinfo file from the node to TFTP"""
-        self.executed.append("fabric_config_get_ip_info")
-
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
 
@@ -488,8 +431,6 @@ class DummyBMC(LanBMC):
         shutil.rmtree(work_dir)
 
     def fabric_config_get_uplink_info(self, filename, tftp_addr=None):
-        self.executed.append("fabric_config_get_uplink_info")
-
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
 
@@ -509,16 +450,10 @@ class DummyBMC(LanBMC):
         shutil.rmtree(work_dir)
 
     def fabric_config_get_uplink(self, iface):
-        self.executed.append(("fabric_config_get_uplink", iface))
         return 0
-
-    def fabric_config_set_uplink(self, uplink, iface):
-        self.executed.append(("fabric_config_set_uplink", uplink, iface))
 
     def fabric_config_get_mac_addresses(self, filename, tftp_addr=None):
         """ Upload a macaddrs file from the node to TFTP"""
-        self.executed.append("fabric_config_get_mac_addresses")
-
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
 
@@ -541,90 +476,51 @@ class DummyBMC(LanBMC):
         shutil.rmtree(work_dir)
 
     def fabric_config_get_ip_src(self):
-        self.executed.append('fabric_config_get_ip_src')
         return 2
 
     def fabric_config_set_ip_src(self, ipsrc_mode):
         self.fabric_ipsrc = ipsrc_mode
-        self.executed.append('fabric_config_set_ip_src')
-
-    def fabric_config_factory_default(self):
-        self.executed.append('fabric_config_factory_default')
 
     def fabric_config_get_ip_addr_base(self):
         """Provide a fake base IP addr"""
-        self.executed.append('fabric_config_get_ip_addr_base')
         return self.ipaddr_base
 
-    def fabric_config_update_config(self):
-        self.executed.append('fabric_config_update_config')
-
     def fabric_get_linkspeed(self, link="", actual=""):
-        self.executed.append('fabric_get_linkspeed')
         return 1
 
     def fabric_config_get_linkspeed(self):
-        self.executed.append('fabric_config_get_linkspeed')
         return 1
 
     def fabric_config_set_linkspeed(self, linkspeed):
         self.fabric_linkspeed = linkspeed
-        self.executed.append('fabric_config_set_linkspeed')
 
     def fabric_config_get_linkspeed_policy(self):
-        self.executed.append('fabric_config_get_linkspeed_policy')
         return 1
 
     def fabric_config_set_linkspeed_policy(self, ls_policy):
         self.fabric_ls_policy = ls_policy
-        self.executed.append('fabric_config_set_linkspeed_policy')
 
     def fabric_config_get_link_users_factor(self):
-        self.executed.append('fabric_config_get_link_users_factor')
         return 1
 
     def fabric_config_set_link_users_factor(self, lu_factor):
         self.fabric_lu_factor = lu_factor
-        self.executed.append('fabric_config_set_link_users_factor')
-
-    def fabric_config_set_macaddr_base(self, macaddr):
-        self.executed.append(('fabric_config_set_macaddr_base', macaddr))
 
     def fabric_config_get_macaddr_base(self):
-        self.executed.append('fabric_config_get_macaddr_base')
         return "00:00:00:00:00:00"
-
-    def fabric_config_set_macaddr_mask(self, mask):
-        self.executed.append(('fabric_config_set_macaddr_mask', mask))
 
     def fabric_config_get_macaddr_mask(self):
-        self.executed.append('fabric_config_get_macaddr_mask')
         return "00:00:00:00:00:00"
-
-    def fabric_add_macaddr(self, nodeid=0, iface=0, macaddr=None):
-        self.executed.append('fabric_add_macaddr')
-
-    def fabric_rm_macaddr(self, nodeid=0, iface=0, macaddr=None):
-        self.executed.append('fabric_rm_macaddr')
 
     def fabric_get_uplink_info(self):
         """Corresponds to Node.get_uplink_info()"""
-        self.executed.append('get_uplink_info')
         return 'Node 0: eth0 0, eth1 0, mgmt 0'
 
     def fabric_get_uplink_speed(self):
         """Corresponds to Node.get_uplink_speed()"""
-        self.executed.append('get_uplink_speed')
         return 1
 
     def fru_read(self, fru_number, filename):
-        if fru_number == 81:
-            self.executed.append('node_fru_read')
-        elif fru_number == 82:
-            self.executed.append('slot_fru_read')
-        else:
-            self.executed.append('fru_read')
-
         with open(filename, "w") as fru_image:
             # Writes a fake FRU image with version "0.0"
             fru_image.write("x00" * 516 + "0.0" + "x00"*7673)
