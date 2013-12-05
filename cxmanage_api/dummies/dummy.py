@@ -28,7 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from mock import Mock
+from mock import Mock, PropertyMock
 
 
 def Dummy(spec):
@@ -49,7 +49,11 @@ def Dummy(spec):
         def __new__(cls, *args, **kwargs):
             self = super(SpeccedDummy, cls).__new__(cls, *args, **kwargs)
             self.__init__(*args, **kwargs)
-            return Mock(spec=spec, wraps=self, name=cls.__name__)
+            variables = vars(self)
+            self = Mock(spec=spec, wraps=self, name=cls.__name__)
+            for name, value in variables.items():
+                setattr(self, name, value)
+            return self
 
         def __getattr__(self, name):
             """ Return None for any undefined attributes.
