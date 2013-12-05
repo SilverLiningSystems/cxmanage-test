@@ -28,7 +28,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from mock import Mock, PropertyMock
+from mock import Mock
+from types import MethodType
 
 
 def Dummy(spec):
@@ -42,26 +43,31 @@ def Dummy(spec):
 
     """
     class SpeccedDummy(object):
-        """ Specced dummy class. Instantiating this actually gives us a Mock
-        object, defined by spec, that wraps ourselves.
-
-        """
+        """ Specced dummy class. Instantiating this actually gives us a Mock """
         def __new__(cls, *args, **kwargs):
             self = super(SpeccedDummy, cls).__new__(cls, *args, **kwargs)
             self.__init__(*args, **kwargs)
-            variables = vars(self)
-            self = Mock(spec=spec, wraps=self, name=cls.__name__)
-            for name, value in variables.items():
-                setattr(self, name, value)
-            return self
 
-        def __getattr__(self, name):
-            """ Return None for any undefined attributes.
+            mock = Mock(spec=spec, name=cls.__name__)
 
-            This is necessary to allow for attributes that are found in the
-            spec, but not defined in any subclass of SpeccedDummy.
+            # Manually add our side effects and attributes to the mock
+            for name, value in vars(cls).items():
+                try:
+                    # Try adding it as a method
+                    getattr(mock, name).side_effect = MethodType(
+                        value, mock, spec
+                    )
+                except TypeError:
+                    # Not callable, so set it as a class variable instead
+                    setattr(mock, name, value)
+                except AttributeError:
+                    # Can't add this, just move on.
+                    pass
 
-            """
-            return None
+            # Now add any instance variables that were created in self.__init__
+            for name, value in vars(self).items():
+                setattr(mock, name, value)
+
+            return mock
 
     return SpeccedDummy
