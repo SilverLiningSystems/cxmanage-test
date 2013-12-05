@@ -29,21 +29,20 @@
 # DAMAGE.
 
 import random
-import time
 
 from cxmanage_api.ubootenv import UbootEnv
 from cxmanage_api.tests import TestSensor
-from cxmanage_api.dummy import DummyBMC
+from cxmanage_api.dummy import Dummy, DummyBMC
+from cxmanage_api.node import Node
 
 
-class DummyNode(object):
+class DummyNode(Dummy(Node)):
     """ Dummy node """
     ip_addresses = DummyBMC.ip_addresses
 
     # pylint: disable=W0613
     def __init__(self, ip_address, username="admin", password="admin",
             tftp=None, *args, **kwargs):
-        self.executed = []
         self.power_state = False
         self.ip_address = ip_address
         self.tftp = tftp
@@ -66,48 +65,18 @@ class DummyNode(object):
 
     def get_sel(self):
         """Simulate get_sel()"""
-        self.executed.append('get_sel')
         return self.sel
 
     def get_power(self):
         """Simulate get_power(). """
-        self.executed.append("get_power")
         return self.power_state
-
-    def set_power(self, mode):
-        """Simulate set_power(). """
-        self.executed.append(("set_power", mode))
 
     def get_power_policy(self):
         """Simulate get_power_policy(). """
-        self.executed.append("get_power_policy")
         return "always-off"
-
-    def set_power_policy(self, mode):
-        """Simulate set_power_policy(). """
-        self.executed.append(("set_power_policy", mode))
-
-    def mc_reset(self):
-        """Simulate mc_reset(). """
-        self.executed.append("mc_reset")
-
-    def get_firmware_info(self):
-        """Simulate get_firmware_info(). """
-        self.executed.append("get_firmware_info")
-
-    def is_updatable(self, package, partition_arg="INACTIVE", priority=None):
-        """Simulate is_updateable(). """
-        self.executed.append(("is_updatable", package))
-
-    def update_firmware(self, package, partition_arg="INACTIVE",
-            priority=None):
-        """Simulate update_firmware(). """
-        self.executed.append(("update_firmware", package))
-        time.sleep(random.randint(0, 2))
 
     def get_sensors(self, name=""):
         """Simulate get_sensors(). """
-        self.executed.append("get_sensors")
         power_value = "%f (+/- 0) Watts" % random.uniform(0, 10)
         temp_value = "%f (+/- 0) degrees C" % random.uniform(30, 50)
         sensors = [
@@ -116,32 +85,16 @@ class DummyNode(object):
         ]
         return [s for s in sensors if name.lower() in s.sensor_name.lower()]
 
-    def config_reset(self):
-        """Simulate config_reset(). """
-        self.executed.append("config_reset")
-
-    def set_boot_order(self, boot_args):
-        """Simulate set_boot_order()."""
-        self.executed.append(("set_boot_order", boot_args))
-
     def get_boot_order(self):
         """Simulate get_boot_order(). """
-        self.executed.append("get_boot_order")
         return ["disk", "pxe"]
-
-    def set_pxe_interface(self, interface):
-        """Simulate set_pxe_interface(). """
-        self.executed.append(("set_pxe_interface", interface))
 
     def get_pxe_interface(self):
         """Simulate get_pxe_interface(). """
-        self.executed.append("get_pxe_interface")
         return "eth0"
 
     def get_versions(self):
         """Simulate get_versions(). """
-        self.executed.append("get_versions")
-
         # pylint: disable=R0902, R0903
         class Result(object):
             """Result Class. """
@@ -158,13 +111,10 @@ class DummyNode(object):
 
     def ipmitool_command(self, ipmitool_args):
         """Simulate ipmitool_command(). """
-        self.executed.append(("ipmitool_command", ipmitool_args))
         return "Dummy output"
 
     def get_ubootenv(self):
         """Simulate get_ubootenv(). """
-        self.executed.append("get_ubootenv")
-
         ubootenv = UbootEnv()
         ubootenv.variables["bootcmd0"] = "run bootcmd_default"
         ubootenv.variables["bootcmd_default"] = "run bootcmd_sata"
@@ -179,13 +129,10 @@ class DummyNode(object):
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
             password="1Password", aggressive=False):
         """Simulate get_server_ip(). """
-        self.executed.append(("get_server_ip", interface, ipv6, user, password,
-                aggressive))
         return "192.168.200.1"
 
     def get_fabric_macaddrs(self):
         """Simulate get_fabric_macaddrs(). """
-        self.executed.append("get_fabric_macaddrs")
         result = {}
         for node in range(len(self.ip_addresses)):
             result[node] = {}
@@ -196,7 +143,6 @@ class DummyNode(object):
 
     def get_fabric_uplink_info(self):
         """Simulate get_fabric_uplink_info(). """
-        self.executed.append('get_fabric_uplink_info')
         results = {}
         for nid in range(1, len(self.ip_addresses)):
             results[nid] = {'eth0': 0, 'eth1': 0, 'mgmt': 0}
@@ -204,17 +150,14 @@ class DummyNode(object):
 
     def get_uplink_info(self):
         """Simulate get_uplink_info(). """
-        self.executed.append('get_uplink_info')
         return 'Node 0: eth0 0, eth1 0, mgmt 0'
 
     def get_uplink_speed(self):
         """Simulate get_uplink_speed(). """
-        self.executed.append('get_uplink_speed')
         return 1
 
     def get_link_stats(self, link=0):
         """Simulate get_link_stats(). """
-        self.executed.append(('get_link_stats', link))
         return {
                  'FS_LC%s_BYTE_CNT_0' % link: '0x0',
                  'FS_LC%s_BYTE_CNT_1' % link: '0x0',
@@ -239,7 +182,6 @@ class DummyNode(object):
 
     def get_linkmap(self):
         """Simulate get_linkmap(). """
-        self.executed.append('get_linkmap')
         results = {}
         for nid in range(0, len(self.ip_addresses)):
             results[nid] = {nid: {1: 2, 3: 1, 4: 3}}
@@ -247,7 +189,6 @@ class DummyNode(object):
 
     def get_routing_table(self):
         """Simulate get_routing_table(). """
-        self.executed.append('get_routing_table')
         results = {}
         for nid in range(0, len(self.ip_addresses)):
             results[nid] = {nid: {1: [0, 0, 0, 3, 0],
@@ -257,7 +198,6 @@ class DummyNode(object):
 
     def get_depth_chart(self):
         """Simulate get_depth_chart(). """
-        self.executed.append('get_depth_chart')
         results = {}
         for nid in range(0, len(self.ip_addresses)):
             results[nid] = {nid: {1: {'shortest': (0, 0)},
@@ -267,21 +207,14 @@ class DummyNode(object):
 
     def get_uplink(self, iface):
         """Simulate get_uplink(). """
-        self.executed.append(('get_uplink', iface))
         return 0
-
-    def set_uplink(self, uplink, iface):
-        """Simulate set_uplink(). """
-        self.executed.append(('set_uplink', uplink, iface))
 
     def get_node_fru_version(self):
         """Simulate get_node_fru_version(). """
-        self.executed.append("get_node_fru_version")
         return "0.0"
 
     def get_slot_fru_version(self):
         """Simulate get_slot_fru_version(). """
-        self.executed.append("get_slot_fru_version")
         return "0.0"
 
 
@@ -294,5 +227,4 @@ class DummyFailNode(DummyNode):
 
     def get_power(self):
         """Simulate get_power(). """
-        self.executed.append("get_power")
         raise DummyFailNode.DummyFailError

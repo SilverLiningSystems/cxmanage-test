@@ -69,21 +69,24 @@ class FabricTest(unittest.TestCase):
     def test_get_mac_addresses(self):
         """ Test get_mac_addresses command """
         self.fabric.get_mac_addresses()
-        self.assertEqual(self.nodes[0].executed, ["get_fabric_macaddrs"])
+        self.assertEqual(
+            self.nodes[0].method_calls,
+            [call.get_fabric_macaddrs()]
+        )
         for node in self.nodes[1:]:
-            self.assertEqual(node.executed, [])
+            self.assertEqual(node.method_calls, [])
 
     def test_get_uplink_info(self):
         """ Test get_uplink_info command """
         self.fabric.get_uplink_info()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["get_uplink_info"])
+            self.assertEqual(node.method_calls, [call.get_uplink_info()])
 
     def test_get_uplink_speed(self):
         """ Test get_uplink_speed command """
         self.fabric.get_uplink_speed()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["get_uplink_speed"])
+            self.assertEqual(node.method_calls, [call.get_uplink_speed()])
 
     def test_get_uplink(self):
         """ Test get_uplink command """
@@ -103,70 +106,80 @@ class FabricTest(unittest.TestCase):
         self.fabric.get_sensors()
         self.fabric.get_sensors("Node Power")
         for node in self.nodes:
-            self.assertEqual(node.executed, ["get_sensors", "get_sensors"])
+            self.assertEqual(node.method_calls, [
+                call.get_sensors(""), call.get_sensors("Node Power")
+            ])
 
     def test_get_firmware_info(self):
         """ Test get_firmware_info command """
         self.fabric.get_firmware_info()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["get_firmware_info"])
+            self.assertEqual(node.method_calls, [call.get_firmware_info()])
 
     def test_is_updatable(self):
         """ Test is_updatable command """
         package = FirmwarePackage()
         self.fabric.is_updatable(package)
         for node in self.nodes:
-            self.assertEqual(node.executed, [("is_updatable", package)])
+            self.assertEqual(node.method_calls, [
+                call.is_updatable(package, "INACTIVE", None)
+            ])
 
     def test_update_firmware(self):
         """ Test update_firmware command """
         package = FirmwarePackage()
         self.fabric.update_firmware(package)
         for node in self.nodes:
-            self.assertEqual(node.executed, [("update_firmware", package)])
+            self.assertEqual(node.method_calls, [
+                call.update_firmware(package, "INACTIVE", None)
+            ])
 
     def test_config_reset(self):
         """ Test config_reset command """
         self.fabric.config_reset()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["config_reset"])
+            self.assertEqual(node.method_calls, [call.config_reset()])
 
     def test_set_boot_order(self):
         """ Test set_boot_order command """
         boot_args = "disk0,pxe,retry"
         self.fabric.set_boot_order(boot_args)
         for node in self.nodes:
-            self.assertEqual(node.executed, [("set_boot_order", boot_args)])
+            self.assertEqual(
+                node.method_calls, [call.set_boot_order(boot_args)]
+            )
 
     def test_get_boot_order(self):
         """ Test get_boot_order command """
         self.fabric.get_boot_order()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["get_boot_order"])
+            self.assertEqual(node.method_calls, [call.get_boot_order()])
 
     def test_set_pxe_interface(self):
         """ Test set_pxe_interface command """
         self.fabric.set_pxe_interface("eth0")
         for node in self.nodes:
-            self.assertEqual(node.executed, [("set_pxe_interface", "eth0")])
+            self.assertEqual(
+                node.method_calls, [call.set_pxe_interface("eth0")]
+            )
 
     def test_get_pxe_interface(self):
         """ Test get_pxe_interface command """
         self.fabric.get_pxe_interface()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["get_pxe_interface"])
+            self.assertEqual(node.method_calls, [call.get_pxe_interface()])
 
     def test_get_versions(self):
         """ Test get_versions command """
         self.fabric.get_versions()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["get_versions"])
+            self.assertEqual(node.method_calls, [call.get_versions()])
 
     def test_get_ubootenv(self):
         """ Test get_ubootenv command """
         self.fabric.get_ubootenv()
         for node in self.nodes:
-            self.assertEqual(node.executed, ["get_ubootenv"])
+            self.assertEqual(node.method_calls, [call.get_ubootenv()])
 
     def test_ipmitool_command(self):
         """ Test ipmitool_command command """
@@ -174,7 +187,7 @@ class FabricTest(unittest.TestCase):
         self.fabric.ipmitool_command(ipmitool_args)
         for node in self.nodes:
             self.assertEqual(
-                node.executed, [("ipmitool_command", ipmitool_args)]
+                node.method_calls, [call.ipmitool_command(ipmitool_args)]
             )
 
     def test_get_server_ip(self):
@@ -182,8 +195,9 @@ class FabricTest(unittest.TestCase):
         self.fabric.get_server_ip("interface", "ipv6", "user", "password",
                 "aggressive")
         for node in self.nodes:
-            self.assertEqual(node.executed, [("get_server_ip", "interface",
-                    "ipv6", "user", "password", "aggressive")])
+            self.assertEqual(node.method_calls, [call.get_server_ip(
+                "interface", "ipv6", "user", "password", "aggressive"
+            )])
 
     def test_failed_command(self):
         """ Test a failed command """
@@ -197,7 +211,7 @@ class FabricTest(unittest.TestCase):
             self.fail()
         except CommandFailedError:
             for node in fail_nodes:
-                self.assertEqual(node.executed, ["get_power"])
+                self.assertEqual(node.method_calls, [call.get_power()])
 
     def test_primary_node(self):
         """Test the primary_node property
@@ -297,25 +311,25 @@ class FabricTest(unittest.TestCase):
         for i in range(0, 5):
             self.fabric.get_link_stats(i)
             for node in self.fabric.nodes.values():
-                self.assertIn(('get_link_stats', i), node.executed)
+                node.get_link_stats.assert_called_with(i)
 
     def test_get_linkmap(self):
         """Test the get_linkmap method"""
         self.fabric.get_linkmap()
         for node in self.fabric.nodes.values():
-            self.assertIn('get_linkmap', node.executed)
+            self.assertTrue(node.get_linkmap.called)
 
     def test_get_routing_table(self):
         """Test the get_routing_table method"""
         self.fabric.get_routing_table()
         for node in self.fabric.nodes.values():
-            self.assertIn('get_routing_table', node.executed)
+            self.assertTrue(node.get_routing_table.called)
 
     def test_get_depth_chart(self):
         """Test the depth_chart method"""
         self.fabric.get_depth_chart()
         for node in self.fabric.nodes.values():
-            self.assertIn('get_depth_chart', node.executed)
+            self.assertTrue(node.get_depth_chart.called)
 
     def test_get_link_users_factor(self):
         """Test the get_link_users_factor method
