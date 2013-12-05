@@ -28,7 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage_api.dummies.dummy import Dummy
-from cxmanage_api.dummies.dummy_bmc import DummyBMC
-from cxmanage_api.dummies.dummy_ubootenv import DummyUbootEnv
-from cxmanage_api.dummies.dummy_ip_retriever import DummyIPRetriever
+from cxmanage_api.dummy.dummy import Dummy
+from cxmanage_api.dummy.dummy_bmc import DummyBMC
+from cxmanage_api.dummy.dummy_ubootenv import DummyUbootEnv
+from cxmanage_api.dummy.dummy_ip_retriever import DummyIPRetriever

@@ -40,7 +40,7 @@ from cxmanage_api.tests import TestSensor
 from cxmanage_api import temp_file
 from cxmanage_api.simg import create_simg, get_simg_header
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
-from cxmanage_api.dummies import Dummy
+from cxmanage_api.dummy import Dummy
 
 
 # pylint: disable=R0902

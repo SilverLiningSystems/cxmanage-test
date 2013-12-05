@@ -50,7 +50,7 @@ setup(
         'cxmanage_api.cli',
         'cxmanage_api.cli.commands',
         'cxmanage_api.tests',
-        'cxmanage_api.dummies'
+        'cxmanage_api.dummy'
     ],
     scripts=['scripts/cxmanage', 'scripts/sol_tabs', 'scripts/cxmux'],
     description='Calxeda Management Utility',

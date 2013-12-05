@@ -38,7 +38,7 @@ import unittest
 from mock import call
 
 from cxmanage_api.tests import TestImage, random_file
-from cxmanage_api.dummies import DummyBMC, DummyUbootEnv, DummyIPRetriever
+from cxmanage_api.dummy import DummyBMC, DummyUbootEnv, DummyIPRetriever
 from cxmanage_api.node import Node
 from cxmanage_api.firmware_package import FirmwarePackage
 
