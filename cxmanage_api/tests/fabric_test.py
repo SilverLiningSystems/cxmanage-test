@@ -38,7 +38,7 @@ from cxmanage_api.fabric import Fabric
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.firmware_package import FirmwarePackage
 from cxmanage_api.cx_exceptions import CommandFailedError
-from cxmanage_api.dummy import DummyNode, DummyFailNode
+from cxmanage_api.tests import DummyNode, DummyFailNode
 
 
 # pylint: disable=R0904

@@ -28,9 +28,32 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage_api.dummy.dummy import Dummy
-from cxmanage_api.dummy.dummy_bmc import DummyBMC
-from cxmanage_api.dummy.dummy_node import DummyNode, DummyFailNode
-from cxmanage_api.dummy.dummy_image import DummyImage
-from cxmanage_api.dummy.dummy_ubootenv import DummyUbootEnv
-from cxmanage_api.dummy.dummy_ip_retriever import DummyIPRetriever
+import os
+import random
+import tempfile
+
+from cxmanage_api.image import Image
+
+
+def random_file(size):
+    """ Create a random file """
+    contents = "".join([chr(random.randint(0, 255)) for _ in range(size)])
+    file_, filename = tempfile.mkstemp(prefix='cxmanage_test-')
+    with os.fdopen(file_, "w") as file_handle:
+        file_handle.write(contents)
+
+    return filename
+
+
+class TestImage(Image):
+    """TestImage Class."""
+    def verify(self):
+        return True
+
+
+# pylint: disable=R0903
+class TestSensor(object):
+    """ Sensor result from bmc/target """
+    def __init__(self, sensor_name, sensor_reading):
+        self.sensor_name = sensor_name
+        self.sensor_reading = sensor_reading

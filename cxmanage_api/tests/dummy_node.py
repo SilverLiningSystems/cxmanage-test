@@ -31,8 +31,7 @@
 import random
 
 from cxmanage_api.ubootenv import UbootEnv
-from cxmanage_api.tests import TestSensor
-from cxmanage_api.dummy import Dummy, DummyBMC
+from cxmanage_api.tests import Dummy, DummyBMC, TestSensor
 from cxmanage_api.node import Node
 
 

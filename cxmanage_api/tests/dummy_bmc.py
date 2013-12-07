@@ -36,11 +36,10 @@ from mock import Mock
 from pyipmi import IpmiError
 from pyipmi.bmc import LanBMC
 
-from cxmanage_api.tests import TestSensor
+from cxmanage_api.tests import Dummy, TestSensor
 from cxmanage_api import temp_file
 from cxmanage_api.simg import create_simg, get_simg_header
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
-from cxmanage_api.dummy import Dummy
 
 
 # pylint: disable=R0902

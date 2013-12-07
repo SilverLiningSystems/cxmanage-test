@@ -1,6 +1,6 @@
 import unittest
 from mock import Mock, call
-from cxmanage_api.dummy import Dummy
+from cxmanage_api.tests import Dummy
 
 
 class DummyTest(unittest.TestCase):
