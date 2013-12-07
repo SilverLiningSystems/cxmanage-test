@@ -45,6 +45,7 @@ class DummyNode(Dummy):
     # pylint: disable=W0613
     def __init__(self, ip_address, username="admin", password="admin",
             tftp=None, *args, **kwargs):
+        super(DummyNode, self).__init__()
         self.power_state = False
         self.ip_address = ip_address
         self.tftp = tftp

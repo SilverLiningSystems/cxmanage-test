@@ -29,12 +29,12 @@
 # DAMAGE.
 
 from mock import Mock
-from types import MethodType
 
 
-class Dummy(object):
-    """ Dummy class. Instantiating this actually gives us a Mock object, so we
-    can make assertions about method calls and their ordering
+class Dummy(Mock):
+    """ Dummy class. Children of this class will automatically have their
+    methods be turned into Mock objects with side effects, allowing us to track
+    their usage and assert about how they are called.
 
     They dummy_spec variable gives us a spec for building the Mock object, which
     restricts the names of methods that can be called.
@@ -43,28 +43,19 @@ class Dummy(object):
 
     dummy_spec = None
 
-    def __new__(cls, *args, **kwargs):
-        self = super(Dummy, cls).__new__(cls, *args, **kwargs)
-        self.__init__(*args, **kwargs)
+    def __init__(self):
+        super(Dummy, self).__init__(
+            spec=self.dummy_spec
+        )
 
-        mock = Mock(spec=cls.dummy_spec, name=cls.__name__)
-
-        # Manually add our side effects and attributes to the mock
-        for name, value in vars(cls).items():
-            try:
-                # Try adding it as a method
-                getattr(mock, name).side_effect = MethodType(
-                    value, mock, cls
-                )
-            except (AttributeError, TypeError):
+        for name in dir(self):
+            if not hasattr(Mock, name):
                 try:
-                    # Not callable, so set it as a class variable instead
-                    setattr(mock, name, value)
-                except (AttributeError, TypeError):
+                    attr = getattr(self, name)
+                    if callable(attr) and not isinstance(attr, Mock):
+                        setattr(self, name, Mock(side_effect=attr))
+                except AttributeError:
                     pass
 
-        # Now add any instance variables that were created in self.__init__
-        for name, value in vars(self).items():
-            setattr(mock, name, value)
-
-        return mock
+    def _get_child_mock(self, *args, **kwargs):
+        return Mock(*args, **kwargs)

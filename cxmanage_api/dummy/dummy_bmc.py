@@ -58,7 +58,7 @@ class DummyBMC(Dummy):
 
 
     def __init__(self, **kwargs):
-        super(DummyBMC, self).__init__(**kwargs)
+        super(DummyBMC, self).__init__()
         self.handle = Mock(name="handle")
         self.partitions = [
                 Partition(0, 3, 0, 393216, in_use=True),  # socman
@@ -71,7 +71,7 @@ class DummyBMC(Dummy):
         ]
         self.ipaddr_base = '192.168.100.1'
         self.unique_guid = 'FAKEGUID%s' % DummyBMC.GUID_UNIQUE
-        self.sel = self.generate_sel(with_errors=False)
+        self.sel = DummyBMC.generate_sel(with_errors=False)
 
         DummyBMC.GUID_UNIQUE += 1
 
