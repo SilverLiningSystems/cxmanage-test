@@ -32,42 +32,39 @@ from mock import Mock
 from types import MethodType
 
 
-def Dummy(spec):
-    """ Returns a dummy that behaves like the specified class.
+class Dummy(object):
+    """ Dummy class. Instantiating this actually gives us a Mock object, so we
+    can make assertions about method calls and their ordering
 
-    The returned value is a Class, not an Instance, so it can be subclassed.
-
-    By default, any attribute accessed in an instance will be equal to None.
-    Return values, or other side effects, can be defined by overriding the
-    functions/properties in a subclass.
+    They dummy_spec variable gives us a spec for building the Mock object, which
+    restricts the names of methods that can be called.
 
     """
-    class SpeccedDummy(object):
-        """ Specced dummy class. Instantiating this actually gives us a Mock """
-        def __new__(cls, *args, **kwargs):
-            self = super(SpeccedDummy, cls).__new__(cls, *args, **kwargs)
-            self.__init__(*args, **kwargs)
 
-            mock = Mock(spec=spec, name=cls.__name__)
+    dummy_spec = None
 
-            # Manually add our side effects and attributes to the mock
-            for name, value in vars(cls).items():
+    def __new__(cls, *args, **kwargs):
+        self = super(Dummy, cls).__new__(cls, *args, **kwargs)
+        self.__init__(*args, **kwargs)
+
+        mock = Mock(spec=cls.dummy_spec, name=cls.__name__)
+
+        # Manually add our side effects and attributes to the mock
+        for name, value in vars(cls).items():
+            try:
+                # Try adding it as a method
+                getattr(mock, name).side_effect = MethodType(
+                    value, mock, cls
+                )
+            except (AttributeError, TypeError):
                 try:
-                    # Try adding it as a method
-                    getattr(mock, name).side_effect = MethodType(
-                        value, mock, spec
-                    )
-                except TypeError:
                     # Not callable, so set it as a class variable instead
                     setattr(mock, name, value)
-                except AttributeError:
-                    # Can't add this, just move on.
+                except (AttributeError, TypeError):
                     pass
 
-            # Now add any instance variables that were created in self.__init__
-            for name, value in vars(self).items():
-                setattr(mock, name, value)
+        # Now add any instance variables that were created in self.__init__
+        for name, value in vars(self).items():
+            setattr(mock, name, value)
 
-            return mock
-
-    return SpeccedDummy
+        return mock

@@ -44,8 +44,10 @@ from cxmanage_api.dummy import Dummy
 
 
 # pylint: disable=R0902
-class DummyBMC(Dummy(LanBMC)):
+class DummyBMC(Dummy):
     """ Dummy BMC for the node tests """
+    dummy_spec = LanBMC
+
     ip_addresses = [
         "192.168.100.%i" % n for n in range(1, 5)
     ]

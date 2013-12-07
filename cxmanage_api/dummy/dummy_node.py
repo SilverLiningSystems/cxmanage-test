@@ -36,8 +36,10 @@ from cxmanage_api.dummy import Dummy, DummyBMC
 from cxmanage_api.node import Node
 
 
-class DummyNode(Dummy(Node)):
+class DummyNode(Dummy):
     """ Dummy node """
+    dummy_spec = Node
+
     ip_addresses = DummyBMC.ip_addresses
 
     # pylint: disable=W0613
