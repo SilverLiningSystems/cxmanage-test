@@ -35,8 +35,10 @@ import unittest
 import xmlrunner
 
 from cxmanage_api.tests import tftp_test, image_test, node_test, fabric_test, \
-        tasks_test
-test_modules = [tftp_test, image_test, node_test, fabric_test, tasks_test]
+        tasks_test, dummy_test
+test_modules = [
+    tftp_test, image_test, node_test, fabric_test, tasks_test, dummy_test
+]
 
 def main():
     """ Load and run tests """
