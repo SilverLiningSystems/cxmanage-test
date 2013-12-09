@@ -1188,11 +1188,14 @@ communication.
         image = self._download_image(partition)
         return self.ubootenv(open(image.filename).read())
 
-    def get_fabric_ipinfo(self):
+    def get_fabric_ipinfo(self, allow_errors=False):
         """Gets what ip information THIS node knows about the Fabric.
 
         >>> node.get_fabric_ipinfo()
         {0: '10.20.1.9', 1: '10.20.2.131', 2: '10.20.0.220', 3: '10.20.2.5'}
+
+        :param allow_errors: Skip IP parsing errors
+        :type allow_errors: boolean
 
         :return: Returns a map of node_ids->ip_addresses.
         :rtype: dictionary
@@ -1214,7 +1217,17 @@ communication.
                         elements = line.split()
                         node_id = int(elements[1].rstrip(":"))
                         ip_address = elements[2]
-                        socket.inet_aton(ip_address)  # IP validity check
+
+                        # IP validity check
+                        try:
+                            socket.inet_aton(ip_address)
+                            if ip_address == "0.0.0.0":
+                                raise ValueError("Invalid IP address 0.0.0.0")
+                        except (socket.error, ValueError):
+                            if allow_errors:
+                                continue
+                            raise
+
                         results[node_id] = ip_address
                 return results
             except (IndexError, ValueError, socket.error):

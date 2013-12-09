@@ -108,7 +108,9 @@ def get_nodes(args, tftp, verify_prompt=False):
         if not args.quiet:
             print("Getting IP addresses...")
 
-        results, errors = run_command(args, nodes, "get_fabric_ipinfo")
+        results, errors = run_command(
+            args, nodes, "get_fabric_ipinfo", args.force
+        )
 
         all_nodes = []
         for node in nodes:
