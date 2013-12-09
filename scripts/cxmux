@@ -33,50 +33,63 @@
 
 import os
 import sys
-
-from optparse import OptionParser
-
+import argparse
+import subprocess
 import cxmanage_api.fabric
 
 
 def main():
-    parser = OptionParser(
-        "usage: %prog [options] COMMAND ecmeIP", conflict_handler="resolve"
+    parser = argparse.ArgumentParser(
+        usage='CXMUX [options] <command> <ecmeip>', conflict_handler='resolve'
     )
-    parser.add_option(
-        "-s", "--ssh",
-        action="store_const", const=True, dest="ssh", default=False,
-        help="Use the SPU IPs rather than ECME IPs"
+    parser.add_argument('-n', '--nosync', action='store_true',
+        help='Do not synchronize input across terminals')
+    parser.add_argument('--virt-env', action='store', type=str,
+        help='Calls workon <virtual_environment> before spawning a window')
+    parser.add_argument('-u', '--user', default='admin',
+        help='Username for login')
+    parser.add_argument('-p', '--password', default='admin',
+        help='Password for login')
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument('-s', '--ssh', action='store_true',
+        help='USE the SPU IPs rather than ECME IPs')
+    action.add_argument('-r', '--serial', action='store_true',
+        help='Run a SOL session to the nodes rather than a command')
+    parser.add_argument('command', nargs=argparse.REMAINDER,
+        help='Command to run')
+    parser.add_argument('ecmeip', nargs=1,
+        help='IP to run the commands against')
+
+    args = parser.parse_args()
+    if args.serial and args.command:
+        parser.error('Do not specify a command when running with --serial')
+
+    args.ecmeip = args.ecmeip[0]
+
+    command = ' '.join(args.command)
+    if args.serial:
+        command = 'ipmitool -U %s -P %s -I lanplus sol activate -H' % \
+            (args.user, args.password)
+    
+    name = '%s@%s' % (command.split()[0], args.ecmeip)
+    tmux_windows = subprocess.check_output(
+        'tmux list-windows -F "#{window_name}"',
+        shell=True
     )
-    parser.add_option(
-        "-n", "--nosync",
-        action="store_const", const=False, dest="sync", default=True,
-        help="Do not syncronize input across terminals"
+    if name in tmux_windows.splitlines():
+        print 'There is already another tmux window with name: %s' % name
+        return 4
+
+    if args.virt_env:
+        command = 'workon %s; ' % args.virt_env + command
+
+    fabric = cxmanage_api.fabric.Fabric(
+        ip_address=args.ecmeip,
+        username=args.user,
+        password=args.password
     )
-    parser.add_option(
-        "--virt-env",
-        action="store", type="string", dest="virt_env",
-        help="Calls workon <virtual_environment> before spawning a window"
-    )
-    parser.disable_interspersed_args()
-
-    (options, args) = parser.parse_args()
-    if len(args) == 0:
-        parser.print_help()
-        return -1
-    elif len(args) < 2:
-        parser.error("Need to specify COMMAND and ecmeIP")
-
-    command = " ".join(args[:-1])
-
-    if options.virt_env:
-        command = 'workon %s; ' % options.virt_env + command
-
-    ecmeip = args[-1]
-    name = '%s@%s' % (args[0], ecmeip)
-    fabric = cxmanage_api.fabric.Fabric(ecmeip)
     ips = [node.ip_address for node in fabric.nodes.values()]
-    if options.ssh:
+    if args.ssh:
         ips = fabric.get_server_ip().values()
 
     for i, ip in enumerate(ips):
@@ -91,7 +104,7 @@ def main():
         os.system('tmux send-keys Enter')
         os.system('tmux select-layout -t "%s" tiled >/dev/null' % name)
 
-    if options.sync:
+    if not args.nosync:
         os.system(
             'tmux set-window-option -t "%s" synchronize-panes on >/dev/null' %
             name
