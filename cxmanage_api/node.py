@@ -708,87 +708,57 @@ communication.
             "\nPriority: " + str(priority)
         )
 
-        images_to_upload = len(package.images)
         logger.info(
-            "package.images: Images to upload: %d" % images_to_upload
+            "Number of images to upload: %d\n" % len(package.images)
         )
 
         updated_partitions = []
 
-        image_uploading = 1
         for image in package.images:
-            logger.info(
-                "\nUploading image %d of %d" %
-                (image_uploading, images_to_upload)
-            )
-
             if image.type == "UBOOTENV" and num_ubootenv_partitions >= 2:
-                logger.info(
-                   "Trying ubootenv for image %d..." % image_uploading
-                )
-
                 # Get partitions
                 running_part = self._get_partition(fwinfo, image.type, "FIRST")
                 factory_part = self._get_partition(fwinfo, image.type,
                         "SECOND")
 
-                # Extra \n's here for ease of reading output
-                logger.info(
-                    "\nFirst ('FIRST') partition:\n" + \
-                    str(running_part) + \
-                    "\n\nSecond ('FACTORY') partition:\n" + \
-                    str(factory_part)
-                )
-
                 # Update factory ubootenv
+                logger.info("Uploading %s to %s\n" % (image, factory_part))
                 self._upload_image(image, factory_part, priority)
 
-                # Extra \n for output formatting
-                logger.info(
-                    "\nDone uploading factory image"
-                )
-
                 # Update running ubootenv
+                logger.info("Downloading partition %s\n" % running_part)
                 old_ubootenv_image = self._download_image(running_part)
-                old_ubootenv = self.ubootenv(open(
-                                        old_ubootenv_image.filename).read())
-
-                logger.info(
-                   "Done getting old ubootenv image"
+                old_ubootenv = self.ubootenv(
+                    open(old_ubootenv_image.filename).read()
                 )
 
                 try:
-                    ubootenv = self.ubootenv(open(image.filename).read())
-                    ubootenv.set_boot_order(old_ubootenv.get_boot_order())
-                    ubootenv.set_pxe_interface(old_ubootenv.get_pxe_interface())
+                    boot_order = old_ubootenv.get_boot_order()
+                    pxe_interface = old_ubootenv.get_pxe_interface()
+                    logger.info("Boot order: %s" % boot_order)
+                    logger.info("PXE interface: %s" % pxe_interface)
 
-                    logger.info(
-                        "Set boot order to %s" % old_ubootenv.get_boot_order()
-                    )
+                    ubootenv = self.ubootenv(open(image.filename).read())
+                    ubootenv.set_boot_order(boot_order)
+                    ubootenv.set_pxe_interface(pxe_interface)
 
                     filename = temp_file()
-                    with open(filename, "w") as file_:
-                        file_.write(ubootenv.get_contents())
+                    with open(filename, "w") as fout:
+                        fout.write(ubootenv.get_contents())
 
-                    ubootenv_image = self.image(filename, image.type, False,
-                                           image.daddr, image.skip_crc32,
-                                           image.version)
+                    ubootenv_image = self.image(
+                        filename, image.type, False, image.daddr,
+                        image.skip_crc32, image.version
+                    )
+
+                    logger.info("Uploading %s to %s\n" % (image, running_part))
                     self._upload_image(ubootenv_image, running_part,
                             priority)
-
-                    logger.info(
-                        "Done uploading ubootenv image to first " + \
-                        "partition ('running partition')"
-                    )
                 except (ValueError, UbootenvError):
                     self._upload_image(image, running_part, priority)
 
                 updated_partitions += [running_part, factory_part]
             else:
-                logger.info(
-                   "Using Non-ubootenv for image %d..." %
-                   image_uploading
-                )
                 # Get the partitions
                 if (partition_arg == "BOTH"):
                     partitions = [self._get_partition(fwinfo, image.type,
@@ -800,20 +770,15 @@ communication.
 
                 # Update the image
                 for partition in partitions:
+                    logger.info("Uploading %s to %s\n" % (image, partition))
                     self._upload_image(image, partition, priority)
 
                 updated_partitions += partitions
 
-            logger.info(
-                "Done uploading image %d of %d" %
-                (image_uploading, images_to_upload)
-            )
-            image_uploading = image_uploading + 1
+            logger.info("Done uploading %s\n" % image)
 
         if package.version:
             self.bmc.set_firmware_version(package.version)
-
-            logger.info("")  # For readability
 
         # Post verify
         fwinfo = self.get_firmware_info()

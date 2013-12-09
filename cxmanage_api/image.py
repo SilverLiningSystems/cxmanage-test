@@ -88,6 +88,9 @@ class Image(object):
             raise InvalidImageError("%s is not a valid %s image" %
                                     (filename, image_type))
 
+    def __str__(self):
+        return "Image %s (%s)" % (os.path.basename(self.filename), self.type)
+
     def render_to_simg(self, priority, daddr):
         """Creates a SIMG file.
 
