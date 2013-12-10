@@ -913,7 +913,7 @@ communication.
             except IpmiError as error:
                 if str(error) != "Error resetting firmware to factory default":
                     raise
-                time.sleep(5) # pausing between retries seems to help a little
+                time.sleep(5)  # pausing between retries seems to help a little
         else:
             self.bmc.reset_firmware()
 
@@ -1583,6 +1583,27 @@ obtained.
         for iface_map in uplink_info.split(', '):
             iface_map_split = iface_map.split(' ')
             results[iface_map_split[0]] = int(iface_map_split[1])
+
+        return results
+
+    def get_uplink_status(self):
+        """Get the uplink status for this node
+
+        >>> node.get_uplink_status()
+        {0: True, 1: False, 2: True, 3: True}
+
+        :return: A dictionary mapping uplink to status
+        :rtype: dict
+
+        """
+        results = {}
+        uplink_status = self.bmc.fabric_get_uplink_status()
+        regex = re.compile(r'U(\d+)\(N\d+\) (\w+):')
+        for uplink, status in regex.findall(uplink_status):
+            if(status == 'Good'):
+                results[uplink] = True
+            else:
+                results[uplink] = False
 
         return results
 
