@@ -135,17 +135,13 @@ class Fabric(object):
             self.task_queue = DEFAULT_TASK_QUEUE
 
     def __eq__(self, other):
-        """__eq__() override."""
         return (isinstance(other, Fabric) and self.nodes == other.nodes)
 
     def __hash__(self):
-        """__hash__() override."""
         return hash(tuple(self.nodes.iteritems()))
 
     def __str__(self):
-        """__str__() override."""
-        return 'Fabric Node 0: %s (%d nodes)' % (self.nodes[0].ip_address,
-                                                 len(self.nodes))
+        return 'Fabric %d nodes (%s)' % (len(self.nodes), self.ip_address)
 
     @property
     def tftp(self):
@@ -210,7 +206,10 @@ class Fabric(object):
         :return: Node object for primary node
         :rtype: Node object
         """
-        return self.nodes[0]
+        try:
+            return self.nodes[0]
+        except KeyError:
+            return self.nodes["0.0"]
 
     def refresh(self, wait=False, timeout=600):
         """Gets the nodes of this fabric by pulling IP info from a BMC."""
