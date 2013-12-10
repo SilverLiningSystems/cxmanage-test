@@ -290,6 +290,26 @@ class Fabric(object):
         """
         return self._run_on_all_nodes(async, "get_uplink_info")
 
+    def get_uplink_mode(self):
+        """Gets the fabric uplink mode
+
+        >>> fabric.get_uplink_mode()
+        1
+
+        :return: The uplink mode
+        :rtype: int
+
+        """
+        return self.primary_node.bmc.fabric_config_get_uplink_mode()
+
+    def set_uplink_mode(self, uplink_mode):
+        """Sets the fabric uplink mode
+
+        >>> fabric.set_uplink_mode(uplink_mode=0)
+
+        """
+        self.primary_node.bmc.fabric_config_set_uplink_mode(uplink_mode)
+
     def get_uplink_speed(self, async=False):
         """Gets the uplink speed of every node in the fabric.
 
