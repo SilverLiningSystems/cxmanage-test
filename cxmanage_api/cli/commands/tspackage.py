@@ -174,7 +174,7 @@ def write_version_info(args, nodes):
 
     for node in nodes:
         lines = [
-            "[ Version Info for Node %d ]" % node.node_id,
+            "[ Version Info for Node %s ]" % node.node_id,
             "ECME IP Address     : %s" % node.ip_address
         ]
 
@@ -211,15 +211,16 @@ def write_mac_addrs(args, nodes):
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ MAC Addresses for Node %d ]" % node.node_id)
+        lines.append("\n[ MAC Addresses for Node %s ]" % node.node_id)
 
         if node in mac_addr_results:
-            for port in mac_addr_results[node][node.node_id]:
-                for mac_address in mac_addr_results[node][node.node_id][port]:
-                    lines.append(
-                        "Node %i, Port %i: %s" %
-                        (node.node_id, port, mac_address)
-                    )
+            for node_id in mac_addr_results[node]:
+                for port in mac_addr_results[node][node_id]:
+                    for mac_address in mac_addr_results[node][node_id][port]:
+                        lines.append(
+                            "Node %s, Port %i: %s" %
+                            (node.node_id, port, mac_address)
+                        )
         else:
             lines.append("\nWARNING: No MAC addresses found!")
 
@@ -234,7 +235,7 @@ def write_sensor_info(args, nodes):
                              args.sensor_name)
 
     for node in nodes:
-        lines = ["\n[ Sensors for Node %d ]" % node.node_id]
+        lines = ["\n[ Sensors for Node %s ]" % node.node_id]
 
         justify_length = max(len(x) for x in results[node]) + 1
 
@@ -256,7 +257,7 @@ def write_fwinfo(args, nodes):
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ Firmware Info for Node %d ]" % node.node_id)
+        lines.append("\n[ Firmware Info for Node %s ]" % node.node_id)
 
         if node in results:
             first_partition = True  # The first partiton doesn't need \n
@@ -287,7 +288,7 @@ def write_boot_order(args, nodes):
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ Boot Order for Node %d ]" % node.node_id)
+        lines.append("\n[ Boot Order for Node %s ]" % node.node_id)
 
         if node in results:
             lines.append(", ".join(results[node]))
@@ -304,7 +305,7 @@ def write_sel(args, nodes):
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ System Event Log for Node %d ]" % node.node_id)
+        lines.append("\n[ System Event Log for Node %s ]" % node.node_id)
 
         try:
             if node in results:
@@ -327,7 +328,7 @@ def write_depth_chart(args, nodes):
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ Depth Chart for Node %d ]" % node.node_id)
+        lines.append("\n[ Depth Chart for Node %s ]" % node.node_id)
 
         if node in depth_results:
             depth_chart = depth_results[node]
@@ -363,7 +364,7 @@ def write_routing_table(args, nodes):
     for node in nodes:
         lines = []  # Lines of text to write to file
         # \n is used here to give a blank line before this section
-        lines.append("\n[ Routing Table for Node %d ]" % node.node_id)
+        lines.append("\n[ Routing Table for Node %s ]" % node.node_id)
 
         if node in routing_results:
             table = routing_results[node]
@@ -379,7 +380,7 @@ def write_serial_log(args, nodes):
     """Write the serial log for each node"""
     results, errors = run_command(args, nodes, "read_fru", 98)
     for node in nodes:
-        lines = ["\n[ Serial log for Node %d ]" % node.node_id]
+        lines = ["\n[ Serial log for Node %s ]" % node.node_id]
         if node in results:
             lines.append(results[node].strip())
         else:
@@ -391,7 +392,7 @@ def write_crash_log(args, nodes):
     """Write the crash log for each node"""
     results, errors = run_command(args, nodes, "read_fru", 99)
     for node in nodes:
-        lines = ["\n[ Crash log for Node %d ]" % node.node_id]
+        lines = ["\n[ Crash log for Node %s ]" % node.node_id]
         if node in results:
             lines.append(results[node].strip())
         else:

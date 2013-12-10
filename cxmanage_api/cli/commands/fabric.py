@@ -49,8 +49,8 @@ def ipinfo_command(args):
     for node in nodes:
         if node in results:
             print 'IP info from %s' % node.ip_address
-            for node_id, node_address in results[node].iteritems():
-                print 'Node %i: %s' % (node_id, node_address)
+            for node_id, node_address in sorted(results[node].items()):
+                print 'Node %s: %s' % (node_id, node_address)
             print
 
     return 0
@@ -70,10 +70,10 @@ def macaddrs_command(args):
     for node in nodes:
         if node in results:
             print "MAC addresses from %s" % node.ip_address
-            for node_id in results[node]:
+            for node_id in sorted(results[node]):
                 for port in results[node][node_id]:
                     for mac_address in results[node][node_id][port]:
-                        print "Node %i, Port %i: %s" % (node_id, port,
+                        print "Node %s, Port %i: %s" % (node_id, port,
                                 mac_address)
             print
 

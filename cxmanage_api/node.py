@@ -123,7 +123,7 @@ class Node(object):
         return hash(self.ip_address)
 
     def __str__(self):
-        return 'Node %i (%s)' % (self.node_id, self.ip_address)
+        return 'Node %s (%s)' % (self.node_id, self.ip_address)
 
     @property
     def tftp_address(self):
@@ -1180,7 +1180,11 @@ communication.
                 for line in open(filename):
                     if line.strip():
                         elements = line.split()
-                        node_id = int(elements[1].rstrip(":"))
+                        node_id = elements[1].rstrip(":")
+                        try:
+                            node_id = int(node_id)
+                        except ValueError:
+                            pass
                         ip_address = elements[2]
 
                         # IP validity check

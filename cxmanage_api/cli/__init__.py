@@ -158,11 +158,8 @@ def get_nodes(args, tftp, verify_prompt=False):
 
 def get_node_strings(args, nodes, justify=False):
     """ Get string representations for the nodes. """
-    # Use the private _node_id instead of node_id. Strange choice,
-    # but we want to avoid accidentally polling the BMC.
-    # pylint: disable=W0212
-    if args.ids and all(x._node_id != None for x in nodes):
-        strings = ["Node %i (%s)" % (x._node_id, x.ip_address) for x in nodes]
+    if args.ids:
+        strings = [str(x) for x in nodes]
     else:
         strings = [x.ip_address for x in nodes]
 
