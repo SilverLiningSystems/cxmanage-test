@@ -38,7 +38,7 @@ from cxmanage_api.tasks import DEFAULT_TASK_QUEUE
 from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.node import Node as NODE
 from cxmanage_api.cx_exceptions import CommandFailedError, TimeoutError, \
-        IpmiError, TftpException
+        IpmiError, TftpException, ParseError
 
 
 # pylint: disable=R0902,R0903, R0904
@@ -243,7 +243,7 @@ class Fabric(object):
                     self._nodes = get_nodes()
                     if len(self._nodes) >= initial_node_count:
                         break
-                except (IpmiError, TftpException):
+                except (IpmiError, TftpException, ParseError):
                     pass
             else:
                 raise TimeoutError(
