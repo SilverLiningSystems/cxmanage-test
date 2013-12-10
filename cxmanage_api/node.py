@@ -50,6 +50,7 @@ from cxmanage_api.tftp import InternalTftp, ExternalTftp
 from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
+from cxmanage_api.decorators import retry
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         SocmanVersionError, FirmwareConfigError, PriorityIncrementError, \
         NoPartitionError, TransferFailure, ImageSizeError, \
@@ -904,7 +905,6 @@ updating the EEPROM
 communication.
 
         """
-
         # Clear CDB. Retry it up to 3 times.
         for _ in range(2):
             try:
@@ -1153,6 +1153,7 @@ communication.
         image = self._download_image(partition)
         return self.ubootenv(open(image.filename).read())
 
+    @retry(3, allowed_errors=(IpmiError, TftpException, ParseError))
     def get_fabric_ipinfo(self, allow_errors=False):
         """Gets what ip information THIS node knows about the Fabric.
 
@@ -1170,42 +1171,46 @@ communication.
         :raises ParseError: If we fail to parse IP info
 
         """
-        for _ in range(3):
-            try:
-                filename = self._run_fabric_command(
-                    function_name='fabric_config_get_ip_info'
-                )
-
-                results = {}
-                for line in open(filename):
-                    if line.strip():
-                        elements = line.split()
-                        node_id = elements[1].rstrip(":")
-                        try:
-                            node_id = int(node_id)
-                        except ValueError:
-                            pass
-                        ip_address = elements[2]
-
-                        # IP validity check
-                        try:
-                            socket.inet_aton(ip_address)
-                            if ip_address == "0.0.0.0":
-                                raise ValueError("Invalid IP address 0.0.0.0")
-                        except (socket.error, ValueError):
-                            if allow_errors:
-                                continue
-                            raise
-
-                        results[node_id] = ip_address
-                return results
-            except (IndexError, ValueError, socket.error):
-                pass
-
-        raise ParseError(
-            "Failed to parse fabric IP info\n%s" % open(filename).read()
+        filename = self._run_fabric_command(
+            function_name='fabric_config_get_ip_info'
         )
+        contents = open(filename).read()
 
+        results = {}
+        for line in contents.splitlines():
+            if line.strip():
+                try:
+                    elements = line.split()
+                    node_id = elements[1].rstrip(":")
+                    try:
+                        node_id = int(node_id)
+                    except ValueError:
+                        pass # may be a physical node ID, "0.0" for example
+                    ip_address = elements[2]
+                except IndexError:
+                    raise ParseError("Failed to parse ipinfo\n%s" % contents)
+
+                try:
+                    socket.inet_aton(ip_address) # IP validity check
+                except socket.error:
+                    if allow_errors:
+                        continue
+                    raise ParseError(
+                        "Invalid IP address %s\n%s" % (ip_address, contents)
+                    )
+
+                if ip_address == "0.0.0.0":
+                    if allow_errors:
+                        continue
+                    raise ParseError(
+                        "Invalid IP address 0.0.0.0\n%s" % contents
+                    )
+
+                results[node_id] = ip_address
+
+        return results
+
+    @retry(3, allowed_errors=(IpmiError, TftpException, ParseError))
     def get_fabric_macaddrs(self):
         """Gets what macaddr information THIS node knows about the Fabric.
 
@@ -1231,43 +1236,40 @@ communication.
         :raises ParseError: If we fail to parse macaddrs output
 
         """
-        for _ in range(3):
-            try:
-                filename = self._run_fabric_command(
-                    function_name='fabric_config_get_mac_addresses'
-                )
-
-                results = {}
-                for line in open(filename):
-                    if (line.startswith("Node")):
-                        elements = line.split()
-                        node_id = int(elements[1].rstrip(","))
-                        port = int(elements[3].rstrip(":"))
-                        mac_address = elements[4]
-
-                        # MAC address validity check
-                        octets = [int(x, 16) for x in mac_address.split(":")]
-                        if len(octets) != 6:
-                            raise ParseError(
-                                "Invalid MAC address: %s" % mac_address
-                            )
-                        elif not all(x <= 255 and x >= 0 for x in octets):
-                            raise ParseError(
-                                "Invalid MAC address: %s" % mac_address
-                            )
-
-                        if not node_id in results:
-                            results[node_id] = {}
-                        if not port in results[node_id]:
-                            results[node_id][port] = []
-                        results[node_id][port].append(mac_address)
-                return results
-            except (ValueError, IndexError, ParseError):
-                pass
-
-        raise ParseError(
-            "Failed to parse MAC addresses\n%s" % open(filename).read()
+        filename = self._run_fabric_command(
+            function_name='fabric_config_get_mac_addresses'
         )
+        contents = open(filename).read()
+
+        results = {}
+        for line in contents.splitlines():
+            if line.strip():
+                elements = line.split()
+                try:
+                    node_id = int(elements[1].rstrip(","))
+                    port = int(elements[3].rstrip(":"))
+                    mac_address = elements[4]
+                    octets = [int(x, 16) for x in mac_address.split(":")]
+                except (IndexError, ValueError):
+                    raise ParseError("Failed to parse macaddrs\n%s" % contents)
+
+                # MAC address validity check
+                if len(octets) != 6:
+                    raise ParseError(
+                        "Invalid MAC address %s\n%s" % (mac_address, contents)
+                    )
+                elif not all(x <= 255 and x >= 0 for x in octets):
+                    raise ParseError(
+                        "Invalid MAC address %s\n%s" % (mac_address, contents)
+                    )
+
+                if not node_id in results:
+                    results[node_id] = {}
+                if not port in results[node_id]:
+                    results[node_id][port] = []
+                results[node_id][port].append(mac_address)
+
+        return results
 
     def get_fabric_uplink_info(self):
         """Gets what uplink information THIS node knows about the Fabric.
