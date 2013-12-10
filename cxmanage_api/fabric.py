@@ -242,6 +242,8 @@ class Fabric(object):
                 try:
                     self._nodes = get_nodes()
                     if len(self._nodes) >= initial_node_count:
+                        # make sure the nodes respond to an IPMI command
+                        self._run_on_all_nodes(False, "get_power")
                         break
                 except (IpmiError, TftpException, ParseError):
                     pass
