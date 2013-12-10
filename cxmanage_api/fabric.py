@@ -33,6 +33,7 @@
 # DAMAGE.
 
 import time
+import re
 
 from cxmanage_api.tasks import DEFAULT_TASK_QUEUE
 from cxmanage_api.tftp import InternalTftp
@@ -309,6 +310,55 @@ class Fabric(object):
 
         """
         self.primary_node.bmc.fabric_config_set_uplink_mode(uplink_mode)
+
+    def get_networks(self):
+        """Gets the fabric networks
+
+        >>> fabric.get_networks()
+        {
+            'default_eth0': False,
+            'default_eth1': False,
+            'default_mgmt': False
+        }
+
+        :return: A dict mapping network to whether or not its private
+        :rtype: dict
+
+        """
+        results = {}
+        filename = self.primary_node._run_fabric_command(
+            'fabric_config_get_networks'
+        )
+        regex = re.compile('\d+ Network (\w+), private=(\d)')
+        for line in open(filename, 'r').readlines():
+            name, private = regex.findall(line)[0]
+            results[name] = (int(private) != 0)
+
+        return results
+
+    def get_uplinks(self):
+        """Gets the fabric uplinks
+
+        >>> fabric.get_uplinks()
+        {0: ['default_eth0', 'default_eth1', 'default_mgmt']}
+
+        :return: A dict mapping uplink to networks
+        :rtype: dict
+
+        """
+        results = {}
+        filename = self.primary_node._run_fabric_command(
+            'fabric_config_get_uplinks'
+        )
+        current_uplink = None
+        for line in  open(filename, 'r').readlines():
+            if('Uplink' in line):
+                current_uplink = int(line.split('Uplink ')[1].replace(':', ''))
+                results[current_uplink] = []
+            else:
+                results[current_uplink].append(line.strip())
+
+        return results
 
     def get_uplink_speed(self, async=False):
         """Gets the uplink speed of every node in the fabric.
