@@ -192,12 +192,11 @@ class FabricTest(unittest.TestCase):
 
     def test_get_server_ip(self):
         """ Test get_server_ip command """
-        self.fabric.get_server_ip("interface", "ipv6", "user", "password",
-                "aggressive")
+        self.fabric.get_server_ip("interface", "ipv6", "aggressive")
         for node in self.nodes:
-            self.assertEqual(node.method_calls, [call.get_server_ip(
-                "interface", "ipv6", "user", "password", "aggressive"
-            )])
+            self.assertEqual(node.method_calls,
+                [call.get_server_ip("interface", "ipv6", "aggressive")]
+            )
 
     def test_failed_command(self):
         """ Test a failed command """

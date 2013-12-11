@@ -38,6 +38,7 @@ import re
 from cxmanage_api.tasks import DEFAULT_TASK_QUEUE
 from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.node import Node as NODE
+from cxmanage_api.credentials import Credentials
 from cxmanage_api.cx_exceptions import CommandFailedError, TimeoutError, \
         IpmiError, TftpException, ParseError
 
@@ -51,10 +52,8 @@ class Fabric(object):
 
     :param ip_address: The ip_address of ANY known node for the Fabric.
     :type ip_address: string
-    :param username: The login username credential. [Default admin]
-    :type username: string
-    :param password: The login password credential. [Default admin]
-    :type password: string
+    :param credentials: Login credentials for ECME/Linux
+    :type credentials: Credentials
     :param tftp: Tftp server to facilitate IPMI command responses.
     :type tftp: `Tftp <tftp.html>`_
     :param task_queue: TaskQueue to use for sending commands.
@@ -113,13 +112,12 @@ class Fabric(object):
             return function
 
     # pylint: disable=R0913
-    def __init__(self, ip_address, username="admin", password="admin",
-                  tftp=None, ecme_tftp_port=5001, task_queue=None,
-                  verbose=False, node=None):
+    def __init__(self, ip_address, credentials=None, tftp=None,
+                 ecme_tftp_port=5001, task_queue=None, verbose=False,
+                 node=None):
         """Default constructor for the Fabric class."""
         self.ip_address = ip_address
-        self.username = username
-        self.password = password
+        self.credentials = Credentials(credentials)
         self._tftp = tftp
         self.ecme_tftp_port = ecme_tftp_port
         self.task_queue = task_queue
@@ -218,16 +216,15 @@ class Fabric(object):
             """Returns a dictionary of nodes reported by the primary node IP"""
             new_nodes = {}
             node = self.node(
-                ip_address=self.ip_address, username=self.username,
-                password=self.password, tftp=self.tftp,
-                ecme_tftp_port=self.ecme_tftp_port, verbose=self.verbose
+                ip_address=self.ip_address, credentials=self.credentials,
+                tftp=self.tftp, ecme_tftp_port=self.ecme_tftp_port,
+                verbose=self.verbose
             )
             ipinfo = node.get_fabric_ipinfo()
             for node_id, node_address in ipinfo.iteritems():
                 new_nodes[node_id] = self.node(
-                    ip_address=node_address, username=self.username,
-                    password=self.password, tftp=self.tftp,
-                    ecme_tftp_port=self.ecme_tftp_port,
+                    ip_address=node_address, credentials=self.credentials,
+                    tftp=self.tftp, ecme_tftp_port=self.ecme_tftp_port,
                     verbose=self.verbose
                 )
                 new_nodes[node_id].node_id = node_id
@@ -901,8 +898,8 @@ class Fabric(object):
         return self._run_on_all_nodes(async, "get_ubootenv")
 
     # pylint: disable=R0913
-    def get_server_ip(self, interface=None, ipv6=False, user="user1",
-            password="1Password", aggressive=False, async=False):
+    def get_server_ip(self, interface=None, ipv6=False, aggressive=False,
+                      async=False):
         """Get the server IP address from all nodes. The nodes must be powered
         on for this to work.
 
@@ -918,10 +915,6 @@ class Fabric(object):
         :type interface: string
         :param ipv6: Return an IPv6 address instead of IPv4.
         :type ipv6: boolean
-        :param user: Linux username.
-        :type user: string
-        :param password: Linux password.
-        :type password: string
         :param aggressive: Discover the IP aggressively (may power cycle node).
         :type aggressive: boolean
         :param async: Flag that determines if the command result (dictionary)
@@ -932,8 +925,9 @@ class Fabric(object):
         :rtype: dictionary or `Task <command.html>`_
 
         """
-        return self._run_on_all_nodes(async, "get_server_ip", interface, ipv6,
-                user, password, aggressive)
+        return self._run_on_all_nodes(
+            async, "get_server_ip", interface, ipv6, aggressive
+        )
 
     def get_ipsrc(self):
         """Return the ipsrc for the fabric.
