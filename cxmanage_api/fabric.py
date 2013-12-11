@@ -39,7 +39,7 @@ from cxmanage_api.tasks import DEFAULT_TASK_QUEUE
 from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.node import Node as NODE
 from cxmanage_api.cx_exceptions import CommandFailedError, TimeoutError, \
-        IpmiError, TftpException, ParseError
+    IpmiError, TftpException, ParseError
 
 
 # pylint: disable=R0902,R0903, R0904
@@ -114,8 +114,8 @@ class Fabric(object):
 
     # pylint: disable=R0913
     def __init__(self, ip_address, username="admin", password="admin",
-                  tftp=None, ecme_tftp_port=5001, task_queue=None,
-                  verbose=False, node=None):
+                 tftp=None, ecme_tftp_port=5001, task_queue=None,
+                 verbose=False, node=None):
         """Default constructor for the Fabric class."""
         self.ip_address = ip_address
         self.username = username
@@ -234,16 +234,22 @@ class Fabric(object):
             return new_nodes
 
         initial_node_count = len(self._nodes)
-        self._nodes = {}
 
+        if initial_node_count == 0:
+            self._nodes = get_nodes()
+            self._run_on_all_nodes(False, "get_power")
+            return
+        new_nodes = dict(
+            [(node.guid, node) for node in get_nodes().values()]
+        )
         if wait:
             deadline = time.time() + timeout
             while time.time() < deadline:
                 try:
-                    self._nodes = get_nodes()
-                    if len(self._nodes) >= initial_node_count:
-                        # make sure the nodes respond to an IPMI command
-                        self._run_on_all_nodes(False, "get_power")
+                    new_nodes = dict(
+                        [(node.guid, node)for node in get_nodes().values()]
+                    )
+                    if len(new_nodes) >= initial_node_count:
                         break
                 except (IpmiError, TftpException, ParseError):
                     pass
@@ -252,8 +258,20 @@ class Fabric(object):
                     "Fabric refresh timed out. Rediscovered %i of %i nodes"
                     % (len(self._nodes), initial_node_count)
                 )
-        else:
-            self._nodes = get_nodes()
+
+        old_nodes = self._nodes
+        for old_node_key in old_nodes.keys():
+            old_node = old_nodes(old_node_key)
+            if old_node.guid in new_nodes:
+                old_node.refresh(new_nodes[old_node.guid])
+                del new_nodes[old_node.guid]
+            else:
+                del self._nodes[old_node_key]
+
+        for new_node in new_nodes.values():
+            self._nodes[new_node.node_id] = new_node
+
+        self._run_on_all_nodes(False, "get_power")
 
     def get_mac_addresses(self):
         """Gets MAC addresses from all nodes.
@@ -689,7 +707,7 @@ class Fabric(object):
         return self._run_on_all_nodes(async, "get_firmware_info_dict")
 
     def is_updatable(self, package, partition_arg="INACTIVE", priority=None,
-                       async=False):
+                     async=False):
         """Checks to see if all nodes can be updated with this fw package.
 
         >>> fabric.is_updatable(package=fwpkg)
@@ -711,10 +729,10 @@ class Fabric(object):
 
         """
         return self._run_on_all_nodes(async, "is_updatable", package,
-                                 partition_arg, priority)
+                                      partition_arg, priority)
 
     def update_firmware(self, package, partition_arg="INACTIVE",
-                          priority=None, async=False):
+                        priority=None, async=False):
         """Updates the firmware on all nodes.
 
         >>> fabric.update_firmware(package=fwpkg)
@@ -730,7 +748,7 @@ class Fabric(object):
         :type async: boolean
         """
         self._run_on_all_nodes(async, "update_firmware", package,
-                          partition_arg, priority)
+                               partition_arg, priority)
 
     def config_reset(self, async=False):
         """Resets the configuration on all nodes to factory defaults.
@@ -904,7 +922,7 @@ class Fabric(object):
 
         """
         return self._run_on_all_nodes(asynchronous, "ipmitool_command",
-                                 ipmitool_args)
+                                      ipmitool_args)
 
     def get_ubootenv(self, async=False):
         """Gets the u-boot environment from all nodes.
@@ -929,7 +947,7 @@ class Fabric(object):
 
     # pylint: disable=R0913
     def get_server_ip(self, interface=None, ipv6=False, user="user1",
-            password="1Password", aggressive=False, async=False):
+                      password="1Password", aggressive=False, async=False):
         """Get the server IP address from all nodes. The nodes must be powered
         on for this to work.
 
@@ -960,7 +978,7 @@ class Fabric(object):
 
         """
         return self._run_on_all_nodes(async, "get_server_ip", interface, ipv6,
-                user, password, aggressive)
+                                      user, password, aggressive)
 
     def get_ipsrc(self):
         """Return the ipsrc for the fabric.
@@ -1049,7 +1067,7 @@ class Fabric(object):
 
         """
         self.primary_node.bmc.fabric_add_macaddr(nodeid=nodeid, iface=iface,
-                macaddr=macaddr)
+                                                 macaddr=macaddr)
 
     def rm_macaddr(self, nodeid, iface, macaddr):
         """Remove a macaddr to a node/interface in the fabric.
@@ -1065,7 +1083,7 @@ class Fabric(object):
 
         """
         self.primary_node.bmc.fabric_rm_macaddr(nodeid=nodeid, iface=iface,
-                macaddr=macaddr)
+                                                macaddr=macaddr)
 
     def set_macaddr_base(self, macaddr):
         """ Set a base MAC address for a custom range.
@@ -1193,7 +1211,7 @@ class Fabric(object):
 
         """
         self.primary_node.bmc.fabric_config_set_uplink(uplink=uplink,
-                iface=iface)
+                                                       iface=iface)
 
     def get_link_stats(self, link=0, async=False):
         """Get the link_stats for each node in the fabric.
