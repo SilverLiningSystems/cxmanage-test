@@ -85,8 +85,9 @@ def main():
 
     fabric = cxmanage_api.fabric.Fabric(
         ip_address=args.ecmeip,
-        username=args.user,
-        password=args.password
+        credentials={
+            "ecme_username": args.user, "ecme_password": args.password
+        }
     )
     ips = [node.ip_address for node in fabric.nodes.values()]
     if args.ssh:

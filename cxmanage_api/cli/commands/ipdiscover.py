@@ -42,8 +42,9 @@ def ipdiscover_command(args):
     if not args.quiet:
         print 'Getting server-side IP addresses...'
 
-    results, errors = run_command(args, nodes, 'get_server_ip', args.interface,
-            args.ipv6, args.server_user, args.server_password, args.aggressive)
+    results, errors = run_command(
+        args, nodes, 'get_server_ip', args.interface, args.ipv6, args.aggressive
+    )
 
     if results:
         node_strings = get_node_strings(args, results, justify=True)
