@@ -54,7 +54,8 @@ from cxmanage_api.decorators import retry
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         SocmanVersionError, FirmwareConfigError, PriorityIncrementError, \
         NoPartitionError, TransferFailure, ImageSizeError, \
-        PartitionInUseError, UbootenvError, EEPROMUpdateError, ParseError
+        PartitionInUseError, UbootenvError, EEPROMUpdateError, ParseError, \
+        NodeMismatchError
 
 
 # pylint: disable=R0902, R0904
@@ -118,10 +119,10 @@ class Node(object):
         self._guid = None
 
     def __eq__(self, other):
-        return isinstance(other, Node) and self.ip_address == other.ip_address
+        return isinstance(other, Node) and self.guid == other.guid
 
     def __hash__(self):
-        return hash(self.ip_address)
+        return hash(self.guid)
 
     def __str__(self):
         return 'Node %s (%s)' % (self.node_id, self.ip_address)
@@ -179,6 +180,24 @@ class Node(object):
 
         """
         self._node_id = value
+
+    def refresh(self, new_node):
+        """ Updates mutable properties for this node, based from another node
+        object.
+
+        :param updated_node: The node we want to update from.
+        :type updated_node: Node
+
+        :raises NodeMismatchError: If the passed in node does not match this
+        node.
+
+        """
+        if not isinstance(new_node, Node) or not new_node.guid == self.guid:
+            raise NodeMismatchError(
+                'Passed in node does not match node to be updated'
+            )
+        self.ip_address = new_node.ip_address
+        self.node_id = new_node.node_id
 
     def get_mac_addresses(self):
         """Gets a dictionary of MAC addresses for this node. The dictionary
