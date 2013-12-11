@@ -378,9 +378,9 @@ class Fabric(object):
         self.primary_node.bmc.fabric_config_rm_network(name=name)
 
     def unassign_network_from_uplink(self, name, uplink):
-        """Unassigns the network to the uplink
+        """Unassigns the network from the uplink
 
-        >>> fabric.unassign_network_to_uplink('foo', 0)
+        >>> fabric.unassign_network_from_uplink('foo', 0)
 
         :param name: The network name
         :type name: str
