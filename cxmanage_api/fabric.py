@@ -336,6 +336,25 @@ class Fabric(object):
 
         return results
 
+    def add_network(self, name):
+        """Adds a network to the fabric
+
+        >>> fabric.add_network('foo')
+
+        """
+        self.primary_node.bmc.fabric_config_add_network(name=name)
+
+    def assign_network_to_uplink(self, name, uplink):
+        """Assigns the network to the uplink
+
+        >>> fabric.assign_network_to_uplink('foo', 0)
+
+        """
+        self.primary_node.bmc.fabric_config_add_network(
+            name=name,
+            uplink=uplink
+        )
+
     def get_uplinks(self):
         """Gets the fabric uplinks
 
