@@ -296,6 +296,32 @@ class InvalidImageError(Exception):
         return self.msg
 
 
+class NodeMismatchError(Exception):
+    """Raised when a node that is supposed to be an updated version of the
+    current node is not.
+
+    >>> from cxmanage_api.cx_exceptions import NodeMismatchError
+    >>> raise InvalidImageError('My custom exception text!')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    cxmanage_api.cx_exceptions.InvalidImageError: My custom exception text!
+
+    :param msg: Exceptions message and details to return to the user.
+    :type msg: string
+    :raised: When a node passed in to refresh() another node does not match.
+
+    """
+
+    def __init__(self, msg):
+        """Default constructor for the NodeMismatchError class."""
+        super(NodeMismatchError, self).__init__()
+        self.msg = msg
+
+    def __str__(self):
+        """String representation of this Exception class."""
+        return self.msg
+
+
 class UbootenvError(Exception):
     """Raised when the UbootEnv class fails to interpret the ubootenv
     environment variables.
