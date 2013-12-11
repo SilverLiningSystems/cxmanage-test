@@ -1185,13 +1185,13 @@ communication.
                     try:
                         node_id = int(node_id)
                     except ValueError:
-                        pass # may be a physical node ID, "0.0" for example
+                        pass  # may be a physical node ID, "0.0" for example
                     ip_address = elements[2]
                 except IndexError:
                     raise ParseError("Failed to parse ipinfo\n%s" % contents)
 
                 try:
-                    socket.inet_aton(ip_address) # IP validity check
+                    socket.inet_aton(ip_address)  # IP validity check
                 except socket.error:
                     if allow_errors:
                         continue
@@ -1583,27 +1583,6 @@ obtained.
         for iface_map in uplink_info.split(', '):
             iface_map_split = iface_map.split(' ')
             results[iface_map_split[0]] = int(iface_map_split[1])
-
-        return results
-
-    def get_uplink_status(self):
-        """Get the uplink status for this node
-
-        >>> node.get_uplink_status()
-        {0: True, 1: False, 2: True, 3: True}
-
-        :return: A dictionary mapping uplink to status
-        :rtype: dict
-
-        """
-        results = {}
-        uplink_status = self.bmc.fabric_get_uplink_status()
-        regex = re.compile(r'U(\d+)\(N\d+\) (\w+):')
-        for uplink, status in regex.findall(uplink_status):
-            if(status == 'Good'):
-                results[uplink] = True
-            else:
-                results[uplink] = False
 
         return results
 

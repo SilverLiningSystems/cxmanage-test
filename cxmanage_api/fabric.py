@@ -601,6 +601,27 @@ class Fabric(object):
         """
         return self._run_on_all_nodes(async, "get_sensors", search)
 
+    def get_uplink_status(self):
+        """Get the uplink status for this node
+
+        >>> node.get_uplink_status()
+        {0: True, 1: False, 2: True, 3: True}
+
+        :return: A dictionary mapping uplink to status
+        :rtype: dict
+
+        """
+        results = {}
+        uplink_status = self.primary_node.bmc.fabric_get_uplink_status()
+        regex = re.compile(r'U(\d+)\(N\d+\) (\w+):')
+        for uplink, status in regex.findall(uplink_status):
+            if(status == 'Good'):
+                results[uplink] = True
+            else:
+                results[uplink] = False
+
+        return results
+
     def get_firmware_info(self, async=False):
         """Gets the firmware info from all nodes.
 
