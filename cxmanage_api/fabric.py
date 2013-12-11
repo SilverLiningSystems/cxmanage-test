@@ -393,6 +393,37 @@ class Fabric(object):
             uplink=uplink
         )
 
+    def assign_interface_to_network(self, interface, network):
+        """Assigns the interface to the network
+
+        >>> fabric.assign_interface_to_network(0, 'foo')
+
+        :param interface: The network interface (0, 1 or 2)
+        :type interface: int
+        :param network: The network name
+        :type network: str
+
+        """
+        self.primary_node.bmc.fabric_config_set_mac(
+            mac=interface,
+            network=network
+        )
+
+    def get_network_assignment(self, interface):
+        """Returns the network the given interface is assigned to
+
+        >>> fabric.get_network_assignment(0)
+        'default_eth0'
+
+        :param interface: The network interface (0, 1 or 2)
+        :type interface: int
+
+        """
+        return self.primary_node.bmc.fabric_config_get_mac_network(
+            mac=interface
+        )
+
+
     def get_uplinks(self):
         """Gets the fabric uplinks
 
