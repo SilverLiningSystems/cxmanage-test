@@ -237,18 +237,16 @@ class Fabric(object):
 
         if initial_node_count == 0:
             self._nodes = get_nodes()
-            self._run_on_all_nodes(False, "get_power")
+            self.get_power()
             return
-        new_nodes = dict(
-            [(node.guid, node) for node in get_nodes().values()]
-        )
+
+        new_nodes = {node.guid: node for node in get_nodes().values()}
         if wait:
             deadline = time.time() + timeout
             while time.time() < deadline:
                 try:
-                    new_nodes = dict(
-                        [(node.guid, node)for node in get_nodes().values()]
-                    )
+                    new_nodes = {node.guid: node
+                                 for node in get_nodes().values()}
                     if len(new_nodes) >= initial_node_count:
                         break
                 except (IpmiError, TftpException, ParseError):
@@ -256,12 +254,11 @@ class Fabric(object):
             else:
                 raise TimeoutError(
                     "Fabric refresh timed out. Rediscovered %i of %i nodes"
-                    % (len(self._nodes), initial_node_count)
+                    % (len(new_nodes), initial_node_count)
                 )
 
         old_nodes = self._nodes
-        for old_node_key in old_nodes.keys():
-            old_node = old_nodes(old_node_key)
+        for old_node_key, old_node in old_nodes.items():
             if old_node.guid in new_nodes:
                 old_node.refresh(new_nodes[old_node.guid])
                 del new_nodes[old_node.guid]
@@ -271,7 +268,7 @@ class Fabric(object):
         for new_node in new_nodes.values():
             self._nodes[new_node.node_id] = new_node
 
-        self._run_on_all_nodes(False, "get_power")
+        self.get_power()
 
     def get_mac_addresses(self):
         """Gets MAC addresses from all nodes.
