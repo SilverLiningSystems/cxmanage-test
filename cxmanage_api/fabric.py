@@ -308,6 +308,9 @@ class Fabric(object):
 
         >>> fabric.set_uplink_mode(uplink_mode=0)
 
+        :param uplink_mode: The uplink_mode
+        :type uplink_mode: int
+
         """
         self.primary_node.bmc.fabric_config_set_uplink_mode(uplink_mode)
 
@@ -341,6 +344,9 @@ class Fabric(object):
 
         >>> fabric.add_network('foo')
 
+        :param name: The network name
+        :type name: str
+
         """
         self.primary_node.bmc.fabric_config_add_network(name=name)
 
@@ -349,8 +355,40 @@ class Fabric(object):
 
         >>> fabric.assign_network_to_uplink('foo', 0)
 
+        :param name: The network name
+        :type name: str
+        :param uplink: The uplink number
+        :type uplink: int
+
         """
         self.primary_node.bmc.fabric_config_add_network(
+            name=name,
+            uplink=uplink
+        )
+
+    def remove_network(self, name):
+        """Adds a network to the fabric
+
+        >>> fabric.remobe_network('foo')
+
+        :param name: The network name
+        :type name: str
+
+        """
+        self.primary_node.bmc.fabric_config_rm_network(name=name)
+
+    def unassign_network_to_uplink(self, name, uplink):
+        """Unassigns the network to the uplink
+
+        >>> fabric.unassign_network_to_uplink('foo', 0)
+
+        :param name: The network name
+        :type name: str
+        :param uplink: The uplink number
+        :type uplink: int
+
+        """
+        self.primary_node.bmc.fabric_config_rm_network(
             name=name,
             uplink=uplink
         )
