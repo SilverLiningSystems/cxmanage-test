@@ -419,7 +419,7 @@ class Fabric(object):
         :type interface: int
 
         """
-        return self.primary_node.bmc.fabric_config_get_mac_network(
+        return self.primary_node.bmc.fabric_config_get_network_mac(
             mac=interface
         )
 
