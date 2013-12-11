@@ -339,16 +339,21 @@ class Fabric(object):
 
         return results
 
-    def add_network(self, name):
+    def add_network(self, name, private=False):
         """Adds a network to the fabric
 
         >>> fabric.add_network('foo')
 
         :param name: The network name
         :type name: str
+        :param private: Whether or not the network is private
+        :type private: bool
 
         """
-        self.primary_node.bmc.fabric_config_add_network(name=name)
+        self.primary_node.bmc.fabric_config_add_network(
+            name=name,
+            private=private
+        )
 
     def assign_network_to_uplink(self, name, uplink):
         """Assigns the network to the uplink
