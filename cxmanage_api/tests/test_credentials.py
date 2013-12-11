@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -30,24 +28,42 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-
 import unittest
-import xmlrunner
 
-from cxmanage_api.tests import tftp_test, image_test, node_test, fabric_test, \
-        tasks_test, dummy_test, test_credentials
-test_modules = [
-    tftp_test, image_test, node_test, fabric_test, tasks_test, dummy_test,
-    test_credentials
-]
+from cxmanage_api.credentials import Credentials
 
-def main():
-    """ Load and run tests """
-    loader = unittest.TestLoader()
-    suite = unittest.TestSuite()
-    for module in test_modules:
-        suite.addTest(loader.loadTestsFromModule(module))
-    xmlrunner.XMLTestRunner(verbosity=2).run(suite)
 
-if __name__ == "__main__":
-    main()
+class TestCredentials(unittest.TestCase):
+    """ Unit tests for the Credentials class """
+    def test_default(self):
+        """ Test default Credentials object """
+        creds = Credentials()
+        self.assertEqual(vars(creds), Credentials.defaults)
+
+    def test_from_dict(self):
+        """ Test Credentials instantiated with a dict """
+        creds = Credentials({"linux_password": "foo"})
+        expected = dict(Credentials.defaults)
+        expected["linux_password"] = "foo"
+        self.assertEqual(vars(creds), expected)
+
+    def test_from_kwargs(self):
+        """ Test Credentials instantiated with kwargs """
+        creds = Credentials(linux_password="foo")
+        expected = dict(Credentials.defaults)
+        expected["linux_password"] = "foo"
+        self.assertEqual(vars(creds), expected)
+
+    def test_from_credentials(self):
+        """ Test Credentials instantiated with other Credentials """
+        creds = Credentials(Credentials(linux_password="foo"))
+        expected = dict(Credentials.defaults)
+        expected["linux_password"] = "foo"
+        self.assertEqual(vars(creds), expected)
+
+    def test_fails_on_invalid(self):
+        """ Test that we don't allow unrecognized credentials """
+        with self.assertRaises(ValueError):
+            Credentials({"desire_to_keep_going": "Very Low"})
+        with self.assertRaises(ValueError):
+            Credentials(magical_mystery_cure="Writing silly strings!")

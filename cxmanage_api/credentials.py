@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -31,23 +29,28 @@
 # DAMAGE.
 
 
-import unittest
-import xmlrunner
+class Credentials(object):
+    """ Container for login credentials """
+    defaults = {
+        "ecme_username": "admin",
+        "ecme_password": "admin",
+        "linux_username": "user1",
+        "linux_password": "1Password"
+    }
 
-from cxmanage_api.tests import tftp_test, image_test, node_test, fabric_test, \
-        tasks_test, dummy_test, test_credentials
-test_modules = [
-    tftp_test, image_test, node_test, fabric_test, tasks_test, dummy_test,
-    test_credentials
-]
+    def __init__(self, base=None, **kwargs):
+        self.__dict__.update(self.defaults)
+        if isinstance(base, Credentials):
+            self.__dict__.update(vars(base))
+        elif base != None:
+            self.__dict__.update(base)
+        self.__dict__.update(kwargs)
 
-def main():
-    """ Load and run tests """
-    loader = unittest.TestLoader()
-    suite = unittest.TestSuite()
-    for module in test_modules:
-        suite.addTest(loader.loadTestsFromModule(module))
-    xmlrunner.XMLTestRunner(verbosity=2).run(suite)
+        for key in self.__dict__:
+            if not key in self.defaults:
+                raise ValueError("Invalid credential key: %s" % key)
 
-if __name__ == "__main__":
-    main()
+    def __repr__(self):
+        return "Credentials(%s)" % (", ".join(
+            "%r: %r" % (key, value) for (key, value) in vars(self).items()
+        ))
