@@ -333,9 +333,15 @@ class Fabric(object):
             'fabric_config_get_networks'
         )
         regex = re.compile('\d+ Network (\w+), private=(\d)')
-        for line in open(filename, 'r').readlines():
-            name, private = regex.findall(line)[0]
-            results[name] = (int(private) != 0)
+        contents = open(filename, 'r').readlines()
+        for line in contents:
+            try:
+                name, private = regex.findall(line)[0]
+                results[name] = (int(private) != 0)
+            except IndexError:
+                raise CommandFailedException(
+                    'Unable to parse networks: %s' % '\n'.join(contents)
+                )
 
         return results
 
