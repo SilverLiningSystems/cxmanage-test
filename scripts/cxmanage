@@ -85,6 +85,10 @@ FWUPDATE_IMAGE_TYPES = ['PACKAGE'] + sorted([
     'BOOT_LOG',
     'UEFI_ENV',
     'DIAG_ELF',
+    'XACTION_LOG',
+    'ROM_INFO',
+    'PARTITION_TABLE',
+    'LUAMAN',
 ])
 
 EEPROMUPDATE_EPILOG = """examples:
