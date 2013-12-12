@@ -61,7 +61,7 @@ class Logger(object):
     the write() method so that it writes message in the appropriate manner.
 
     >>> # To use this class for inheritance ...
-    >>> from cx_automation.loggers import Logger
+    >>> from cxmanage_api.loggers import Logger
     >>>
 
     :param log_level: Verbosity level of logging for this logger.
@@ -193,7 +193,7 @@ class StandardOutLogger(Logger):
     Only the write method has to be implemented.
 
     >>> # Typical instantiation ...
-    >>> from cx_automation.loggers import StandardOutLogger
+    >>> from cxmanage_api.loggers import StandardOutLogger
     >>> logger = StandardOutLogger()
 
 
@@ -287,13 +287,13 @@ class FileLogger(Logger):
 class CompositeLogger(object):
     """Takes a list of loggers and writes the same output to them all.
 
-    >>> from cx_automation.loggers import StandardOutLogger, FileLogger
+    >>> from cxmanage_api.loggers import StandardOutLogger, FileLogger
     >>> # Let's say you want to log to a file while also seeing the output.
     >>> # Create a StandardOutLogger to 'see' output.
     >>> slogger = StandarOutLogger(...)
     >>> # Create a FileLogger to log to a file.
     >>> flogger = FileLogger(...)
-    >>> from cx_automation.loggers import CompositeLogger
+    >>> from cxmanage_api.loggers import CompositeLogger
     >>> # Create a composite logger and you can log to both simultaneously!
     >>> logger = CompositeLogger(loggers=[slogger, flogger])
 
