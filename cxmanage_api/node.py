@@ -119,10 +119,10 @@ class Node(object):
         self._guid = None
 
     def __eq__(self, other):
-        return isinstance(other, Node) and self.guid == other.guid
+        return isinstance(other, Node) and self.ip_address == other.ip_address
 
     def __hash__(self):
-        return hash(self.guid)
+        return hash(self.ip_address)
 
     def __str__(self):
         return 'Node %s (%s)' % (self.node_id, self.ip_address)

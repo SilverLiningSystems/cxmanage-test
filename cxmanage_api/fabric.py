@@ -217,36 +217,31 @@ class Fabric(object):
         def get_nodes():
             """Returns a dictionary of nodes reported by the primary node IP"""
             new_nodes = {}
-            node = self.node(
+            root_node = self.node(
                 ip_address=self.ip_address, username=self.username,
                 password=self.password, tftp=self.tftp,
                 ecme_tftp_port=self.ecme_tftp_port, verbose=self.verbose
             )
-            ipinfo = node.get_fabric_ipinfo()
-            for node_id, node_address in ipinfo.iteritems():
-                new_nodes[node_id] = self.node(
+            ipinfo = root_node.get_fabric_ipinfo()
+            for node_id, node_address in ipinfo.items():
+                node = self.node(
                     ip_address=node_address, username=self.username,
                     password=self.password, tftp=self.tftp,
                     ecme_tftp_port=self.ecme_tftp_port,
                     verbose=self.verbose
                 )
-                new_nodes[node_id].node_id = node_id
+                node.node_id = node_id
+                new_nodes[node.guid] = node
             return new_nodes
 
         initial_node_count = len(self._nodes)
+        old_nodes = {node.guid: node for node in self._nodes.values()}
 
-        if initial_node_count == 0:
-            self._nodes = get_nodes()
-            self.get_power()
-            return
-
-        new_nodes = {node.guid: node for node in get_nodes().values()}
         if wait:
             deadline = time.time() + timeout
             while time.time() < deadline:
                 try:
-                    new_nodes = {node.guid: node
-                                 for node in get_nodes().values()}
+                    new_nodes = get_nodes()
                     if len(new_nodes) >= initial_node_count:
                         break
                 except (IpmiError, TftpException, ParseError):
@@ -256,19 +251,15 @@ class Fabric(object):
                     "Fabric refresh timed out. Rediscovered %i of %i nodes"
                     % (len(new_nodes), initial_node_count)
                 )
+        else:
+            new_nodes = get_nodes()
 
-        old_nodes = self._nodes
-        for old_node_key, old_node in old_nodes.items():
-            if old_node.guid in new_nodes:
-                old_node.refresh(new_nodes[old_node.guid])
-                del new_nodes[old_node.guid]
-            else:
-                del self._nodes[old_node_key]
+        for guid, node in new_nodes.items():
+            if guid in old_nodes:
+                old_nodes[guid].refresh(node)
+                new_nodes[guid] = old_nodes[guid]
 
-        for new_node in new_nodes.values():
-            self._nodes[new_node.node_id] = new_node
-
-        self.get_power()
+        self._nodes = {node.node_id: node for node in new_nodes.values()}
 
     def get_mac_addresses(self):
         """Gets MAC addresses from all nodes.
