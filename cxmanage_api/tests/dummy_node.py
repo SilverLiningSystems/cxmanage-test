@@ -128,8 +128,7 @@ class DummyNode(Dummy):
         return {}
 
     # pylint: disable=R0913
-    def get_server_ip(self, interface=None, ipv6=False, user="user1",
-            password="1Password", aggressive=False):
+    def get_server_ip(self, interface=None, ipv6=False, aggressive=False):
         """Simulate get_server_ip(). """
         return "192.168.200.1"
 

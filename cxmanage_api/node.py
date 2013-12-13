@@ -51,6 +51,7 @@ from cxmanage_api.image import Image as IMAGE
 from cxmanage_api.ubootenv import UbootEnv as UBOOTENV
 from cxmanage_api.ip_retriever import IPRetriever as IPRETRIEVER
 from cxmanage_api.decorators import retry
+from cxmanage_api.credentials import Credentials
 from cxmanage_api.cx_exceptions import TimeoutError, NoSensorError, \
         SocmanVersionError, FirmwareConfigError, PriorityIncrementError, \
         NoPartitionError, TransferFailure, ImageSizeError, \
@@ -68,10 +69,8 @@ class Node(object):
 
     :param ip_address: The ip_address of the Node.
     :type ip_address: string
-    :param username: The login username credential. [Default admin]
-    :type username: string
-    :param password: The login password credential. [Default admin]
-    :type password: string
+    :param credentials: Login credentials for ECME/Linux
+    :type credentials: Credentials
     :param tftp: The internal/external TFTP server to use for data xfer.
     :type tftp: `Tftp <tftp.html>`_
     :param verbose: Flag to turn on verbose output (cmd/response).
@@ -85,9 +84,9 @@ class Node(object):
 
     """
     # pylint: disable=R0913
-    def __init__(self, ip_address, username="admin", password="admin",
-                  tftp=None, ecme_tftp_port=5001, verbose=False, bmc=None,
-                  image=None, ubootenv=None, ipretriever=None):
+    def __init__(self, ip_address, credentials=None, tftp=None,
+                 ecme_tftp_port=5001, verbose=False, bmc=None, image=None,
+                 ubootenv=None, ipretriever=None):
         """Default constructor for the Node class."""
         if (not tftp):
             tftp = InternalTftp.default()
@@ -103,14 +102,15 @@ class Node(object):
             ipretriever = IPRETRIEVER
 
         self.ip_address = ip_address
-        self.username = username
-        self.password = password
+        self.credentials = Credentials(credentials)
         self.tftp = tftp
         self.ecme_tftp = ExternalTftp(ip_address, ecme_tftp_port)
         self.verbose = verbose
 
-        self.bmc = make_bmc(bmc, hostname=ip_address, username=username,
-                            password=password, verbose=verbose)
+        self.bmc = make_bmc(
+            bmc, hostname=ip_address, username=self.credentials.ecme_username,
+            password=self.credentials.ecme_password, verbose=verbose
+        )
         self.image = image
         self.ubootenv = ubootenv
         self.ipretriever = ipretriever
@@ -1143,8 +1143,11 @@ communication.
         else:
             command = ["ipmitool"]
 
-        command += ["-U", self.username, "-P", self.password, "-H",
-                self.ip_address]
+        command += [
+            "-U", self.credentials.ecme_username,
+            "-P", self.credentials.ecme_password,
+            "-H", self.ip_address
+        ]
         command += ipmitool_args
 
         if (self.verbose):
@@ -1481,8 +1484,7 @@ communication.
 
         return results
 
-    def get_server_ip(self, interface=None, ipv6=False, user="user1",
-            password="1Password", aggressive=False):
+    def get_server_ip(self, interface=None, ipv6=False, aggressive=False):
         """Get the IP address of the Linux server. The server must be powered
         on for this to work.
 
@@ -1493,10 +1495,6 @@ communication.
         :type interface: string
         :param ipv6: Return an IPv6 address instead of IPv4.
         :type ipv6: boolean
-        :param user: Linux username.
-        :type user: string
-        :param password: Linux password.
-        :type password: string
         :param aggressive: Discover the IP aggressively (may power cycle node).
         :type aggressive: boolean
 
@@ -1509,9 +1507,12 @@ obtained.
 
         """
         verbosity = 2 if self.verbose else 0
-        retriever = self.ipretriever(self.ip_address, aggressive=aggressive,
-                verbosity=verbosity, server_user=user, server_password=password,
-                interface=interface, ipv6=ipv6, bmc=self.bmc)
+        retriever = self.ipretriever(
+            self.ip_address, aggressive=aggressive, verbosity=verbosity,
+            server_user=self.credentials.linux_username,
+            server_password=self.credentials.linux_password,
+            interface=interface, ipv6=ipv6, bmc=self.bmc
+        )
         retriever.run()
         return retriever.server_ip
 

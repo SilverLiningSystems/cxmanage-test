@@ -1,6 +1,3 @@
-"""Calxeda: ipdiscover.py"""
-
-
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -31,30 +28,42 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage_api.cli import get_tftp, get_nodes, get_node_strings, run_command
+import unittest
+
+from cxmanage_api.credentials import Credentials
 
 
-def ipdiscover_command(args):
-    """discover server IP addresses"""
-    tftp = get_tftp(args)
-    nodes = get_nodes(args, tftp)
+class TestCredentials(unittest.TestCase):
+    """ Unit tests for the Credentials class """
+    def test_default(self):
+        """ Test default Credentials object """
+        creds = Credentials()
+        self.assertEqual(vars(creds), Credentials.defaults)
 
-    if not args.quiet:
-        print 'Getting server-side IP addresses...'
+    def test_from_dict(self):
+        """ Test Credentials instantiated with a dict """
+        creds = Credentials({"linux_password": "foo"})
+        expected = dict(Credentials.defaults)
+        expected["linux_password"] = "foo"
+        self.assertEqual(vars(creds), expected)
 
-    results, errors = run_command(
-        args, nodes, 'get_server_ip', args.interface, args.ipv6, args.aggressive
-    )
+    def test_from_kwargs(self):
+        """ Test Credentials instantiated with kwargs """
+        creds = Credentials(linux_password="foo")
+        expected = dict(Credentials.defaults)
+        expected["linux_password"] = "foo"
+        self.assertEqual(vars(creds), expected)
 
-    if results:
-        node_strings = get_node_strings(args, results, justify=True)
-        print 'IP addresses (ECME, Server)'
-        for node in nodes:
-            if node in results:
-                print '%s: %s' % (node_strings[node], results[node])
-        print
+    def test_from_credentials(self):
+        """ Test Credentials instantiated with other Credentials """
+        creds = Credentials(Credentials(linux_password="foo"))
+        expected = dict(Credentials.defaults)
+        expected["linux_password"] = "foo"
+        self.assertEqual(vars(creds), expected)
 
-    if not args.quiet and errors:
-        print 'Some errors occurred during the command.'
-
-    return len(errors) > 0
+    def test_fails_on_invalid(self):
+        """ Test that we don't allow unrecognized credentials """
+        with self.assertRaises(ValueError):
+            Credentials({"desire_to_keep_going": "Very Low"})
+        with self.assertRaises(ValueError):
+            Credentials(magical_mystery_cure="Writing silly strings!")

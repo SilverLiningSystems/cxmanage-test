@@ -100,9 +100,20 @@ def get_nodes(args, tftp, verify_prompt=False):
     for entry in args.hostname.split(','):
         hosts.extend(parse_host_entry(entry))
 
-    nodes = [Node(ip_address=x, username=args.user, password=args.password,
-            tftp=tftp, ecme_tftp_port=args.ecme_tftp_port,
-            verbose=args.verbose) for x in hosts]
+    credentials = {
+        "ecme_username": args.user,
+        "ecme_password": args.password,
+        "linux_username": args.linux_username,
+        "linux_password": args.linux_password
+    }
+
+    nodes = [
+        Node(
+            ip_address=x, credentials=credentials, tftp=tftp,
+            ecme_tftp_port=args.ecme_tftp_port, verbose=args.verbose
+        )
+        for x in hosts
+    ]
 
     if args.all_nodes:
         if not args.quiet:
@@ -116,10 +127,11 @@ def get_nodes(args, tftp, verify_prompt=False):
         for node in nodes:
             if node in results:
                 for node_id, ip_address in sorted(results[node].iteritems()):
-                    new_node = Node(ip_address=ip_address, username=args.user,
-                            password=args.password, tftp=tftp,
-                            ecme_tftp_port=args.ecme_tftp_port,
-                            verbose=args.verbose)
+                    new_node = Node(
+                        ip_address=ip_address, credentials=credentials,
+                        tftp=tftp, ecme_tftp_port=args.ecme_tftp_port,
+                        verbose=args.verbose
+                    )
                     new_node.node_id = node_id
                     if not new_node in all_nodes:
                         all_nodes.append(new_node)

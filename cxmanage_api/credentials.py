@@ -1,6 +1,3 @@
-"""Calxeda: ipdiscover.py"""
-
-
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -31,30 +28,29 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-from cxmanage_api.cli import get_tftp, get_nodes, get_node_strings, run_command
 
+class Credentials(object):
+    """ Container for login credentials """
+    defaults = {
+        "ecme_username": "admin",
+        "ecme_password": "admin",
+        "linux_username": "user1",
+        "linux_password": "1Password"
+    }
 
-def ipdiscover_command(args):
-    """discover server IP addresses"""
-    tftp = get_tftp(args)
-    nodes = get_nodes(args, tftp)
+    def __init__(self, base=None, **kwargs):
+        self.__dict__.update(self.defaults)
+        if isinstance(base, Credentials):
+            self.__dict__.update(vars(base))
+        elif base != None:
+            self.__dict__.update(base)
+        self.__dict__.update(kwargs)
 
-    if not args.quiet:
-        print 'Getting server-side IP addresses...'
+        for key in self.__dict__:
+            if not key in self.defaults:
+                raise ValueError("Invalid credential key: %s" % key)
 
-    results, errors = run_command(
-        args, nodes, 'get_server_ip', args.interface, args.ipv6, args.aggressive
-    )
-
-    if results:
-        node_strings = get_node_strings(args, results, justify=True)
-        print 'IP addresses (ECME, Server)'
-        for node in nodes:
-            if node in results:
-                print '%s: %s' % (node_strings[node], results[node])
-        print
-
-    if not args.quiet and errors:
-        print 'Some errors occurred during the command.'
-
-    return len(errors) > 0
+    def __repr__(self):
+        return "Credentials(%s)" % (", ".join(
+            "%r: %r" % (key, value) for (key, value) in vars(self).items()
+        ))
