@@ -28,6 +28,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+""" Module for the generic Dummy class """
+
 from mock import Mock
 
 

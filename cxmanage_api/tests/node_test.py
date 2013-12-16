@@ -1,6 +1,4 @@
-# pylint: disable=C0302
-"""Unit tests for the Node class."""
-
+# pylint: disable=too-many-public-methods
 
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
@@ -32,6 +30,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+"""Unit tests for the Node class."""
+
 import shutil
 import tempfile
 import unittest
@@ -43,21 +43,17 @@ from cxmanage_api.node import Node
 from cxmanage_api.firmware_package import FirmwarePackage
 
 
-# pylint: disable=R0904, W0201
 class NodeTest(unittest.TestCase):
     """ Tests involving cxmanage Nodes """
 
     def setUp(self):
-        self.nodes = [Node(ip_address=ip, tftp=DummyBMC.tftp, bmc=DummyBMC,
+        self.nodes = [
+            Node(
+                ip_address=ip, tftp=DummyBMC.tftp, bmc=DummyBMC,
                 image=TestImage, ubootenv=DummyUbootEnv,
-                ipretriever=DummyIPRetriever, verbose=True)
-                for ip in DummyBMC.ip_addresses]
-
-        self.server_ip = None
-        self.fabric_ipsrc = None
-        self.fabric_ls_policy = None
-        self.fabric_linkspeed = None
-        self.fabric_lu_factor = None
+                ipretriever=DummyIPRetriever, verbose=True
+            ) for ip in DummyBMC.ip_addresses
+        ]
 
         # Give each node a node_id
         count = 0

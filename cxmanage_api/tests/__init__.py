@@ -28,6 +28,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+""" cxmanage_api.tests convenience imports """
+
 from cxmanage_api.tests.utilities import random_file, TestImage, TestSensor
 from cxmanage_api.tests.dummy import Dummy
 from cxmanage_api.tests.dummy_bmc import DummyBMC

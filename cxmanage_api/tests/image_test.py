@@ -1,5 +1,4 @@
-"""Calxeda: image_test.py"""
-
+# pylint: disable=too-many-public-methods
 
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
@@ -31,6 +30,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+"""Calxeda: image_test.py"""
 
 import os
 import shutil
@@ -42,7 +42,6 @@ from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.tests import random_file, TestImage
 
 
-# pylint: disable=R0904
 class ImageTest(unittest.TestCase):
     """ Tests involving cxmanage images
 

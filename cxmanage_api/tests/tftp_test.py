@@ -1,5 +1,4 @@
-"""Calxeda: tftp_test.py"""
-
+# pylint: disable=too-many-public-methods
 
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
@@ -31,11 +30,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
-
-#
-# Unit tests for the Internal and External Tftp classes.
-#
-
+"""Calxeda: tftp_test.py"""
 
 import os
 import socket
@@ -58,7 +53,7 @@ def _get_relative_host():
     except socket.error:
         raise
 
-# pylint: disable=R0904
+
 class InternalTftpTest(unittest.TestCase):
     """ Tests the functions of the InternalTftp class."""
 
@@ -105,7 +100,6 @@ class InternalTftpTest(unittest.TestCase):
         sock.close()
 
 
-# pylint: disable=R0904
 class ExternalTftpTest(unittest.TestCase):
     """Tests the ExternalTftp class.
     ..note:

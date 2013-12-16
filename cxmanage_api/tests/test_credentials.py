@@ -1,3 +1,5 @@
+# pylint: disable=too-many-public-methods
+
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -27,6 +29,8 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+
+""" Tests for the cxmanage_api.credentials module """
 
 import unittest
 

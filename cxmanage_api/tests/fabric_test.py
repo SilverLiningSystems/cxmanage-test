@@ -1,4 +1,5 @@
-"""Calxeda: fabric_test.py """
+# pylint: disable=protected-access
+# pylint: disable=too-many-public-methods
 
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
@@ -30,6 +31,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+"""Calxeda: fabric_test.py """
+
 import random
 import unittest
 from mock import call
@@ -41,14 +44,12 @@ from cxmanage_api.cx_exceptions import CommandFailedError
 from cxmanage_api.tests import DummyNode, DummyFailNode
 
 
-# pylint: disable=R0904
 class FabricTest(unittest.TestCase):
     """ Test the various Fabric commands """
     def setUp(self):
         # Set up the controller and add targets
         self.fabric = Fabric(DummyNode.ip_addresses[0], node=DummyNode)
         self.nodes = [DummyNode(i) for i in DummyNode.ip_addresses]
-        # pylint: disable=W0212
         self.fabric._nodes = dict((i, self.nodes[i])
                 for i in xrange(len(self.nodes)))
 
@@ -201,7 +202,6 @@ class FabricTest(unittest.TestCase):
     def test_failed_command(self):
         """ Test a failed command """
         fail_nodes = [DummyFailNode(i) for i in DummyNode.ip_addresses]
-        # pylint: disable=W0212
         self.fabric._nodes = dict(
             (i, fail_nodes[i]) for i in xrange(len(self.nodes))
         )
@@ -224,8 +224,9 @@ class FabricTest(unittest.TestCase):
 
         """
         self.fabric.get_ipsrc()
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_get_ip_src.called)
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_get_ip_src()
+        ])
 
     def test_set_ipsrc(self):
         """Test the set_ipsrc method"""
@@ -233,42 +234,42 @@ class FabricTest(unittest.TestCase):
         ipsrc = random.randint(1, 2)
 
         self.fabric.set_ipsrc(ipsrc)
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_set_ip_src.called)
-
-        # fabric_ipsrc is just part of DummyBMC - not a real bmc attribute
-        # it's there to make sure the ipsrc_mode value gets passed to the bmc.
-        self.assertEqual(bmc.fabric_ipsrc, ipsrc)
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_set_ip_src(ipsrc)
+        ])
 
     def test_apply_fdc(self):
         """Test the apply_factory_default_config method"""
 
         self.fabric.apply_factory_default_config()
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_factory_default.called)
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_factory_default()
+        ])
 
     def test_get_ipaddr_base(self):
         """Test the get_ipaddr_base method"""
-        ipaddr_base = self.fabric.get_ipaddr_base()
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_get_ip_addr_base.called)
-        self.assertEqual(bmc.ipaddr_base, ipaddr_base)
+        self.fabric.get_ipaddr_base()
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_get_ip_addr_base()
+        ])
 
     def test_update_config(self):
         """Test the update_config method
 
         """
         self.fabric.update_config()
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_update_config.called)
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_update_config()
+        ])
 
     def test_get_linkspeed(self):
         """Test the get_linkspeed method
 
         """
         self.fabric.get_linkspeed()
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_get_linkspeed.called)
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_get_linkspeed()
+        ])
 
     def test_set_linkspeed(self):
         """Test the set_linkspeed method"""
@@ -277,20 +278,18 @@ class FabricTest(unittest.TestCase):
         linkspeed = random.choice(valid_linkspeeds)
 
         self.fabric.set_linkspeed(linkspeed)
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_set_linkspeed.called)
-
-        # fabric_linkspeed is just part of DummyBMC - not a real bmc attribute
-        # it's there to make sure the ipsrc_mode value gets passed to the bmc.
-        self.assertEqual(bmc.fabric_linkspeed, linkspeed)
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_set_linkspeed(linkspeed)
+        ])
 
     def test_get_linkspeed_policy(self):
         """Test the get_linkspeed_policy method
 
         """
         self.fabric.get_linkspeed_policy()
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_get_linkspeed_policy.called)
+        self.assertTrue(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_get_linkspeed_policy()
+        ])
 
     def test_set_linkspeed_policy(self):
         """Test the set_linkspeed_policy method"""
@@ -298,12 +297,9 @@ class FabricTest(unittest.TestCase):
         ls_policy = random.randint(0, 1)
 
         self.fabric.set_linkspeed_policy(ls_policy)
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_set_linkspeed_policy.called)
-
-        # fabric_ls_policy is just part of DummyBMC - not a real bmc attribute
-        # it's there to make sure the ipsrc_mode value gets passed to the bmc.
-        self.assertEqual(bmc.fabric_ls_policy, ls_policy)
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_set_linkspeed_policy(ls_policy)
+        ])
 
     def test_get_link_stats(self):
         """Test the get_link_stats() method."""
@@ -335,8 +331,9 @@ class FabricTest(unittest.TestCase):
 
         """
         self.fabric.get_link_users_factor()
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_get_link_users_factor.called)
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_get_link_users_factor()
+        ])
 
     def test_set_link_users_factor(self):
         """Test the set_link_users_factor method"""
@@ -344,12 +341,9 @@ class FabricTest(unittest.TestCase):
         lu_factor = random.randint(5, 50)
 
         self.fabric.set_link_users_factor(lu_factor)
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_config_set_link_users_factor.called)
-
-        # fabric_lu_factor is just part of DummyBMC - not a real bmc attribute
-        # it's there to make sure the ipsrc_mode value gets passed to the bmc.
-        self.assertEqual(bmc.fabric_lu_factor, lu_factor)
+        self.assertEqual(self.fabric.primary_node.bmc.method_calls, [
+            call.fabric_config_set_link_users_factor(lu_factor)
+        ])
 
     def test_add_macaddr (self):
         """Test the add_macaddr method"""
@@ -363,8 +357,7 @@ class FabricTest(unittest.TestCase):
         t_macaddr = "66:55:44:33:22:11"
 
         self.fabric.add_macaddr (t_nodeid, t_iface, t_macaddr)
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_add_macaddr.called)
+        self.assertTrue(self.fabric.primary_node.bmc.fabric_add_macaddr.called)
 
     def test_rm_macaddr (self):
         """Test the rm_macaddr method"""
@@ -378,8 +371,7 @@ class FabricTest(unittest.TestCase):
         t_macaddr = "66:55:44:33:22:11"
 
         self.fabric.rm_macaddr (t_nodeid, t_iface, t_macaddr)
-        bmc = self.fabric.primary_node.bmc
-        self.assertTrue(bmc.fabric_rm_macaddr.called)
+        self.assertTrue(self.fabric.primary_node.bmc.fabric_rm_macaddr.called)
 
     def test_set_macaddr_base(self):
         """Test the set_macaddr_base method"""

@@ -1,5 +1,5 @@
-"""Calxeda: task_test.py"""
-
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-public-methods
 
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
@@ -31,6 +31,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+"""Calxeda: task_test.py"""
 
 import unittest
 import time
@@ -38,7 +39,6 @@ import time
 from cxmanage_api.tasks import TaskQueue
 
 
-# pylint: disable=R0904
 class TaskTest(unittest.TestCase):
     """Test for the TaskQueue Class."""
 
@@ -70,7 +70,6 @@ class TaskTest(unittest.TestCase):
         self.assertGreaterEqual(finish - start, 2.0)
 
 
-# pylint: disable=R0903
 class Counter(object):
     """ Simple counter object for testing purposes """
     def __init__(self):

@@ -28,6 +28,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+""" Dummy implementation of cxmanage_api.ubootenv.UbootEnv """
+
 from cxmanage_api.ubootenv import UbootEnv
 
 

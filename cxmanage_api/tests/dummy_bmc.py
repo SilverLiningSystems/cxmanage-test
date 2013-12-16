@@ -1,3 +1,11 @@
+# pylint: disable=invalid-name
+# pylint: disable=no-self-use
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-public-methods
+# pylint: disable=unused-argument
+
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -28,6 +36,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+""" Module for the DummyBMC class """
+
 import random
 import shutil
 import tempfile
@@ -42,7 +52,6 @@ from cxmanage_api.simg import create_simg, get_simg_header
 from cxmanage_api.tftp import InternalTftp, ExternalTftp
 
 
-# pylint: disable=R0902
 class DummyBMC(Dummy):
     """ Dummy BMC for the node tests """
     dummy_spec = LanBMC
@@ -76,23 +85,11 @@ class DummyBMC(Dummy):
 
     def guid(self):
         """Returns the GUID"""
-        # pylint: disable=R0903
-        class Result(object):
-            """Results class."""
-            def __init__(self, dummybmc):
-                self.system_guid = dummybmc.unique_guid
-                self.time_stamp = None
-        return Result(self)
+        return Result(system_guid=self.unique_guid, time_stamp=None)
 
     def get_chassis_status(self):
         """ Get chassis status """
-        # pylint: disable=R0903
-        class Result(object):
-            """Results class."""
-            def __init__(self):
-                self.power_on = False
-                self.power_restore_policy = "always-off"
-        return Result()
+        return Result(power_on=False, power_restore_policy="always-off")
 
     def sel_elist(self):
         """ List SEL. with_errors=True simulates a SEL that contains errors """
@@ -135,15 +132,10 @@ class DummyBMC(Dummy):
         self.partitions[partition].fwinfo.priority = "%8x" % simg.priority
         self.partitions[partition].fwinfo.daddr = "%8x" % simg.daddr
 
-        # pylint: disable=R0903
-        class Result(object):
-            """Results class."""
-            def __init__(self):
-                """Default constructor for the Result class."""
-                self.tftp_handle_id = 0
-        return Result()
+        return Result(tftp_handle_id = 0)
 
     def retrieve_firmware(self, filename, partition, image_type, tftp_addr):
+        """ Mock retrieve_firmware method """
         self.partitions[partition].retrieves += 1
 
         # Upload blank image to tftp
@@ -155,42 +147,28 @@ class DummyBMC(Dummy):
         tftp.put_file("%s/%s" % (work_dir, filename), filename)
         shutil.rmtree(work_dir)
 
-        # pylint: disable=R0903
-        class Result(object):
-            """Results class."""
-            def __init__(self):
-                self.tftp_handle_id = 0
-        return Result()
+        return Result(tftp_handle_id = 0)
 
     def register_firmware_read(self, filename, partition, image_type):
+        """ Mock register_firmware_read method. currently not supported """
         raise IpmiError()
 
     def register_firmware_write(self, filename, partition, image_type):
+        """ Mock register_firmware_write method. currently not supported """
         raise IpmiError()
 
     def get_firmware_status(self, handle):
-        # pylint: disable=R0903
-        class Result(object):
-            """Results class."""
-            def __init__(self):
-                self.status = "Complete"
-
-        del handle
-
-        return Result()
+        """ Mock get_firmware_status method """
+        return Result(status="Complete")
 
     def check_firmware(self, partition):
+        """ Mock check_firmware method """
         self.partitions[partition].checks += 1
 
-        # pylint: disable=R0903
-        class Result(object):
-            """Results class."""
-            def __init__(self):
-                self.crc32 = 0
-                self.error = None
-        return Result()
+        return Result(crc32=0, error=None)
 
     def activate_firmware(self, partition):
+        """ Mock activate_firmware method """
         self.partitions[partition].activates += 1
 
     def sdr_list(self):
@@ -206,27 +184,20 @@ class DummyBMC(Dummy):
 
     def get_info_basic(self):
         """ Get basic SoC info from this node """
-        # pylint: disable=R0903
-        class Result(object):
-            """Results class."""
-            def __init__(self):
-                self.iana = int("0x0096CD", 16)
-                self.firmware_version = "ECX-0000-v0.0.0"
-                self.ecme_version = "v0.0.0"
-                self.ecme_timestamp = 0
-        return Result()
+        return Result(
+            iana=int("0x0096CD", 16),
+            firmware_version="ECX-0000-v0.0.0",
+            ecme_version="v0.0.0",
+            ecme_timestamp=0
+        )
 
     def get_info_card(self):
-        # pylint: disable=R0903
-        class Result(object):
-            """Results class."""
-            def __init__(self):
-                self.type = "TestBoard"
-                self.revision = "0"
-        return Result()
+        """ Mock get_info_card method """
+        return Result(type="TestBoard", revision="0")
 
     node_count = 0
     def fabric_get_node_id(self):
+        """ Mock fabric_get_node_id method """
         result = DummyBMC.node_count
         DummyBMC.node_count += 1
         return result
@@ -350,7 +321,6 @@ class DummyBMC(Dummy):
             'other hops/neighbors - 5/12'
         )
 
-
         work_dir = tempfile.mkdtemp(prefix="cxmanage_test-")
         with open('%s/%s' % (work_dir, filename), 'w') as dc_file:
             for dchart in depth_chart:
@@ -365,9 +335,8 @@ class DummyBMC(Dummy):
 
         shutil.rmtree(work_dir)
 
-    # pylint: disable=W0222
     def fabric_get_linkstats(self, filename, tftp_addr=None,
-        link=None):
+                             link=None):
         """Upload a link_stats file from the node to TFTP"""
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
@@ -432,6 +401,7 @@ class DummyBMC(Dummy):
         shutil.rmtree(work_dir)
 
     def fabric_config_get_uplink_info(self, filename, tftp_addr=None):
+        """ Mock fabric_config_get_uplink_info method """
         if not(tftp_addr):
             raise IpmiError('No tftp address!')
 
@@ -451,6 +421,7 @@ class DummyBMC(Dummy):
         shutil.rmtree(work_dir)
 
     def fabric_config_get_uplink(self, iface):
+        """ Mock fabric_config_get_uplink """
         return 0
 
     def fabric_config_get_mac_addresses(self, filename, tftp_addr=None):
@@ -477,40 +448,35 @@ class DummyBMC(Dummy):
         shutil.rmtree(work_dir)
 
     def fabric_config_get_ip_src(self):
+        """ Mock fabric_config_get_ip_src """
         return 2
-
-    def fabric_config_set_ip_src(self, ipsrc_mode):
-        self.fabric_ipsrc = ipsrc_mode
 
     def fabric_config_get_ip_addr_base(self):
         """Provide a fake base IP addr"""
         return self.ipaddr_base
 
     def fabric_get_linkspeed(self, link="", actual=""):
+        """ Mock fabric_get_linkspeed """
         return 1
 
     def fabric_config_get_linkspeed(self):
+        """ Mock fabric_config_get_linkspeed """
         return 1
-
-    def fabric_config_set_linkspeed(self, linkspeed):
-        self.fabric_linkspeed = linkspeed
 
     def fabric_config_get_linkspeed_policy(self):
+        """ Mock fabric_config_get_linkspeed_policy """
         return 1
-
-    def fabric_config_set_linkspeed_policy(self, ls_policy):
-        self.fabric_ls_policy = ls_policy
 
     def fabric_config_get_link_users_factor(self):
+        """ Mock fabric_config_get_link_users_factor """
         return 1
 
-    def fabric_config_set_link_users_factor(self, lu_factor):
-        self.fabric_lu_factor = lu_factor
-
     def fabric_config_get_macaddr_base(self):
+        """ Mock fabric_config_get_macaddr_base """
         return "00:00:00:00:00:00"
 
     def fabric_config_get_macaddr_mask(self):
+        """ Mock fabric_config_get_macaddr_mask """
         return "00:00:00:00:00:00"
 
     def fabric_get_uplink_info(self):
@@ -522,15 +488,16 @@ class DummyBMC(Dummy):
         return 1
 
     def fru_read(self, fru_number, filename):
+        """ Mock fru_read method """
         with open(filename, "w") as fru_image:
             # Writes a fake FRU image with version "0.0"
             fru_image.write("x00" * 516 + "0.0" + "x00"*7673)
 
     def pmic_get_version(self):
+        """ Mock pmic_get_version method """
         return "0"
 
 
-# pylint: disable=R0913, R0903
 class Partition(object):
     """Partition class."""
     def __init__(self, partition, type_, offset=0,
@@ -562,3 +529,9 @@ class FWInfoEntry(object):
         self.in_use = {None: "Unknown", True: "1", False: "0"}[in_use]
         self.flags = "fffffffd"
         self.version = "v0.0.0"
+
+
+class Result(object):
+    """ Generic result object. Converts kwargs into instance vars """
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)

@@ -1,3 +1,5 @@
+# pylint: disable=too-few-public-methods
+
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -28,6 +30,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+""" Utilities used by cxmanage unit tests """
+
 import os
 import random
 import tempfile
@@ -51,7 +55,6 @@ class TestImage(Image):
         return True
 
 
-# pylint: disable=R0903
 class TestSensor(object):
     """ Sensor result from bmc/target """
     def __init__(self, sensor_name, sensor_reading):

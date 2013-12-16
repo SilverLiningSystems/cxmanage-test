@@ -1,3 +1,5 @@
+# pylint: disable=too-few-public-methods
+
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -28,10 +30,11 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+""" Dummy implementation of cxmanage_api.ipretriever.IPRetriever """
+
 from cxmanage_api.cx_exceptions import IPDiscoveryError
 
 
-# pylint: disable=R0903
 class DummyIPRetriever(object):
     """ Dummy IP retriever """
 
@@ -40,6 +43,7 @@ class DummyIPRetriever(object):
         self.ecme_ip = ecme_ip
         self.aggressive = aggressive
         self.verbosity = verbosity
+        self.server_ip = None
         for name, value in kwargs.iteritems():
             setattr(self, name, value)
 

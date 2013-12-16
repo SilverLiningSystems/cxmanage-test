@@ -1,3 +1,9 @@
+# pylint: disable=no-self-use
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-public-methods
+# pylint: disable=unused-argument
+
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -28,6 +34,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+""" Dummy implementation for cxmanage_api.node.Node """
+
 import random
 
 from cxmanage_api.ubootenv import UbootEnv
@@ -41,7 +49,6 @@ class DummyNode(Dummy):
 
     ip_addresses = DummyBMC.ip_addresses
 
-    # pylint: disable=W0613
     def __init__(self, ip_address, username="admin", password="admin",
             tftp=None, *args, **kwargs):
         super(DummyNode, self).__init__()
@@ -58,7 +65,7 @@ class DummyNode(Dummy):
     @property
     def guid(self):
         """Returns the node GUID"""
-        return self.bmc.guid().system_guid
+        return self.bmc.unique_guid
 
     @property
     def chassis_id(self):
@@ -97,7 +104,6 @@ class DummyNode(Dummy):
 
     def get_versions(self):
         """Simulate get_versions(). """
-        # pylint: disable=R0902, R0903
         class Result(object):
             """Result Class. """
             def __init__(self):
@@ -127,7 +133,6 @@ class DummyNode(Dummy):
         """Simulates get_fabric_ipinfo(). """
         return {}
 
-    # pylint: disable=R0913
     def get_server_ip(self, interface=None, ipv6=False, aggressive=False):
         """Simulate get_server_ip(). """
         return "192.168.200.1"
