@@ -39,8 +39,8 @@ from cxmanage_api.tasks import DEFAULT_TASK_QUEUE
 from cxmanage_api.tftp import InternalTftp
 from cxmanage_api.node import Node as NODE
 from cxmanage_api.credentials import Credentials
-from cxmanage_api.cx_exceptions import CommandFailedError, TimeoutError, \
-    IpmiError, TftpException, ParseError
+from cxmanage_api.cx_exceptions import CommandFailedError, IpmiError, \
+    TftpException, ParseError, TimeoutError
 
 
 # pylint: disable=R0902,R0903, R0904
@@ -235,19 +235,22 @@ class Fabric(object):
         old_nodes = {node.guid: node for node in self._nodes.values()}
 
         if wait:
+            error = None
             deadline = time.time() + timeout
             while time.time() < deadline:
                 try:
                     new_nodes = get_nodes()
                     if len(new_nodes) >= initial_node_count:
                         break
-                except (IpmiError, TftpException, ParseError):
-                    pass
+                except (IpmiError, TftpException, ParseError) as err:
+                    error = err
             else:
-                raise TimeoutError(
-                    "Fabric refresh timed out. Rediscovered %i of %i nodes"
-                    % (len(new_nodes), initial_node_count)
-                )
+                if (error):
+                    raise error
+                else:
+                    raise TimeoutError(
+                        'Timeout after %s seconds occurred.' % timeout
+                    )
         else:
             new_nodes = get_nodes()
 
