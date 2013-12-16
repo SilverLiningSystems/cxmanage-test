@@ -1,3 +1,5 @@
+# pylint: disable=useless-else-on-loop
+
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -27,6 +29,8 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+
+""" Decorators used in cxmanage_api """
 
 from functools import wraps
 

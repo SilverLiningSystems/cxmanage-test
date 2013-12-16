@@ -1,6 +1,4 @@
 # pylint: disable=C0302
-"""Calxeda: node.py"""
-
 
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
@@ -31,6 +29,8 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+
+"""Calxeda: node.py"""
 
 import os
 import re

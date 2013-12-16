@@ -1,6 +1,8 @@
-# pylint: disable=C0302
-"""Calxeda: fabric.py """
-
+# pylint: disable=too-many-lines
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-arguments
 
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
@@ -32,6 +34,8 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+""" Calxeda: fabric.py """
+
 import time
 import re
 
@@ -43,7 +47,6 @@ from cxmanage_api.cx_exceptions import CommandFailedError, IpmiError, \
     TftpException, ParseError, TimeoutError
 
 
-# pylint: disable=R0902,R0903, R0904
 class Fabric(object):
     """ The Fabric class provides management of multiple nodes.
 
@@ -111,7 +114,6 @@ class Fabric(object):
 
             return function
 
-    # pylint: disable=R0913
     def __init__(self, ip_address, credentials=None, tftp=None,
                  ecme_tftp_port=5001, task_queue=None, verbose=False,
                  node=None):
@@ -338,14 +340,14 @@ class Fabric(object):
         filename = self.primary_node._run_fabric_command(
             'fabric_config_get_networks'
         )
-        regex = re.compile('\d+ Network (\w+), private=(\d)')
+        regex = re.compile(r'\d+ Network (\w+), private=(\d)')
         contents = open(filename, 'r').readlines()
         for line in contents:
             try:
                 name, private = regex.findall(line)[0]
                 results[name] = (int(private) != 0)
             except IndexError:
-                raise CommandFailedException(
+                raise CommandFailedError(
                     'Unable to parse networks: %s' % '\n'.join(contents)
                 )
 
@@ -933,7 +935,6 @@ class Fabric(object):
         """
         return self._run_on_all_nodes(async, "get_ubootenv")
 
-    # pylint: disable=R0913
     def get_server_ip(self, interface=None, ipv6=False, aggressive=False,
                       async=False):
         """Get the server IP address from all nodes. The nodes must be powered
@@ -1324,6 +1325,3 @@ class Fabric(object):
             if errors:
                 raise CommandFailedError(results, errors)
             return results
-
-
-# End of file: ./fabric.py

@@ -1,6 +1,3 @@
-"""Calxeda: __init__.py """
-
-
 # Copyright (c) 2012-2013, Calxeda Inc.
 #
 # All rights reserved.
@@ -31,6 +28,7 @@
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 
+"""Calxeda: __init__.py """
 
 import sys
 import time
