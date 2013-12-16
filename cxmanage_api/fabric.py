@@ -237,7 +237,9 @@ class Fabric(object):
         old_nodes = {node.guid: node for node in self._nodes.values()}
 
         if wait:
-            error = None
+            error = TimeoutError(
+                'Timeout after %s seconds occurred.' % timeout
+            )
             deadline = time.time() + timeout
             while time.time() < deadline:
                 try:
@@ -247,12 +249,7 @@ class Fabric(object):
                 except (IpmiError, TftpException, ParseError) as err:
                     error = err
             else:
-                if (error):
-                    raise error
-                else:
-                    raise TimeoutError(
-                        'Timeout after %s seconds occurred.' % timeout
-                    )
+                raise error
         else:
             new_nodes = get_nodes()
 
