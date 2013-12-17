@@ -190,7 +190,10 @@ def run_command(args, nodes, name, *method_args):
 
     tasks = {}
     for node in nodes:
-        tasks[node] = task_queue.put(getattr(node, name), *method_args)
+        target = node
+        for member in name.split("."):
+            target = getattr(target, member)
+        tasks[node] = task_queue.put(target, *method_args)
 
     results = {}
     errors = {}

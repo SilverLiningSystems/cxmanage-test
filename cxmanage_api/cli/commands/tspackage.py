@@ -93,6 +93,10 @@ def tspackage_command(args):
         print("Getting version information...")
     write_version_info(args, nodes)
 
+    if not quit:
+        print("Getting LAN information...")
+    write_lan_info(args, nodes)
+
     if not quiet:
         print("Getting boot order...")
     write_boot_order(args, nodes)
@@ -199,6 +203,19 @@ def write_version_info(args, nodes):
             lines.append("No version information could be found.")
 
         write_to_file(node, lines)
+
+
+def write_lan_info(args, nodes):
+    """Write LAN info for each node"""
+    results, _ = run_command(args, nodes, "bmc.lan_print")
+
+    for node in nodes:
+        lines = ["\n[ LAN info for Node %s ]" % node.node_id]
+        for (key, value) in sorted(vars(results[node]).items()):
+            lines.append("%s: %s" % (key, value))
+
+        write_to_file(node, lines)
+
 
 def write_mac_addrs(args, nodes):
     """Write the MAC addresses for each node to their respective files."""
