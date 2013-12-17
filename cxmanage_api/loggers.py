@@ -39,6 +39,7 @@ target.
 
 
 import os
+import pprint
 import datetime
 import traceback
 
@@ -100,7 +101,14 @@ class Logger(object):
         :type level_tag: string
 
         """
-        lines = msg.split('\n')
+        lines = pprint.pformat(msg).splitlines()
+        if len(lines) == 1:
+            #
+            # We don't care about single line formatting.
+            # Make sure we get __str__ instead of __repr___
+            #
+            lines = str(msg).splitlines()
+
         result = []
         for line in lines:
             if (self.time_stamp):
