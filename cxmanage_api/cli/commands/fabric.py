@@ -131,3 +131,28 @@ def uplink_info_command(args):
         print "Some errors occured during the command.\n"
 
     return len(errors) == 0
+
+
+def uplinks_command(args):
+    """get uplinks from nodes"""
+    args.all_nodes = False
+
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting uplinks..."
+    results, errors = run_command(
+        args, nodes, "run_fabric_tftp_command", "fabric_config_get_uplinks"
+    )
+
+    for node in nodes:
+        if node in results:
+            print "[ Uplinks from %s ]" % node.ip_address
+            print results[node].strip()
+            print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) == 0

@@ -44,7 +44,7 @@ from cxmanage_api.cli.commands.mc import mcreset_command
 from cxmanage_api.cli.commands.fw import fwupdate_command, fwinfo_command
 from cxmanage_api.cli.commands.sensor import sensor_command
 from cxmanage_api.cli.commands.fabric import ipinfo_command, macaddrs_command, \
-        partition_config_command, uplink_info_command
+        partition_config_command, uplink_info_command, uplinks_command
 from cxmanage_api.cli.commands.config import config_reset_command, \
         config_boot_command, config_pxe_command
 from cxmanage_api.cli.commands.info import info_command
@@ -277,6 +277,11 @@ def build_parser():
     uplink_info = subparsers.add_parser('uplink_info',
             help='get uplink info')
     uplink_info.set_defaults(func=uplink_info_command)
+
+    # uplinks command
+    uplinks = subparsers.add_parser('uplinks',
+            help='get uplinks')
+    uplinks.set_defaults(func=uplinks_command)
 
     # config command
     config = subparsers.add_parser('config', help='configure hosts')
