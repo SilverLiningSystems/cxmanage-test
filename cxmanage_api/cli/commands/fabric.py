@@ -106,3 +106,28 @@ def partition_config_command(args):
         print "Some errors occured during the command.\n"
 
     return len(errors) == 0
+
+
+def uplink_info_command(args):
+    """get uplink info from nodes"""
+    args.all_nodes = False
+
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting uplink info..."
+    results, errors = run_command(
+        args, nodes, "run_fabric_tftp_command", "fabric_config_get_uplink_info"
+    )
+
+    for node in nodes:
+        if node in results:
+            print "[ Uplink info from %s ]" % node.ip_address
+            print results[node].strip()
+            print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) == 0
