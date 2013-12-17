@@ -334,18 +334,17 @@ class Fabric(object):
 
         """
         results = {}
-        filename = self.primary_node.run_fabric_tftp_command(
+        contents = self.primary_node.run_fabric_tftp_command(
             'fabric_config_get_networks'
         )
         regex = re.compile(r'\d+ Network (\w+), private=(\d)')
-        contents = open(filename, 'r').readlines()
-        for line in contents:
+        for line in contents.splitlines():
             try:
                 name, private = regex.findall(line)[0]
                 results[name] = (int(private) != 0)
             except IndexError:
-                raise CommandFailedError(
-                    'Unable to parse networks: %s' % '\n'.join(contents)
+                raise ParseError(
+                    'Unable to parse networks\n%s' % contents
                 )
 
         return results
@@ -451,11 +450,11 @@ class Fabric(object):
 
         """
         results = {}
-        filename = self.primary_node.run_fabric_tftp_command(
+        contents = self.primary_node.run_fabric_tftp_command(
             'fabric_config_get_uplinks'
         )
         current_uplink = None
-        for line in  open(filename, 'r').readlines():
+        for line in contents.splitlines():
             if('Uplink' in line):
                 current_uplink = int(line.split('Uplink ')[1].replace(':', ''))
                 results[current_uplink] = []

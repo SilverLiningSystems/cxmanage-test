@@ -1193,10 +1193,9 @@ communication.
         :raises ParseError: If we fail to parse IP info
 
         """
-        filename = self.run_fabric_tftp_command(
+        contents = self.run_fabric_tftp_command(
             function_name='fabric_config_get_ip_info'
         )
-        contents = open(filename).read()
 
         results = {}
         for line in contents.splitlines():
@@ -1258,10 +1257,9 @@ communication.
         :raises ParseError: If we fail to parse macaddrs output
 
         """
-        filename = self.run_fabric_tftp_command(
+        contents = self.run_fabric_tftp_command(
             function_name='fabric_config_get_mac_addresses'
         )
-        contents = open(filename).read()
 
         results = {}
         for line in contents.splitlines():
@@ -1310,13 +1308,13 @@ communication.
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = self.run_fabric_tftp_command(
+        contents = self.run_fabric_tftp_command(
             function_name='fabric_config_get_uplink_info'
         )
 
         # Parse addresses from ipinfo file
         results = {}
-        for line in open(filename):
+        for line in contents.splitlines():
             node_id = int(line.replace('Node ', '')[0])
             ul_info = line.replace('Node %s:' % node_id, '').strip().split(',')
             node_data = {}
@@ -1360,12 +1358,12 @@ communication.
         :raises IpmiError: If the IPMI command fails.
 
         """
-        filename = self.run_fabric_tftp_command(
+        contents = self.run_fabric_tftp_command(
             function_name='fabric_get_linkstats',
             link=link
         )
         results = {}
-        for line in open(filename):
+        for line in contents.splitlines():
             if ('=' in line):
                 reg_value = line.strip().split('=')
                 if (len(reg_value) < 2):
@@ -1394,12 +1392,12 @@ communication.
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = self.run_fabric_tftp_command(
+        contents = self.run_fabric_tftp_command(
             function_name='fabric_info_get_link_map',
         )
 
         results = {}
-        for line in open(filename):
+        for line in contents.splitlines():
             if (line.startswith("Link")):
                 elements = line.strip().split()
                 link_id = int(elements[1].rstrip(':'))
@@ -1421,12 +1419,12 @@ communication.
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = self.run_fabric_tftp_command(
+        contents = self.run_fabric_tftp_command(
             function_name='fabric_info_get_routing_table',
         )
 
         results = {}
-        for line in open(filename):
+        for line in contents.splitlines():
             if (line.startswith("Node")):
                 elements = line.strip().split()
                 node_id = int(elements[1].rstrip(':'))
@@ -1454,12 +1452,12 @@ communication.
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = self.run_fabric_tftp_command(
+        contents = self.run_fabric_tftp_command(
             function_name='fabric_info_get_depth_chart',
         )
 
         results = {}
-        for line in open(filename):
+        for line in contents.splitlines():
             if (line.startswith("Node")):
                 elements = line.strip().split()
                 target = int(elements[1].rstrip(':'))
@@ -1627,12 +1625,12 @@ obtained.
             return(hexfile.read(bytes_to_read))
 
     def run_fabric_tftp_command(self, function_name, **kwargs):
-        """Run a fabric TFTP command, returning the filename.
+        """Run a fabric TFTP command and return the contents of the file.
 
         :param function_name: BMC fabric function name
         :type function_name: string
 
-        :return: Downloaded filename
+        :return: Contents of downloaded file
         :rtype: string
 
         """
@@ -1662,7 +1660,7 @@ obtained.
             if os.path.getsize(filename) == 0:
                 raise TftpException("Node failed to reach TFTP server")
 
-        return filename
+        return open(filename, "rb").read()
 
     @staticmethod
     def _get_partition(fwinfo, image_type, partition_arg):
