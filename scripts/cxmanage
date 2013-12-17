@@ -43,7 +43,8 @@ from cxmanage_api.cli.commands.power import power_command, \
 from cxmanage_api.cli.commands.mc import mcreset_command
 from cxmanage_api.cli.commands.fw import fwupdate_command, fwinfo_command
 from cxmanage_api.cli.commands.sensor import sensor_command
-from cxmanage_api.cli.commands.fabric import ipinfo_command, macaddrs_command
+from cxmanage_api.cli.commands.fabric import ipinfo_command, macaddrs_command, \
+        partition_config_command
 from cxmanage_api.cli.commands.config import config_reset_command, \
         config_boot_command, config_pxe_command
 from cxmanage_api.cli.commands.info import info_command
@@ -266,6 +267,11 @@ def build_parser():
     macaddrs = subparsers.add_parser('macaddrs',
             help='get mac addresses')
     macaddrs.set_defaults(func=macaddrs_command)
+
+    # partition_config command
+    partition_config = subparsers.add_parser('partition_config',
+            help='get partition config')
+    partition_config.set_defaults(func=partition_config_command)
 
     # config command
     config = subparsers.add_parser('config', help='configure hosts')

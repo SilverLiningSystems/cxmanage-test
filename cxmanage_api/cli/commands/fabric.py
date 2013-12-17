@@ -81,3 +81,28 @@ def macaddrs_command(args):
         print "Some errors occured during the command.\n"
 
     return len(errors) == 0
+
+
+def partition_config_command(args):
+    """get partition config from nodes"""
+    args.all_nodes = False
+
+    tftp = get_tftp(args)
+    nodes = get_nodes(args, tftp)
+
+    if not args.quiet:
+        print "Getting partition config..."
+    results, errors = run_command(
+        args, nodes, "run_fabric_tftp_command", "fabric_info_partition_config"
+    )
+
+    for node in nodes:
+        if node in results:
+            print "[ Partition config from %s ]" % node.ip_address
+            print results[node].strip()
+            print
+
+    if not args.quiet and errors:
+        print "Some errors occured during the command.\n"
+
+    return len(errors) == 0
