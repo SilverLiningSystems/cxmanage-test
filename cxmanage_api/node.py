@@ -1193,7 +1193,7 @@ communication.
         :raises ParseError: If we fail to parse IP info
 
         """
-        filename = self._run_fabric_command(
+        filename = self.run_fabric_tftp_command(
             function_name='fabric_config_get_ip_info'
         )
         contents = open(filename).read()
@@ -1258,7 +1258,7 @@ communication.
         :raises ParseError: If we fail to parse macaddrs output
 
         """
-        filename = self._run_fabric_command(
+        filename = self.run_fabric_tftp_command(
             function_name='fabric_config_get_mac_addresses'
         )
         contents = open(filename).read()
@@ -1310,7 +1310,7 @@ communication.
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = self._run_fabric_command(
+        filename = self.run_fabric_tftp_command(
             function_name='fabric_config_get_uplink_info'
         )
 
@@ -1360,7 +1360,7 @@ communication.
         :raises IpmiError: If the IPMI command fails.
 
         """
-        filename = self._run_fabric_command(
+        filename = self.run_fabric_tftp_command(
             function_name='fabric_get_linkstats',
             link=link
         )
@@ -1394,7 +1394,7 @@ communication.
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = self._run_fabric_command(
+        filename = self.run_fabric_tftp_command(
             function_name='fabric_info_get_link_map',
         )
 
@@ -1421,7 +1421,7 @@ communication.
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = self._run_fabric_command(
+        filename = self.run_fabric_tftp_command(
             function_name='fabric_info_get_routing_table',
         )
 
@@ -1454,7 +1454,7 @@ communication.
         :raises TftpException: If the TFTP transfer fails.
 
         """
-        filename = self._run_fabric_command(
+        filename = self.run_fabric_tftp_command(
             function_name='fabric_info_get_depth_chart',
         )
 
@@ -1626,8 +1626,16 @@ obtained.
             hexfile.seek(offset)
             return(hexfile.read(bytes_to_read))
 
-    def _run_fabric_command(self, function_name, **kwargs):
-        """Handles the basics of sending a node a command for fabric data."""
+    def run_fabric_tftp_command(self, function_name, **kwargs):
+        """Run a fabric TFTP command, returning the filename.
+
+        :param function_name: BMC fabric function name
+        :type function_name: string
+
+        :return: Downloaded filename
+        :rtype: string
+
+        """
         filename = temp_file()
         basename = os.path.basename(filename)
         try:

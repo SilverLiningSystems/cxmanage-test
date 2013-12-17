@@ -334,7 +334,7 @@ class Fabric(object):
 
         """
         results = {}
-        filename = self.primary_node._run_fabric_command(
+        filename = self.primary_node.run_fabric_tftp_command(
             'fabric_config_get_networks'
         )
         regex = re.compile(r'\d+ Network (\w+), private=(\d)')
@@ -451,7 +451,7 @@ class Fabric(object):
 
         """
         results = {}
-        filename = self.primary_node._run_fabric_command(
+        filename = self.primary_node.run_fabric_tftp_command(
             'fabric_config_get_uplinks'
         )
         current_uplink = None
