@@ -173,7 +173,7 @@ def get_node_strings(args, nodes, justify=False):
     else:
         strings = [x.ip_address for x in nodes]
 
-    if justify:
+    if strings and justify:
         just_size = max(16, max(len(x) for x in strings) + 1)
         strings = [x.ljust(just_size) for x in strings]
 

@@ -61,7 +61,8 @@ def sensor_command(args):
                     sensors[sensor_name].append((node, reading, ""))
 
     node_strings = get_node_strings(args, results, justify=True)
-    jsize = len(node_strings.itervalues().next())
+    if node_strings:
+        jsize = len(node_strings.itervalues().next())
     for sensor_name, readings in sensors.iteritems():
         print sensor_name
 
