@@ -425,8 +425,9 @@ Initiated by power up | Asserted',
             if (search == ""):
                 raise NoSensorError("No sensors were found")
             else:
-                raise NoSensorError("No sensors containing \"%s\" were " +
-                                    "found" % search)
+                raise NoSensorError(
+                    "No sensors containing \"%s\" were found" % search
+                )
         return dict((x.sensor_name, x) for x in sensors)
 
     def get_sensors_dict(self, search=""):
