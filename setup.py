@@ -51,7 +51,7 @@ setup(
         'cxmanage_api.cli.commands',
         'cxmanage_api.tests'
     ],
-    scripts=['scripts/cxmanage', 'scripts/sol_tabs', 'scripts/cxmux'],
+    scripts=['scripts/cxmanage', 'scripts/sol_tabs', 'scripts/cxmux', 'run_tests'],
     description='Calxeda Management Utility',
     # NOTE: As of right now, the pyipmi version requirement needs to be updated
     # at the top of scripts/cxmanage as well.
