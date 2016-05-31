@@ -11,6 +11,8 @@ before_deploy:
 - export GIT_TAG=`python -c 'import cxmanage_api.__init__; print cxmanage_api.__init__.__version__'`
 - export GIT_TAG=$GIT_TAG.Build$TRAVIS_BUILD_NUMBER
 - echo $GIT_TAG
+- git tag $GIT_TAG -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
+- git push -q https://$TAGPERM@github.com/SilverLiningSystems/cxmanage-test --tags
 - ls dist/ -R
 notifications:
   slack:
@@ -20,6 +22,6 @@ deploy:
   provider: releases
   api_key:
     secure: R9FLRkDEMy5I+P2tBgTzKGsqiwJ7woDMwTqHrssUAl3pbHX6BdLyjBqtviQptzOO6meMIvzHJoIxy0ZfUQGC8jQFBdfgm6J1/tipd0c5PByMF38OMj5knLSMnsQYMduGOgTbaGdbi6CrdqCMpWQ+ZZp1Zq4bP+rqmp0iBc/AnO6USm2HSZeuUSC9mGR4A5YRYMmFKZ1DxdDg7gvLgYd4NeOder0krpw+UGeFnWwEvVNUTIdX0OU7lJdf0xElerMCX/aB5wPY+n/tKYbIp8pjzBx3729EwaM6JP4CrI6GxB8THbX/AYCA04v36QhBqMNwGraODUhG6ew2U1q7toMW7DtQDCxdQgGQ5eq6X3DjoSsNkwvkRjaPBD+cAQUXOkxKaDslEyGKjHhIESdIv7GMbyMSVuoyNS4f4UiDZH3q9XFK6rDSjyBRl8aJGHlDOUeuqmJ/Yy3mcJLeqbUT71MEhq0WVcmi6nOBHa7SwvHExBAXWAX+LJ6IROALTQRdUplNpU7Da8gJwYIE8cvJL/XgrFG59lqVgFMmR32wPTsy7HNqMKTZxrN0lEdkNkT5zCi/I4aFc9biIOzVEMAHPfuX9XTLQ3ORlIZE7H22x9W4NL6njdPqlVRqpzdTQABTleC7M4eu4SMZNufvQ2CELTOEWck/u8uzwrn3hO0doTKABWs=
-  file: dist/cxmanage*.gz
+  file: dist/cxmanage-0.11.0.linux-x86_64.tar.gz
   on:
     repo: SilverLiningSystems/cxmanage-test
