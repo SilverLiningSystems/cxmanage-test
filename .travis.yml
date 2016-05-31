@@ -25,3 +25,4 @@ deploy:
   file: dist/cxmanage-0.11.0.linux-x86_64.tar.gz
   on:
     repo: SilverLiningSystems/cxmanage-test
+    tags: true
