@@ -39,7 +39,7 @@ travis_build = os.environ.get('TRAVIS_BUILD_NUMBER')
 if travis_build is None:
     travis_build = ''
 else:
-    travis_build = ".Build" + travis_build
+    travis_build = ".dev" + travis_build
 
 def get_version():
     """ Parse __init__.py to find the package version """
