@@ -43,7 +43,7 @@ def get_version():
     raise Exception("Failed to parse cxmanage package version from __init__.py")
 
 setup(
-    name='cxmanage',
+    name='cxmanage-test',
     version=get_version(),
     packages=[
         'cxmanage_api',
