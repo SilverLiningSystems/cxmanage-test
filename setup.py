@@ -33,13 +33,20 @@
 
 
 from setuptools import setup
+import os
+
+travis_build = os.environ.get('TRAVIS_BUILD_NUMBER')
+if travis_build is None:
+    travis_build = ''
+else:
+    travis_build = ".Build" + travis_build
 
 def get_version():
     """ Parse __init__.py to find the package version """
     for line in open("cxmanage_api/__init__.py"):
         key, delim, value = line.partition("=")
         if key.strip() == "__version__" and delim == "=":
-            return value.strip().strip("'\"")
+            return value.strip().strip("'\"") + travis_build
     raise Exception("Failed to parse cxmanage package version from __init__.py")
 
 setup(
