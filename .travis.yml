@@ -39,6 +39,7 @@ deploy:
     file: "$RELEASE_FILE"
     on:
       tags: false
+      repo: SilverLiningSystems/cxmanage-test
 
 branches:
   except:
