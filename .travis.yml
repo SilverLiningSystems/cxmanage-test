@@ -38,7 +38,7 @@ deploy:
     file: "$RELEASE_FILE"
     on:
       tags: false
-      branch: bugfix
+      branch: master
 
 branches:
   except:
