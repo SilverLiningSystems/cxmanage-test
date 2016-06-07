@@ -9,7 +9,7 @@ before_deploy:
 - git config --global user.email "builds@travis-ci.com"
 - git config --global user.name "Travis CI"
 - export GIT_TAG=`python -c 'import cxmanage_api.__init__; print cxmanage_api.__init__.__version__'`
-- export GIT_TAG=v$GIT_TAG.Build$TRAVIS_BUILD_NUMBER
+- export GIT_TAG=v$GIT_TAG.$TRAVIS_BRANCH.Build$TRAVIS_BUILD_NUMBER
 - echo $GIT_TAG
 - git tag $GIT_TAG -f -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
 - git push https://$GITPERM@github.com/SilverLiningSystems/cxmanage-test
@@ -28,7 +28,7 @@ deploy:
     file: "$RELEASE_FILE"
     on:
       tags: false
-      branch: master
+      all_branches: true
   - provider: pypi
     user: sls.jarvis
     server: https://testpypi.python.org/pypi
