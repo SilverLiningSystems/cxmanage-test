@@ -28,6 +28,7 @@ deploy:
     file: "$RELEASE_FILE"
     on:
       tags: false
+      all_branches: true
   - provider: pypi
     user: sls.jarvis
     server: https://testpypi.python.org/pypi
