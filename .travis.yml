@@ -11,7 +11,7 @@ before_deploy:
 - export GIT_TAG=`python -c 'import cxmanage_api.__init__; print cxmanage_api.__init__.__version__'`
 - export GIT_TAG=v$GIT_TAG.$TRAVIS_BRANCH.Build$TRAVIS_BUILD_NUMBER
 - echo $GIT_TAG
-- git tag $GIT_TAG -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
+- git tag $GIT_TAG -f -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
 - git push -f https://$GITPERM@github.com/SilverLiningSystems/cxmanage-test --tags
 - export RELEASE_FILE=$(ls dist/*.tar.gz)
 - echo "deploying $RELEASE_FILE to Github releases"
