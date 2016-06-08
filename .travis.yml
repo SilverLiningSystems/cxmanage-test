@@ -12,7 +12,7 @@ before_deploy:
 #- export GIT_TAG=v$GIT_TAG.$TRAVIS_BRANCH.Build$TRAVIS_BUILD_NUMBER
 - echo $GIT_TAG
 - git tag $GIT_TAG -f -a -m "Generated tag from TravisCI for build $TRAVIS_BUILD_NUMBER"
-- git push https://$GITPERM@github.com/SilverLiningSystems/cxmanage-test --tags
+- git push -f https://$GITPERM@github.com/SilverLiningSystems/cxmanage-test --tags
 - export RELEASE_FILE=$(ls dist/*.tar.gz)
 - echo "deploying $RELEASE_FILE to Github releases"
 notifications:
