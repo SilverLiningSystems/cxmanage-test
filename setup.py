@@ -36,7 +36,9 @@ from setuptools import setup
 import os
 
 travis_build = os.environ.get('TRAVIS_BUILD_NUMBER')
-if travis_build is None:
+travis_bench = os.environ.get('TRAVIS_BRANCH')
+
+if (travis_build is None) or (travis_bench == "master"):
     travis_build = ''
 else:
     travis_build = ".dev" + travis_build
