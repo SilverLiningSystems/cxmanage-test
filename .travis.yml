@@ -4,7 +4,7 @@ python:
 install:
 - python setup.py bdist
 - pip install .
-script: cxmanage --help #run_tests
+script: run_tests #cxmanage --help
 before_deploy:
 - git config --global user.email "builds@travis-ci.com"
 - git config --global user.name "Travis CI"
